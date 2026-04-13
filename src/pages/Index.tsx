@@ -1,57 +1,53 @@
-import { useState } from "react";
-import { stocks, StockCategory } from "@/data/stocks";
-import StockCard from "@/components/StockCard";
+import { sectors, StockQuote } from "@/data/stocks";
+import { useStockData } from "@/hooks/useStockData";
+import StockTile from "@/components/StockTile";
 import DashboardHeader from "@/components/DashboardHeader";
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState<StockCategory>("high-risk");
+  const { data: quotes, isLoading, error } = useStockData();
 
-  const filteredStocks = stocks.filter((s) => s.category === activeTab);
-
-  const tabs: { key: StockCategory; label: string; sublabel: string }[] = [
-    { key: "high-risk", label: "Strategic Allocation", sublabel: "GROWTH / RISK" },
-    { key: "low-risk", label: "Core Holdings", sublabel: "STABLE" },
-  ];
+  const quoteMap = new Map<string, StockQuote>();
+  quotes?.forEach((q) => quoteMap.set(q.ticker, q));
 
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-[1400px] mx-auto bg-card border-x border-border shadow-2xl min-h-screen">
-        {/* Warm spotlight */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/5 blur-[100px] pointer-events-none rounded-full" />
 
-        <DashboardHeader totalStocks={stocks.length} />
+        <DashboardHeader totalStocks={sectors.flatMap(s => s.tickers).length} />
 
-        {/* Tabs */}
-        <nav className="px-6 md:px-10 flex gap-1 border-b border-border bg-background/50">
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`px-4 md:px-6 py-4 text-sm font-medium tracking-wide transition-colors relative ${
-                activeTab === tab.key
-                  ? "text-primary bg-card border-x border-t border-border -mb-px"
-                  : "text-muted-foreground hover:text-foreground border-x border-t border-transparent"
-              }`}
-            >
-              {tab.label}
-              <span className="text-[10px] font-mono ml-2 opacity-70">{tab.sublabel}</span>
-            </button>
-          ))}
-        </nav>
-
-        {/* Stock Grid */}
-        <main className="p-6 md:p-10 relative z-10">
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredStocks.map((stock) => (
-              <StockCard key={stock.ticker} stock={stock} />
-            ))}
-          </div>
-
-          {filteredStocks.length === 0 && (
+        <main className="p-6 md:p-10 relative z-10 space-y-8">
+          {isLoading && (
             <div className="text-center text-muted-foreground py-20 font-mono text-sm">
-              No stocks in this category.
+              Fetching market data…
             </div>
           )}
+
+          {error && (
+            <div className="text-center text-rust py-20 font-mono text-sm">
+              Failed to load data. Retrying…
+            </div>
+          )}
+
+          {!isLoading && !error && sectors.map((sector) => (
+            <section key={sector.name}>
+              <h2 className="font-serif text-lg text-foreground mb-4 flex items-center gap-3">
+                {sector.name}
+                <span className="flex-1 h-[1px] bg-border" />
+                <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
+                  {sector.tickers.length} assets
+                </span>
+              </h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                {sector.tickers.map((ticker) => {
+                  const quote = quoteMap.get(ticker) || {
+                    ticker, price: 0, dayMin: 0, dayMax: 0, peRatio: null, change: 0
+                  };
+                  return <StockTile key={ticker} quote={quote} />;
+                })}
+              </div>
+            </section>
+          ))}
         </main>
       </div>
     </div>
