@@ -37,7 +37,11 @@ function setCache(evaluations: PriceEvaluation[]) {
   localStorage.setItem(CACHE_KEY, JSON.stringify(data));
 }
 
-export function usePriceEvaluations(quotes: { ticker: string; price: number }[] | undefined) {
+export function clearPriceCache() {
+  localStorage.removeItem(CACHE_KEY);
+}
+
+export function usePriceEvaluations(quotes: { ticker: string; price: number; dayMin: number; dayMax: number; change: number }[] | undefined) {
   return useQuery({
     queryKey: ["price-evaluations"],
     queryFn: async (): Promise<PriceEvaluation[]> => {
@@ -54,6 +58,9 @@ export function usePriceEvaluations(quotes: { ticker: string; price: number }[] 
         .map(q => ({
           ticker: q.ticker,
           price: q.price,
+          dayMin: q.dayMin,
+          dayMax: q.dayMax,
+          change: q.change,
           sector: sectorMap.get(q.ticker) || "Other",
         }));
 

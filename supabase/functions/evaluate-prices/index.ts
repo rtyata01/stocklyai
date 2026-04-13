@@ -20,8 +20,8 @@ Deno.serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
 
-    const stockList = stocks.map((s: { ticker: string; price: number; sector: string }) =>
-      `${s.ticker} (sector: ${s.sector}, current price: $${s.price.toFixed(2)})`
+    const stockList = stocks.map((s: { ticker: string; price: number; sector: string; dayMin: number; dayMax: number; change: number }) =>
+      `${s.ticker}: current $${s.price.toFixed(2)}, day range $${s.dayMin.toFixed(2)}-$${s.dayMax.toFixed(2)}, change ${s.change.toFixed(2)}%, sector: ${s.sector}`
     ).join('\n');
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -31,15 +31,28 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
+        model: 'google/gemini-2.5-flash',
         messages: [
           {
             role: 'system',
-            content: `You are a stock analyst. For each stock, provide fair value estimates for buy, hold, and sell price points based on general market knowledge. Return ONLY valid JSON array with objects containing: ticker, buyPrice, holdPrice, salePrice (all numbers). No explanation, no markdown.`
+            content: `You are a senior equity research analyst. For each stock or asset, determine realistic fair value price targets for Buy, Hold, and Sell zones based on:
+
+1. **Analyst consensus target prices** — use well-known Wall Street consensus estimates as your primary reference.
+2. **Valuation fundamentals** — consider P/E, P/S, growth rates, and sector multiples.
+3. **Technical levels** — recent support/resistance, 52-week range context.
+
+CRITICAL RULES:
+- Buy price should be a realistic discount to current price where it becomes attractive — typically 5-20% below current price depending on volatility and valuation.
+- Hold price should be approximately the current fair value — close to the current market price or analyst consensus target.
+- Sell price should be a realistic upside target — typically 10-30% above current price, aligned with analyst price targets.
+- For crypto assets (ETH, SOL, XRP, BITF, BMNR), use crypto-specific valuation (market cycles, adoption metrics).
+- For ETFs (SPY, VOO), use index-level targets based on earnings estimates.
+- NEVER return a buy price that is more than 30% below current price unless the stock is fundamentally overvalued by analyst consensus.
+- All prices must be in USD and make sense relative to the current trading price provided.`
           },
           {
             role: 'user',
-            content: `Evaluate fair buy, hold, and sell prices for these stocks:\n${stockList}`
+            content: `Provide buy, hold, and sell fair value targets for each:\n\n${stockList}`
           }
         ],
         tools: [
@@ -57,9 +70,9 @@ Deno.serve(async (req) => {
                       type: 'object',
                       properties: {
                         ticker: { type: 'string' },
-                        buyPrice: { type: 'number' },
-                        holdPrice: { type: 'number' },
-                        salePrice: { type: 'number' },
+                        buyPrice: { type: 'number', description: 'Attractive entry price, typically 5-20% below current' },
+                        holdPrice: { type: 'number', description: 'Fair value / consensus target, near current price' },
+                        salePrice: { type: 'number', description: 'Upside target, typically 10-30% above current' },
                       },
                       required: ['ticker', 'buyPrice', 'holdPrice', 'salePrice'],
                       additionalProperties: false,
