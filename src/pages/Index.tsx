@@ -1,13 +1,16 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { sectors, StockQuote, formatCurrency } from "@/data/stocks";
 import { useStockData } from "@/hooks/useStockData";
-import { usePriceEvaluations, PriceEvaluation } from "@/hooks/usePriceEvaluations";
+import { usePriceEvaluations, PriceEvaluation, clearPriceCache } from "@/hooks/usePriceEvaluations";
 import DashboardHeader from "@/components/DashboardHeader";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import { useQueryClient } from "@tanstack/react-query";
 
 const Index = () => {
+  const queryClient = useQueryClient();
   const { data: quotes, isLoading, error } = useStockData();
   const { data: evaluations, isLoading: evalLoading } = usePriceEvaluations(quotes);
 
@@ -17,10 +20,20 @@ const Index = () => {
   const evalMap = new Map<string, PriceEvaluation>();
   evaluations?.forEach((e) => evalMap.set(e.ticker, e));
 
+  const handleRefresh = () => {
+    clearPriceCache();
+    queryClient.invalidateQueries({ queryKey: ["price-evaluations"] });
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-[1400px] mx-auto bg-card border-x border-border shadow-2xl min-h-screen">
-        <DashboardHeader totalStocks={sectors.flatMap(s => s.tickers).length} />
+        <DashboardHeader
+          totalStocks={sectors.flatMap(s => s.tickers).length}
+          onRefresh={handleRefresh}
+          onManageStocks={() => {/* TODO: open manage dialog */}}
+          isRefreshing={evalLoading}
+        />
 
         <main className="p-4 md:p-8 relative z-10 space-y-6">
           {isLoading && (
