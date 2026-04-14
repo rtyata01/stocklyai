@@ -14,7 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      stock_news: {
+        Row: {
+          created_at: string
+          headline: string
+          id: string
+          is_fda_related: boolean
+          published_at: string
+          source_url: string | null
+          summary: string | null
+          ticker: string
+        }
+        Insert: {
+          created_at?: string
+          headline: string
+          id?: string
+          is_fda_related?: boolean
+          published_at?: string
+          source_url?: string | null
+          summary?: string | null
+          ticker: string
+        }
+        Update: {
+          created_at?: string
+          headline?: string
+          id?: string
+          is_fda_related?: boolean
+          published_at?: string
+          source_url?: string | null
+          summary?: string | null
+          ticker?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
