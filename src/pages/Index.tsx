@@ -53,7 +53,7 @@ const Index = () => {
           <Tabs defaultValue="portfolio">
             <TabsList className="mb-4">
               <TabsTrigger value="portfolio" className="text-xs font-mono">Portfolio</TabsTrigger>
-              <TabsTrigger value="announcements" className="text-xs font-mono">Weekly Announcements</TabsTrigger>
+              <TabsTrigger value="announcements" className="text-xs font-mono">Earnings Momentum</TabsTrigger>
             </TabsList>
 
             <TabsContent value="portfolio">
