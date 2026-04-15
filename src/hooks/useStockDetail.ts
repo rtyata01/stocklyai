@@ -20,6 +20,13 @@ export interface PricePoint {
   price: number;
 }
 
+export interface Catalyst {
+  event: string;
+  date: string | null;
+  impact: "bullish" | "bearish" | "neutral";
+  details: string;
+}
+
 export interface InvestmentSimulation {
   initialInvestment: number;
   currentValue: number;
@@ -40,6 +47,7 @@ export interface StockDetail {
   yearlyEarnings: YearlyEarning[];
   priceHistory: PricePoint[];
   investmentSimulation: InvestmentSimulation;
+  catalysts: Catalyst[];
 }
 
 const CACHE_KEY = "stock-detail-cache";
