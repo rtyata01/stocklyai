@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { sectors, StockQuote, formatCurrency } from "@/data/stocks";
+import { formatCurrency } from "@/data/stocks";
 import { useStockData } from "@/hooks/useStockData";
 import { usePriceEvaluations, PriceEvaluation, clearPriceCache } from "@/hooks/usePriceEvaluations";
 import DashboardHeader from "@/components/DashboardHeader";
 import NewsPanel from "@/components/NewsPanel";
+import ManageWatchlistDialog, { getWatchlistSectors } from "@/components/ManageWatchlistDialog";
+import { SectorGroup, StockQuote } from "@/data/stocks";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -18,6 +20,8 @@ const Index = () => {
   const { data: quotes, isLoading, error } = useStockData();
   const { data: evaluations, isLoading: evalLoading } = usePriceEvaluations(quotes);
   const [collapsedSectors, setCollapsedSectors] = useState<Set<string>>(new Set());
+  const [watchlistOpen, setWatchlistOpen] = useState(false);
+  const [activeSectors, setActiveSectors] = useState<SectorGroup[]>(() => getWatchlistSectors());
 
   const quoteMap = new Map<string, StockQuote>();
   quotes?.forEach((q) => quoteMap.set(q.ticker, q));
@@ -39,14 +43,27 @@ const Index = () => {
     });
   };
 
+  const handleWatchlistSave = (newSectors: SectorGroup[]) => {
+    setActiveSectors(newSectors);
+    // Refresh data with new tickers
+    queryClient.invalidateQueries({ queryKey: ["stock-data"] });
+    queryClient.invalidateQueries({ queryKey: ["price-evaluations"] });
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-[1400px] mx-auto bg-card border-x border-border shadow-2xl min-h-screen">
         <DashboardHeader
-          totalStocks={sectors.flatMap(s => s.tickers).length}
+          totalStocks={activeSectors.flatMap(s => s.tickers).length}
           onRefresh={handleRefresh}
-          onManageStocks={() => {}}
+          onManageStocks={() => setWatchlistOpen(true)}
           isRefreshing={evalLoading}
+        />
+
+        <ManageWatchlistDialog
+          open={watchlistOpen}
+          onOpenChange={setWatchlistOpen}
+          onSave={handleWatchlistSave}
         />
 
         <div className="px-4 md:px-8 pt-4">
@@ -70,7 +87,7 @@ const Index = () => {
                   </div>
                 )}
 
-                {!isLoading && !error && sectors.map((sector) => {
+                {!isLoading && !error && activeSectors.map((sector) => {
                   const isOpen = !collapsedSectors.has(sector.name);
                   return (
                     <Collapsible key={sector.name} open={isOpen} onOpenChange={() => toggleSector(sector.name)}>
