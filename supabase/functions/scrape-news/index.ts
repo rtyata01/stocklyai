@@ -25,7 +25,6 @@ Deno.serve(async (req) => {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     await supabase.from('stock_news').delete().lt('published_at', sevenDaysAgo);
 
-    // Get tickers from request body or use defaults
     let tickers: string[];
     try {
       const body = await req.json();
@@ -56,59 +55,68 @@ Deno.serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are an expert earnings momentum trader and analyst. Your job is to identify the single best stock for an earnings momentum trade from the given ticker list.
+            content: `You are an expert earnings momentum trader and analyst. Your job is to identify the TOP stocks (up to 5, but ONLY those that truly qualify) for earnings momentum trades from the given ticker list.
 
-Criteria for the #1 pick:
+STRICT Criteria — a stock MUST meet ALL of these to be included:
 1. Earnings date is within the NEXT 2-3 weeks from today (${today})
 2. Strong expectation to BEAT analyst EPS estimates (whisper numbers, recent guidance raises, sector tailwinds)
 3. Forecast for strong revenue/earnings growth in the following quarter
-4. Risk-to-reward ratio of approximately 1:2 (limited downside, 2x upside potential)
+4. Risk-to-reward ratio of AT LEAST 1:2 (limited downside, 2x+ upside potential)
 5. Good for a short-term earnings momentum trade (buy before earnings, ride the beat)
 
-Provide ONLY the single best pick. Be specific with numbers: expected EPS vs consensus, earnings date, price target, stop loss, and why this stock will beat.
-If no stock meets all criteria strongly, pick the closest match and note caveats.`
+IMPORTANT RULES:
+- Return ONLY stocks that genuinely have earnings in the next 2-3 weeks
+- If only 1-2 stocks meet all criteria, return only those. Do NOT pad to 5.
+- Maximum 5 picks. Minimum 1.
+- Each pick must have risk:reward of 1:2 or better
+- Rank by confidence (highest first)`
           },
           {
             role: 'user',
-            content: `From these tickers, identify the #1 earnings momentum trade for the next 2-3 weeks: ${tickers.join(', ')}. Today is ${today}.`
+            content: `From these tickers, identify the best earnings momentum trades for the next 2-3 weeks: ${tickers.join(', ')}. Today is ${today}. Return ONLY those that truly qualify (1-5 picks).`
           }
         ],
         tools: [
           {
             type: 'function',
             function: {
-              name: 'return_earnings_pick',
-              description: 'Return the top earnings momentum stock pick',
+              name: 'return_earnings_picks',
+              description: 'Return the top earnings momentum stock picks (1-5)',
               parameters: {
                 type: 'object',
                 properties: {
-                  pick: {
-                    type: 'object',
-                    properties: {
-                      ticker: { type: 'string', description: 'Stock ticker symbol' },
-                      earnings_date: { type: 'string', description: 'Expected earnings date (YYYY-MM-DD)' },
-                      consensus_eps: { type: 'number', description: 'Wall Street consensus EPS estimate' },
-                      expected_eps: { type: 'number', description: 'Your expected actual EPS (whisper number)' },
-                      beat_confidence: { type: 'string', enum: ['High', 'Medium', 'Low'], description: 'Confidence level the stock will beat' },
-                      entry_price: { type: 'number', description: 'Suggested entry price' },
-                      price_target: { type: 'number', description: 'Price target after earnings beat' },
-                      stop_loss: { type: 'number', description: 'Stop loss price' },
-                      risk_reward_ratio: { type: 'string', description: 'Risk to reward ratio e.g. 1:2.1' },
-                      headline: { type: 'string', description: 'Compelling one-line headline for the trade' },
-                      thesis: { type: 'string', description: 'Detailed 2-3 sentence bull thesis explaining why this stock will beat and rally' },
-                      catalysts: { type: 'array', items: { type: 'string' }, description: '3-4 key catalysts' },
-                      risks: { type: 'array', items: { type: 'string' }, description: '2-3 key risks' },
-                      next_quarter_growth: { type: 'string', description: 'Expected revenue/earnings growth outlook for the quarter after earnings' },
+                  picks: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        ticker: { type: 'string' },
+                        earnings_date: { type: 'string', description: 'YYYY-MM-DD' },
+                        consensus_eps: { type: 'number' },
+                        expected_eps: { type: 'number' },
+                        beat_confidence: { type: 'string', enum: ['High', 'Medium', 'Low'] },
+                        entry_price: { type: 'number' },
+                        price_target: { type: 'number' },
+                        stop_loss: { type: 'number' },
+                        risk_reward_ratio: { type: 'string' },
+                        headline: { type: 'string' },
+                        thesis: { type: 'string' },
+                        catalysts: { type: 'array', items: { type: 'string' } },
+                        risks: { type: 'array', items: { type: 'string' } },
+                        next_quarter_growth: { type: 'string' },
+                      },
+                      required: ['ticker', 'earnings_date', 'consensus_eps', 'expected_eps', 'beat_confidence', 'entry_price', 'price_target', 'stop_loss', 'risk_reward_ratio', 'headline', 'thesis', 'catalysts', 'risks', 'next_quarter_growth'],
                     },
-                    required: ['ticker', 'earnings_date', 'consensus_eps', 'expected_eps', 'beat_confidence', 'entry_price', 'price_target', 'stop_loss', 'risk_reward_ratio', 'headline', 'thesis', 'catalysts', 'risks', 'next_quarter_growth'],
+                    minItems: 1,
+                    maxItems: 5,
                   },
                 },
-                required: ['pick'],
+                required: ['picks'],
               },
             },
           },
         ],
-        tool_choice: { type: 'function', function: { name: 'return_earnings_pick' } },
+        tool_choice: { type: 'function', function: { name: 'return_earnings_picks' } },
       }),
     });
 
@@ -123,41 +131,46 @@ If no stock meets all criteria strongly, pick the closest match and note caveats
     if (!toolCall) throw new Error('No tool call in response');
 
     const parsed = JSON.parse(toolCall.function.arguments);
-    const pick = parsed.pick;
+    const picks = parsed.picks;
 
-    // Build a rich summary from the structured data
-    const summary = JSON.stringify({
-      earnings_date: pick.earnings_date,
-      consensus_eps: pick.consensus_eps,
-      expected_eps: pick.expected_eps,
-      beat_confidence: pick.beat_confidence,
-      entry_price: pick.entry_price,
-      price_target: pick.price_target,
-      stop_loss: pick.stop_loss,
-      risk_reward_ratio: pick.risk_reward_ratio,
-      thesis: pick.thesis,
-      catalysts: pick.catalysts,
-      risks: pick.risks,
-      next_quarter_growth: pick.next_quarter_growth,
-    });
+    if (!Array.isArray(picks) || picks.length === 0) {
+      throw new Error('No qualifying picks found');
+    }
 
-    // Clear existing and insert the single pick
+    // Clear existing picks
     await supabase.from('stock_news').delete().gte('created_at', sevenDaysAgo);
 
-    const { error: insertError } = await supabase.from('stock_news').insert({
+    // Insert all picks
+    const inserts = picks.map((pick: any, index: number) => ({
       ticker: pick.ticker,
       headline: pick.headline,
-      summary: summary,
+      summary: JSON.stringify({
+        rank: index + 1,
+        earnings_date: pick.earnings_date,
+        consensus_eps: pick.consensus_eps,
+        expected_eps: pick.expected_eps,
+        beat_confidence: pick.beat_confidence,
+        entry_price: pick.entry_price,
+        price_target: pick.price_target,
+        stop_loss: pick.stop_loss,
+        risk_reward_ratio: pick.risk_reward_ratio,
+        thesis: pick.thesis,
+        catalysts: pick.catalysts,
+        risks: pick.risks,
+        next_quarter_growth: pick.next_quarter_growth,
+      }),
       is_fda_related: false,
       published_at: new Date().toISOString(),
-    });
+    }));
+
+    const { error: insertError } = await supabase.from('stock_news').insert(inserts);
 
     if (insertError) {
       console.error('Insert error:', insertError);
       throw insertError;
     }
 
-    return new Response(JSON.stringify({ success: true, pick: pick.ticker }), {
+    return new Response(JSON.stringify({ success: true, count: picks.length, tickers: picks.map((p: any) => p.ticker) }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
