@@ -123,6 +123,40 @@ const StockDetail = () => {
                 )}
               </section>
 
+              {/* Catalysts */}
+              {detail.catalysts && detail.catalysts.length > 0 && (
+                <section>
+                  <h2 className="font-serif text-base text-foreground mb-3 flex items-center gap-3">
+                    Upcoming Catalysts <span className="flex-1 h-[1px] bg-border" />
+                  </h2>
+                  <div className="grid gap-2">
+                    {detail.catalysts.map((c, i) => (
+                      <div key={i} className="border border-border rounded-sm p-3 bg-secondary/20 flex items-start gap-3">
+                        <div className={`mt-0.5 w-2 h-2 rounded-full shrink-0 ${
+                          c.impact === 'bullish' ? 'bg-pine' : c.impact === 'bearish' ? 'bg-destructive' : 'bg-muted-foreground'
+                        }`} />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-mono text-sm text-foreground">{c.event}</span>
+                            {c.date && (
+                              <span className="text-[10px] font-mono text-muted-foreground bg-secondary px-1.5 py-0.5 rounded">
+                                {c.date}
+                              </span>
+                            )}
+                            <span className={`text-[10px] font-mono uppercase px-1.5 py-0.5 rounded ${
+                              c.impact === 'bullish' ? 'text-pine bg-pine/10' : c.impact === 'bearish' ? 'text-destructive bg-destructive/10' : 'text-muted-foreground bg-secondary'
+                            }`}>
+                              {c.impact}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">{c.details}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
               {/* Earnings Charts */}
               <section>
                 <h2 className="font-serif text-base text-foreground mb-3 flex items-center gap-3">

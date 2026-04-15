@@ -47,7 +47,8 @@ Deno.serve(async (req) => {
 - Past 4 years annual earnings (EPS and revenue) 
 - Next 4 years annual earnings estimates
 - Quarterly price history (past 8 quarters close price)
-- What would $1000 invested 5 years ago be worth now`
+- What would $1000 invested 5 years ago be worth now
+- Upcoming major catalysts (earnings dates, product launches, FDA decisions, regulatory events, analyst days, M&A activity, key partnerships, macro events) with specific dates where known. Include 3-8 catalysts.`
           }
         ],
         tools: [
@@ -124,8 +125,22 @@ Deno.serve(async (req) => {
                     },
                     required: ['initialInvestment', 'currentValue', 'totalReturn', 'dataPoints'],
                   },
+                  catalysts: {
+                    type: 'array',
+                    description: 'Upcoming major catalysts for this stock',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        event: { type: 'string', description: 'Name of the catalyst event' },
+                        date: { type: 'string', description: 'Expected date (YYYY-MM-DD) or null if unknown' },
+                        impact: { type: 'string', enum: ['bullish', 'bearish', 'neutral'], description: 'Expected impact direction' },
+                        details: { type: 'string', description: 'Brief explanation of why this matters' },
+                      },
+                      required: ['event', 'impact', 'details'],
+                    },
+                  },
                 },
-                required: ['currentPrice', 'week52High', 'week52Low', 'quarterlyEarnings', 'yearlyEarnings', 'priceHistory', 'investmentSimulation'],
+                required: ['currentPrice', 'week52High', 'week52Low', 'quarterlyEarnings', 'yearlyEarnings', 'priceHistory', 'investmentSimulation', 'catalysts'],
               },
             },
           },
