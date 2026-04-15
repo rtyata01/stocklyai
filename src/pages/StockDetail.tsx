@@ -223,36 +223,6 @@ const StockDetail = () => {
                 </Tabs>
               </section>
 
-              {/* Price History */}
-              {detail.priceHistory?.length > 0 && (
-                <section>
-                  <h2 className="font-serif text-base text-foreground mb-3 flex items-center gap-3">
-                    Price History <span className="flex-1 h-[1px] bg-border" />
-                  </h2>
-                  <div className="border border-border rounded-sm p-4">
-                    <ResponsiveContainer width="100%" height={250}>
-                      <AreaChart data={detail.priceHistory}>
-                        <defs>
-                          <linearGradient id="priceGrad" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="hsl(33 30% 56%)" stopOpacity={0.3} />
-                            <stop offset="95%" stopColor="hsl(33 30% 56%)" stopOpacity={0} />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(16 10% 23%)" />
-                        <XAxis dataKey="period" tick={{ fontSize: 10, fill: 'hsl(35 8% 60%)' }} />
-                        <YAxis tick={{ fontSize: 10, fill: 'hsl(35 8% 60%)' }} domain={['auto', 'auto']} />
-                        <Tooltip
-                          contentStyle={{ background: 'hsl(18 12% 11%)', border: '1px solid hsl(16 10% 23%)', borderRadius: 4, fontSize: 12 }}
-                          formatter={(value: number) => [`$${value.toFixed(2)}`, 'Price']}
-                        />
-                        {evalData && <ReferenceLine y={evalData.buyPrice} stroke="hsl(33 30% 56%)" strokeDasharray="3 3" label={{ value: 'Buy', fontSize: 10, fill: 'hsl(33 30% 56%)' }} />}
-                        {evalData && <ReferenceLine y={evalData.salePrice} stroke="hsl(5 50% 40%)" strokeDasharray="3 3" label={{ value: 'Sell', fontSize: 10, fill: 'hsl(5 50% 40%)' }} />}
-                        <Area type="monotone" dataKey="price" stroke="hsl(33 30% 56%)" fill="url(#priceGrad)" strokeWidth={2} />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                </section>
-              )}
 
               {/* $1000 Investment Simulation */}
               {detail.investmentSimulation && (
