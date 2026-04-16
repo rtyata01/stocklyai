@@ -27,11 +27,17 @@ export interface Catalyst {
   details: string;
 }
 
+export interface PeriodReturn {
+  period: string; // "1W" | "1M" | "3M" | "6M" | "1Y" | "4Y"
+  label: string; // human label
+  startPrice: number;
+  endValue: number; // value of $1000 invested at startPrice, now
+  returnPct: number; // percentage return
+}
+
 export interface InvestmentSimulation {
   initialInvestment: number;
-  currentValue: number;
-  totalReturn: number;
-  dataPoints: { date: string; value: number }[];
+  periodReturns: PeriodReturn[];
 }
 
 export interface StockDetail {
@@ -50,7 +56,7 @@ export interface StockDetail {
   catalysts: Catalyst[];
 }
 
-const CACHE_KEY = "stock-detail-cache";
+const CACHE_KEY = "stock-detail-cache-v2";
 const CACHE_TTL = 4 * 60 * 60 * 1000; // 4 hours
 
 function getCached(ticker: string): StockDetail | null {

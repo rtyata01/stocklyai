@@ -259,46 +259,45 @@ const StockDetail = () => {
 
 
               {/* $1000 Investment Simulation */}
-              {detail.investmentSimulation && (
+              {detail.investmentSimulation && detail.investmentSimulation.periodReturns?.length > 0 && (
                 <section>
                   <h2 className="font-serif text-base text-foreground mb-3 flex items-center gap-3">
-                    $1,000 Investment Simulation <span className="flex-1 h-[1px] bg-border" />
+                    $1,000 Investment Returns <span className="flex-1 h-[1px] bg-border" />
                   </h2>
                   <div className="border border-border rounded-sm p-4">
-                    <div className="flex gap-6 mb-4">
-                      <div>
-                        <div className="text-[10px] font-mono text-muted-foreground uppercase">Initial</div>
-                        <div className="font-mono text-sm text-foreground">{formatCurrency(detail.investmentSimulation.initialInvestment)}</div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] font-mono text-muted-foreground uppercase">Current Value</div>
-                        <div className="font-mono text-sm text-foreground">{formatCurrency(detail.investmentSimulation.currentValue)}</div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] font-mono text-muted-foreground uppercase">Total Return</div>
-                        <div className={`font-mono text-sm ${detail.investmentSimulation.totalReturn >= 0 ? "text-pine" : "text-destructive"}`}>
-                          {detail.investmentSimulation.totalReturn >= 0 ? "+" : ""}{detail.investmentSimulation.totalReturn.toFixed(1)}%
-                        </div>
-                      </div>
+                    <div className="text-[10px] font-mono text-muted-foreground uppercase mb-3">
+                      Value of $1,000 invested at the start of each period (current price: {quote ? formatCurrency(quote.price) : formatCurrency(detail.currentPrice)})
                     </div>
-                    <ResponsiveContainer width="100%" height={220}>
-                      <AreaChart data={detail.investmentSimulation.dataPoints}>
-                        <defs>
-                          <linearGradient id="simGrad" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="hsl(134 17% 31%)" stopOpacity={0.3} />
-                            <stop offset="95%" stopColor="hsl(134 17% 31%)" stopOpacity={0} />
-                          </linearGradient>
-                        </defs>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mb-4">
+                      {detail.investmentSimulation.periodReturns.map(p => (
+                        <div key={p.period} className="border border-border rounded-sm p-2 bg-secondary/20">
+                          <div className="text-[10px] font-mono text-muted-foreground uppercase">{p.label}</div>
+                          <div className="font-mono text-sm text-foreground mt-0.5">{formatCurrency(p.endValue)}</div>
+                          <div className={`font-mono text-[11px] ${p.returnPct >= 0 ? "text-pine" : "text-destructive"}`}>
+                            {p.returnPct >= 0 ? "+" : ""}{p.returnPct.toFixed(2)}%
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <ResponsiveContainer width="100%" height={240}>
+                      <BarChart data={detail.investmentSimulation.periodReturns}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(16 10% 23%)" />
-                        <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'hsl(35 8% 60%)' }} />
-                        <YAxis tick={{ fontSize: 10, fill: 'hsl(35 8% 60%)' }} />
+                        <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'hsl(35 8% 60%)' }} />
+                        <YAxis tick={{ fontSize: 10, fill: 'hsl(35 8% 60%)' }} tickFormatter={(v) => `${v}%`} />
                         <Tooltip
                           contentStyle={{ background: 'hsl(18 12% 11%)', border: '1px solid hsl(16 10% 23%)', borderRadius: 4, fontSize: 12 }}
-                          formatter={(value: number) => [`$${value.toFixed(2)}`, 'Value']}
+                          formatter={(value: number, _n, item: any) => [
+                            `${value >= 0 ? "+" : ""}${value.toFixed(2)}% (${formatCurrency(item.payload.endValue)})`,
+                            'Return',
+                          ]}
                         />
-                        <ReferenceLine y={1000} stroke="hsl(35 8% 60%)" strokeDasharray="3 3" label={{ value: '$1,000', fontSize: 10, fill: 'hsl(35 8% 60%)' }} />
-                        <Area type="monotone" dataKey="value" stroke="hsl(134 17% 31%)" fill="url(#simGrad)" strokeWidth={2} />
-                      </AreaChart>
+                        <ReferenceLine y={0} stroke="hsl(35 8% 60%)" />
+                        <Bar dataKey="returnPct" name="Return %">
+                          {detail.investmentSimulation.periodReturns.map((entry, i) => (
+                            <Cell key={i} fill={entry.returnPct >= 0 ? 'hsl(134 17% 31%)' : 'hsl(0 65% 45%)'} />
+                          ))}
+                        </Bar>
+                      </BarChart>
                     </ResponsiveContainer>
                   </div>
                 </section>

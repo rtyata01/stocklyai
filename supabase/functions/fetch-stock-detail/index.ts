@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
 - Past 4 years annual earnings (EPS and revenue) 
 - Next 4 years annual earnings estimates
 - Quarterly price history (past 8 quarters close price)
-- What would $1000 invested 5 years ago be worth now
+- Investment returns: For $1,000 invested at the start of each of these periods (1 week ago, 1 month ago, 3 months ago, 6 months ago, 1 year ago, 4 years ago), compute the start-of-period price, the current value of the $1,000 investment now, and the percentage return using actual historical close prices.
 - Upcoming major catalysts (earnings dates, product launches, FDA decisions, regulatory events, analyst days, M&A activity, key partnerships, macro events) with specific dates where known. Include 3-8 catalysts.`
           }
         ],
@@ -108,22 +108,24 @@ Deno.serve(async (req) => {
                   investmentSimulation: {
                     type: 'object',
                     properties: {
-                      initialInvestment: { type: 'number' },
-                      currentValue: { type: 'number' },
-                      totalReturn: { type: 'number', description: 'percentage' },
-                      dataPoints: {
+                      initialInvestment: { type: 'number', description: 'Always 1000' },
+                      periodReturns: {
                         type: 'array',
+                        description: 'Returns for $1000 invested at start of each period: 1W, 1M, 3M, 6M, 1Y, 4Y',
                         items: {
                           type: 'object',
                           properties: {
-                            date: { type: 'string' },
-                            value: { type: 'number' },
+                            period: { type: 'string', enum: ['1W', '1M', '3M', '6M', '1Y', '4Y'] },
+                            label: { type: 'string', description: 'e.g. "1 Week", "1 Month", "4 Years"' },
+                            startPrice: { type: 'number' },
+                            endValue: { type: 'number', description: 'Current value of $1000 invested then' },
+                            returnPct: { type: 'number' },
                           },
-                          required: ['date', 'value'],
+                          required: ['period', 'label', 'startPrice', 'endValue', 'returnPct'],
                         },
                       },
                     },
-                    required: ['initialInvestment', 'currentValue', 'totalReturn', 'dataPoints'],
+                    required: ['initialInvestment', 'periodReturns'],
                   },
                   catalysts: {
                     type: 'array',
