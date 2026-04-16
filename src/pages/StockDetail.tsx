@@ -7,7 +7,7 @@ import { ArrowLeft, TrendingUp, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LabelList,
   ResponsiveContainer, ReferenceLine, Cell,
 } from "recharts";
 
@@ -305,11 +305,25 @@ const StockDetail = () => {
                         </div>
                       ))}
                     </div>
-                    <ResponsiveContainer width="100%" height={240}>
-                      <BarChart data={recomputed}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} />
-                        <XAxis dataKey="label" tick={{ fontSize: 10, fill: chartAxisColor }} />
-                        <YAxis tick={{ fontSize: 10, fill: chartAxisColor }} tickFormatter={(v) => `${v}%`} />
+                    <ResponsiveContainer width="100%" height={Math.max(180, recomputed.length * 36)}>
+                      <BarChart
+                        data={recomputed}
+                        layout="vertical"
+                        margin={{ top: 8, right: 56, left: 8, bottom: 8 }}
+                        barCategoryGap="28%"
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} horizontal={false} />
+                        <XAxis
+                          type="number"
+                          tick={{ fontSize: 10, fill: chartAxisColor }}
+                          tickFormatter={(v) => `${v}%`}
+                        />
+                        <YAxis
+                          type="category"
+                          dataKey="label"
+                          tick={{ fontSize: 10, fill: chartAxisColor }}
+                          width={70}
+                        />
                         <Tooltip
                           cursor={{ fill: 'hsl(var(--muted) / 0.18)' }}
                           contentStyle={{ background: chartTooltipBg, border: `1px solid ${chartTooltipBorder}`, borderRadius: 4, fontSize: 12 }}
@@ -324,11 +338,17 @@ const StockDetail = () => {
                             ];
                           }}
                         />
-                        <ReferenceLine y={0} stroke="hsl(35 8% 60%)" />
-                        <Bar dataKey="returnPct" name="Return %">
+                        <ReferenceLine x={0} stroke={chartAxisColor} />
+                        <Bar dataKey="returnPct" name="Return %" barSize={16} radius={[2, 2, 2, 2]}>
                           {recomputed.map((entry, i) => (
                             <Cell key={i} fill={entry.returnPct >= 0 ? 'hsl(134 17% 31%)' : 'hsl(0 65% 45%)'} />
                           ))}
+                          <LabelList
+                            dataKey="returnPct"
+                            position="right"
+                            formatter={(v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`}
+                            style={{ fill: chartTooltipText, fontSize: 10, fontFamily: 'monospace' }}
+                          />
                         </Bar>
                       </BarChart>
                     </ResponsiveContainer>
