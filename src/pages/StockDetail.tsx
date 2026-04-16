@@ -7,8 +7,8 @@ import { ArrowLeft, TrendingUp, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, ReferenceLine, Area, AreaChart, Cell,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, ReferenceLine, Cell,
 } from "recharts";
 
 const StockDetail = () => {
@@ -26,6 +26,13 @@ const StockDetail = () => {
   const week52Pct = detail
     ? ((detail.currentPrice - detail.week52Low) / (detail.week52High - detail.week52Low)) * 100
     : 0;
+
+  const chartGridColor = "hsl(var(--border))";
+  const chartAxisColor = "hsl(var(--muted-foreground))";
+  const chartTooltipBg = "hsl(var(--popover))";
+  const chartTooltipBorder = "hsl(var(--border))";
+  const chartTooltipText = "hsl(var(--popover-foreground))";
+  const chartCardClassName = "border border-border rounded-sm p-4 bg-card";
 
   return (
     <div className="min-h-screen bg-background">
@@ -164,23 +171,24 @@ const StockDetail = () => {
                   Earnings <span className="flex-1 h-[1px] bg-border" />
                 </h2>
                 <Tabs defaultValue="quarterly">
-                  <TabsList className="mb-4">
+                  <TabsList className="mb-4 border border-border bg-secondary/30">
                     <TabsTrigger value="quarterly" className="text-xs font-mono">Quarterly</TabsTrigger>
                     <TabsTrigger value="yearly" className="text-xs font-mono">Yearly</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="quarterly">
                     <div className="grid md:grid-cols-2 gap-4">
-                      <div className="border border-border rounded-sm p-4">
+                      <div className={chartCardClassName}>
                         <div className="text-[10px] font-mono text-muted-foreground uppercase mb-3">EPS by Quarter</div>
                         <ResponsiveContainer width="100%" height={220}>
                           <BarChart data={detail.quarterlyEarnings}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(16 10% 23%)" />
-                            <XAxis dataKey="quarter" tick={{ fontSize: 10, fill: 'hsl(35 8% 60%)' }} />
-                            <YAxis tick={{ fontSize: 10, fill: 'hsl(35 8% 60%)' }} />
+                            <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} />
+                            <XAxis dataKey="quarter" tick={{ fontSize: 10, fill: chartAxisColor }} />
+                            <YAxis tick={{ fontSize: 10, fill: chartAxisColor }} />
                             <Tooltip
-                              contentStyle={{ background: 'hsl(18 12% 11%)', border: '1px solid hsl(16 10% 23%)', borderRadius: 4, fontSize: 12 }}
-                              labelStyle={{ color: 'hsl(35 20% 90%)' }}
+                              contentStyle={{ background: chartTooltipBg, border: `1px solid ${chartTooltipBorder}`, borderRadius: 4, fontSize: 12 }}
+                              labelStyle={{ color: chartTooltipText }}
+                              itemStyle={{ color: chartTooltipText }}
                             />
                             <Bar dataKey="eps" name="EPS">
                               {detail.quarterlyEarnings.map((entry, i) => (
@@ -194,15 +202,17 @@ const StockDetail = () => {
                           <span className="flex items-center gap-1"><span className="w-3 h-2 rounded-sm" style={{ background: 'hsl(33 30% 56% / 0.5)' }} /> Estimate</span>
                         </div>
                       </div>
-                      <div className="border border-border rounded-sm p-4">
+                      <div className={chartCardClassName}>
                         <div className="text-[10px] font-mono text-muted-foreground uppercase mb-3">Revenue by Quarter ($M)</div>
                         <ResponsiveContainer width="100%" height={220}>
                           <BarChart data={detail.quarterlyEarnings}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(16 10% 23%)" />
-                            <XAxis dataKey="quarter" tick={{ fontSize: 10, fill: 'hsl(35 8% 60%)' }} />
-                            <YAxis tick={{ fontSize: 10, fill: 'hsl(35 8% 60%)' }} />
+                            <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} />
+                            <XAxis dataKey="quarter" tick={{ fontSize: 10, fill: chartAxisColor }} />
+                            <YAxis tick={{ fontSize: 10, fill: chartAxisColor }} />
                             <Tooltip
-                              contentStyle={{ background: 'hsl(18 12% 11%)', border: '1px solid hsl(16 10% 23%)', borderRadius: 4, fontSize: 12 }}
+                              contentStyle={{ background: chartTooltipBg, border: `1px solid ${chartTooltipBorder}`, borderRadius: 4, fontSize: 12 }}
+                              labelStyle={{ color: chartTooltipText }}
+                              itemStyle={{ color: chartTooltipText }}
                             />
                             <Bar dataKey="revenue" name="Revenue ($M)">
                               {detail.quarterlyEarnings.map((entry, i) => (
@@ -217,15 +227,17 @@ const StockDetail = () => {
 
                   <TabsContent value="yearly">
                     <div className="grid md:grid-cols-2 gap-4">
-                      <div className="border border-border rounded-sm p-4">
+                      <div className={chartCardClassName}>
                         <div className="text-[10px] font-mono text-muted-foreground uppercase mb-3">EPS by Year</div>
                         <ResponsiveContainer width="100%" height={220}>
                           <BarChart data={detail.yearlyEarnings}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(16 10% 23%)" />
-                            <XAxis dataKey="year" tick={{ fontSize: 10, fill: 'hsl(35 8% 60%)' }} />
-                            <YAxis tick={{ fontSize: 10, fill: 'hsl(35 8% 60%)' }} />
+                            <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} />
+                            <XAxis dataKey="year" tick={{ fontSize: 10, fill: chartAxisColor }} />
+                            <YAxis tick={{ fontSize: 10, fill: chartAxisColor }} />
                             <Tooltip
-                              contentStyle={{ background: 'hsl(18 12% 11%)', border: '1px solid hsl(16 10% 23%)', borderRadius: 4, fontSize: 12 }}
+                              contentStyle={{ background: chartTooltipBg, border: `1px solid ${chartTooltipBorder}`, borderRadius: 4, fontSize: 12 }}
+                              labelStyle={{ color: chartTooltipText }}
+                              itemStyle={{ color: chartTooltipText }}
                             />
                             <Bar dataKey="eps" name="EPS">
                               {detail.yearlyEarnings.map((entry, i) => (
@@ -235,15 +247,17 @@ const StockDetail = () => {
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
-                      <div className="border border-border rounded-sm p-4">
+                      <div className={chartCardClassName}>
                         <div className="text-[10px] font-mono text-muted-foreground uppercase mb-3">Revenue by Year ($M)</div>
                         <ResponsiveContainer width="100%" height={220}>
                           <BarChart data={detail.yearlyEarnings}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(16 10% 23%)" />
-                            <XAxis dataKey="year" tick={{ fontSize: 10, fill: 'hsl(35 8% 60%)' }} />
-                            <YAxis tick={{ fontSize: 10, fill: 'hsl(35 8% 60%)' }} />
+                            <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} />
+                            <XAxis dataKey="year" tick={{ fontSize: 10, fill: chartAxisColor }} />
+                            <YAxis tick={{ fontSize: 10, fill: chartAxisColor }} />
                             <Tooltip
-                              contentStyle={{ background: 'hsl(18 12% 11%)', border: '1px solid hsl(16 10% 23%)', borderRadius: 4, fontSize: 12 }}
+                              contentStyle={{ background: chartTooltipBg, border: `1px solid ${chartTooltipBorder}`, borderRadius: 4, fontSize: 12 }}
+                              labelStyle={{ color: chartTooltipText }}
+                              itemStyle={{ color: chartTooltipText }}
                             />
                             <Bar dataKey="revenue" name="Revenue ($M)">
                               {detail.yearlyEarnings.map((entry, i) => (
@@ -261,13 +275,14 @@ const StockDetail = () => {
 
               {/* $1000 Investment Simulation */}
               {detail.investmentSimulation && detail.investmentSimulation.periodReturns?.length > 0 && (() => {
-                const livePrice = quote?.price ?? detail.currentPrice;
-                // Recompute returns from authoritative live current price + AI-provided startPrice
+                const currentPriceForSimulation = detail.currentPrice > 0 ? detail.currentPrice : (quote?.price ?? 0);
                 const recomputed = detail.investmentSimulation.periodReturns.map(p => {
                   const startPrice = p.startPrice;
-                  const endValue = startPrice > 0 ? (1000 / startPrice) * livePrice : p.endValue;
-                  const returnPct = startPrice > 0 ? ((livePrice - startPrice) / startPrice) * 100 : p.returnPct;
+                  const endValue = startPrice > 0 && currentPriceForSimulation > 0
+                    ? (1000 / startPrice) * currentPriceForSimulation
+                    : p.endValue;
                   const gain = endValue - 1000;
+                  const returnPct = (gain / 1000) * 100;
                   return { ...p, endValue, returnPct, gain };
                 });
                 return (
@@ -277,7 +292,7 @@ const StockDetail = () => {
                   </h2>
                   <div className="border border-border rounded-sm p-4">
                     <div className="text-[10px] font-mono text-muted-foreground uppercase mb-3">
-                      Value of $1,000 invested at the start of each period (current price: {formatCurrency(livePrice)})
+                      Value of $1,000 invested at the start of each period (current price: {formatCurrency(currentPriceForSimulation)})
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mb-4">
                       {recomputed.map(p => (
@@ -292,14 +307,14 @@ const StockDetail = () => {
                     </div>
                     <ResponsiveContainer width="100%" height={240}>
                       <BarChart data={recomputed}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(16 10% 23%)" />
-                        <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'hsl(35 8% 60%)' }} />
-                        <YAxis tick={{ fontSize: 10, fill: 'hsl(35 8% 60%)' }} tickFormatter={(v) => `${v}%`} />
+                        <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} />
+                        <XAxis dataKey="label" tick={{ fontSize: 10, fill: chartAxisColor }} />
+                        <YAxis tick={{ fontSize: 10, fill: chartAxisColor }} tickFormatter={(v) => `${v}%`} />
                         <Tooltip
-                          cursor={{ fill: 'hsl(35 8% 60% / 0.08)' }}
-                          contentStyle={{ background: 'hsl(18 12% 11%)', border: '1px solid hsl(16 10% 23%)', borderRadius: 4, fontSize: 12 }}
-                          labelStyle={{ color: 'hsl(35 20% 90%)' }}
-                          itemStyle={{ color: 'hsl(35 20% 90%)' }}
+                          cursor={{ fill: 'hsl(var(--muted) / 0.18)' }}
+                          contentStyle={{ background: chartTooltipBg, border: `1px solid ${chartTooltipBorder}`, borderRadius: 4, fontSize: 12 }}
+                          labelStyle={{ color: chartTooltipText }}
+                          itemStyle={{ color: chartTooltipText }}
                           formatter={(value: number, _n, item: any) => {
                             const p = item.payload;
                             const sign = p.gain >= 0 ? "+" : "−";
