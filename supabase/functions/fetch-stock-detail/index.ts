@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
 - Past 4 years annual earnings (EPS and revenue) 
 - Next 4 years annual earnings estimates
 - Quarterly price history (past 8 quarters close price)
-- What would $1000 invested 5 years ago be worth now
+- Investment returns: For $1,000 invested at the start of each of these periods (1 week ago, 1 month ago, 3 months ago, 6 months ago, 1 year ago, 4 years ago), compute the start-of-period price, the current value of the $1,000 investment now, and the percentage return using actual historical close prices.
 - Upcoming major catalysts (earnings dates, product launches, FDA decisions, regulatory events, analyst days, M&A activity, key partnerships, macro events) with specific dates where known. Include 3-8 catalysts.`
           }
         ],
