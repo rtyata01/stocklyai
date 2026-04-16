@@ -90,6 +90,7 @@ const StockDetail = () => {
                 </h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {[
+                    { label: "Current Price", value: formatCurrency(quote?.price ?? detail.currentPrice) },
                     { label: "52W High", value: detail.week52High ? formatCurrency(detail.week52High) : "—" },
                     { label: "52W Low", value: detail.week52Low ? formatCurrency(detail.week52Low) : "—" },
                     { label: "P/E Ratio", value: detail.peRatio?.toFixed(2) ?? "N/A" },
@@ -259,17 +260,27 @@ const StockDetail = () => {
 
 
               {/* $1000 Investment Simulation */}
-              {detail.investmentSimulation && detail.investmentSimulation.periodReturns?.length > 0 && (
+              {detail.investmentSimulation && detail.investmentSimulation.periodReturns?.length > 0 && (() => {
+                const livePrice = quote?.price ?? detail.currentPrice;
+                // Recompute returns from authoritative live current price + AI-provided startPrice
+                const recomputed = detail.investmentSimulation.periodReturns.map(p => {
+                  const startPrice = p.startPrice;
+                  const endValue = startPrice > 0 ? (1000 / startPrice) * livePrice : p.endValue;
+                  const returnPct = startPrice > 0 ? ((livePrice - startPrice) / startPrice) * 100 : p.returnPct;
+                  const gain = endValue - 1000;
+                  return { ...p, endValue, returnPct, gain };
+                });
+                return (
                 <section>
                   <h2 className="font-serif text-base text-foreground mb-3 flex items-center gap-3">
                     $1,000 Investment Returns <span className="flex-1 h-[1px] bg-border" />
                   </h2>
                   <div className="border border-border rounded-sm p-4">
                     <div className="text-[10px] font-mono text-muted-foreground uppercase mb-3">
-                      Value of $1,000 invested at the start of each period (current price: {quote ? formatCurrency(quote.price) : formatCurrency(detail.currentPrice)})
+                      Value of $1,000 invested at the start of each period (current price: {formatCurrency(livePrice)})
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mb-4">
-                      {detail.investmentSimulation.periodReturns.map(p => (
+                      {recomputed.map(p => (
                         <div key={p.period} className="border border-border rounded-sm p-2 bg-secondary/20">
                           <div className="text-[10px] font-mono text-muted-foreground uppercase">{p.label}</div>
                           <div className="font-mono text-sm text-foreground mt-0.5">{formatCurrency(p.endValue)}</div>
@@ -280,20 +291,27 @@ const StockDetail = () => {
                       ))}
                     </div>
                     <ResponsiveContainer width="100%" height={240}>
-                      <BarChart data={detail.investmentSimulation.periodReturns}>
+                      <BarChart data={recomputed}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(16 10% 23%)" />
                         <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'hsl(35 8% 60%)' }} />
                         <YAxis tick={{ fontSize: 10, fill: 'hsl(35 8% 60%)' }} tickFormatter={(v) => `${v}%`} />
                         <Tooltip
+                          cursor={{ fill: 'hsl(35 8% 60% / 0.08)' }}
                           contentStyle={{ background: 'hsl(18 12% 11%)', border: '1px solid hsl(16 10% 23%)', borderRadius: 4, fontSize: 12 }}
-                          formatter={(value: number, _n, item: any) => [
-                            `${value >= 0 ? "+" : ""}${value.toFixed(2)}% (${formatCurrency(item.payload.endValue)})`,
-                            'Return',
-                          ]}
+                          labelStyle={{ color: 'hsl(35 20% 90%)' }}
+                          itemStyle={{ color: 'hsl(35 20% 90%)' }}
+                          formatter={(value: number, _n, item: any) => {
+                            const p = item.payload;
+                            const sign = p.gain >= 0 ? "+" : "−";
+                            return [
+                              `${value >= 0 ? "+" : ""}${value.toFixed(2)}%  •  ${formatCurrency(p.endValue)} (${sign}${formatCurrency(Math.abs(p.gain))})`,
+                              'Return',
+                            ];
+                          }}
                         />
                         <ReferenceLine y={0} stroke="hsl(35 8% 60%)" />
                         <Bar dataKey="returnPct" name="Return %">
-                          {detail.investmentSimulation.periodReturns.map((entry, i) => (
+                          {recomputed.map((entry, i) => (
                             <Cell key={i} fill={entry.returnPct >= 0 ? 'hsl(134 17% 31%)' : 'hsl(0 65% 45%)'} />
                           ))}
                         </Bar>
@@ -301,7 +319,8 @@ const StockDetail = () => {
                     </ResponsiveContainer>
                   </div>
                 </section>
-              )}
+                );
+              })()}
             </>
           )}
         </main>
