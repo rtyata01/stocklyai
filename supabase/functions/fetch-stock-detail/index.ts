@@ -108,22 +108,24 @@ Deno.serve(async (req) => {
                   investmentSimulation: {
                     type: 'object',
                     properties: {
-                      initialInvestment: { type: 'number' },
-                      currentValue: { type: 'number' },
-                      totalReturn: { type: 'number', description: 'percentage' },
-                      dataPoints: {
+                      initialInvestment: { type: 'number', description: 'Always 1000' },
+                      periodReturns: {
                         type: 'array',
+                        description: 'Returns for $1000 invested at start of each period: 1W, 1M, 3M, 6M, 1Y, 4Y',
                         items: {
                           type: 'object',
                           properties: {
-                            date: { type: 'string' },
-                            value: { type: 'number' },
+                            period: { type: 'string', enum: ['1W', '1M', '3M', '6M', '1Y', '4Y'] },
+                            label: { type: 'string', description: 'e.g. "1 Week", "1 Month", "4 Years"' },
+                            startPrice: { type: 'number' },
+                            endValue: { type: 'number', description: 'Current value of $1000 invested then' },
+                            returnPct: { type: 'number' },
                           },
-                          required: ['date', 'value'],
+                          required: ['period', 'label', 'startPrice', 'endValue', 'returnPct'],
                         },
                       },
                     },
-                    required: ['initialInvestment', 'currentValue', 'totalReturn', 'dataPoints'],
+                    required: ['initialInvestment', 'periodReturns'],
                   },
                   catalysts: {
                     type: 'array',
