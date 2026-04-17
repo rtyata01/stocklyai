@@ -259,6 +259,7 @@ const NewsPanel = () => {
         </Tabs>
       )}
     </div>
+    </TooltipProvider>
   );
 };
 
