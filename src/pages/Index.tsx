@@ -12,8 +12,13 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, HelpCircle } from "lucide-react";
+
+const BUY_HELP = "BUY zone — aggregated entry price computed from: (1) analyst consensus & 52-week support, (2) intrinsic value from forward EPS × peer P/E, (3) PEG ratio < 1 signal, (4) margin-of-safety guardrail (typically 15–30% below fair value). Median of valid methods.";
+const HOLD_HELP = "HOLD / fair value — center estimate close to current price using analyst consensus 12-month target, forward intrinsic value, and PEG ≈ 1 signal. Holding here implies risk/reward is balanced.";
+const SELL_HELP = "SELL zone — aggregated upside exit computed from: (1) analyst price targets, (2) intrinsic value ceiling, (3) PEG > 1.5 / overvalued flag, (4) sentiment-adjusted stretch above last week's average (typically 10–30% above fair value).";
 
 const Index = () => {
   const queryClient = useQueryClient();
