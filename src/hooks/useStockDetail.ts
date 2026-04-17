@@ -56,7 +56,7 @@ export interface StockDetail {
   catalysts: Catalyst[];
 }
 
-const CACHE_KEY = "stock-detail-cache-v2";
+const CACHE_KEY = "stock-detail-cache-v3";
 const CACHE_TTL = 4 * 60 * 60 * 1000; // 4 hours
 
 function getCached(ticker: string): StockDetail | null {
