@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useStockNews, useRefreshNews } from "@/hooks/useStockNews";
-import { RefreshCw, TrendingUp, ShieldAlert, Zap, CalendarDays, DollarSign, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { RefreshCw, TrendingUp, ShieldAlert, Zap, CalendarDays, DollarSign, ArrowUpRight, ArrowDownRight, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQueryClient } from "@tanstack/react-query";
 
 interface EarningsPick {
@@ -12,6 +13,7 @@ interface EarningsPick {
   consensus_eps: number;
   expected_eps: number;
   beat_confidence: string;
+  current_price?: number;
   entry_price: number;
   price_target: number;
   stop_loss: number;
@@ -34,18 +36,34 @@ const confidenceColor = (c: string) => {
   return "text-destructive";
 };
 
+const HelpTip = ({ text }: { text: string }) => (
+  <Tooltip>
+    <TooltipTrigger asChild>
+      <button type="button" className="inline-flex text-muted-foreground hover:text-foreground transition-colors" aria-label="How is this calculated?">
+        <HelpCircle className="h-3 w-3" />
+      </button>
+    </TooltipTrigger>
+    <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+      {text}
+    </TooltipContent>
+  </Tooltip>
+);
+
 const PickCard = ({ ticker, headline, pick }: ParsedPick) => (
   <div className="border border-primary/40 rounded-sm bg-primary/5 overflow-hidden">
     {/* Header */}
     <div className="p-5 border-b border-primary/20">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
             <Badge className="bg-primary text-primary-foreground font-mono text-sm px-3 py-1">{ticker}</Badge>
             <Badge variant="outline" className={`text-[10px] font-mono ${confidenceColor(pick.beat_confidence)}`}>
               {pick.beat_confidence} Confidence
             </Badge>
-            <Badge variant="outline" className="text-[10px] font-mono">R:R {pick.risk_reward_ratio}</Badge>
+            <Badge variant="outline" className="text-[10px] font-mono inline-flex items-center gap-1">
+              R:R {pick.risk_reward_ratio}
+              <HelpTip text="Risk-to-Reward Ratio = (Target − Entry) ÷ (Entry − Stop Loss). A value of 1:2 means potential upside is at least 2× the downside risk." />
+            </Badge>
           </div>
           <h2 className="font-serif text-lg font-semibold text-foreground leading-tight">{headline}</h2>
         </div>
@@ -56,21 +74,35 @@ const PickCard = ({ ticker, headline, pick }: ParsedPick) => (
       </div>
     </div>
 
-    {/* Trade Setup */}
-    <div className="grid grid-cols-3 border-b border-primary/20">
+    {/* Trade Setup — aligned with BUY / HOLD / SELL framework */}
+    <div className="grid grid-cols-4 border-b border-primary/20">
       <div className="p-4 text-center border-r border-primary/20">
-        <div className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest mb-1">Entry</div>
-        <div className="font-mono text-base font-semibold text-foreground">${pick.entry_price.toFixed(2)}</div>
+        <div className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
+          Current
+          <HelpTip text="Today's actual market price for the stock. All entry/target/stop levels are anchored to this price." />
+        </div>
+        <div className="font-mono text-base font-semibold text-foreground">
+          {pick.current_price != null ? `$${pick.current_price.toFixed(2)}` : "—"}
+        </div>
+      </div>
+      <div className="p-4 text-center border-r border-primary/20">
+        <div className="text-[10px] font-mono text-pine uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
+          Entry · BUY
+          <HelpTip text="BUY zone: 2–8% below current price where the stock becomes attractive to enter. Matches the BUY rating in our price evaluation framework." />
+        </div>
+        <div className="font-mono text-base font-semibold text-pine">${pick.entry_price.toFixed(2)}</div>
       </div>
       <div className="p-4 text-center border-r border-primary/20">
         <div className="text-[10px] font-mono text-primary uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
-          <ArrowUpRight className="h-3 w-3" /> Target
+          <ArrowUpRight className="h-3 w-3" /> Target · SELL
+          <HelpTip text="SELL zone: 10–30% above current price, aligned with analyst consensus targets and post-earnings upside potential. Take profit here." />
         </div>
         <div className="font-mono text-base font-semibold text-primary">${pick.price_target.toFixed(2)}</div>
       </div>
       <div className="p-4 text-center">
         <div className="text-[10px] font-mono text-destructive uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
           <ArrowDownRight className="h-3 w-3" /> Stop Loss
+          <HelpTip text="Maximum downside before exiting. Set below entry price to cap losses if the earnings thesis fails." />
         </div>
         <div className="font-mono text-base font-semibold text-destructive">${pick.stop_loss.toFixed(2)}</div>
       </div>
@@ -79,11 +111,17 @@ const PickCard = ({ ticker, headline, pick }: ParsedPick) => (
     {/* EPS */}
     <div className="grid grid-cols-2 border-b border-primary/20">
       <div className="p-4 border-r border-primary/20">
-        <div className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest mb-1">Consensus EPS</div>
+        <div className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest mb-1 flex items-center gap-1">
+          Consensus EPS
+          <HelpTip text="Wall Street analyst average EPS estimate for the upcoming quarter." />
+        </div>
         <div className="font-mono text-sm text-foreground">${pick.consensus_eps.toFixed(2)}</div>
       </div>
       <div className="p-4">
-        <div className="text-[10px] font-mono text-pine uppercase tracking-widest mb-1">Expected EPS (Whisper)</div>
+        <div className="text-[10px] font-mono text-pine uppercase tracking-widest mb-1 flex items-center gap-1">
+          Expected EPS (Whisper)
+          <HelpTip text="Whisper number — the unofficial 'real' EPS expectation derived from buy-side trader sentiment, recent guidance raises, and sector tailwinds. Beating this drives momentum." />
+        </div>
         <div className="font-mono text-sm text-pine">${pick.expected_eps.toFixed(2)}</div>
       </div>
     </div>
@@ -170,10 +208,12 @@ const NewsPanel = () => {
   picks.sort((a, b) => (a.pick.rank ?? 99) - (b.pick.rank ?? 99));
 
   return (
+    <TooltipProvider delayDuration={150}>
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-serif text-sm text-muted-foreground">
+        <h3 className="font-serif text-sm text-muted-foreground inline-flex items-center gap-1.5">
           Top Earnings Momentum Picks — Next 2-3 Weeks (R:R ≥ 1:2)
+          <HelpTip text="AI scans the watchlist for stocks reporting earnings in 2–3 weeks with: (1) high probability of beating EPS estimates, (2) strong next-quarter growth outlook, and (3) a risk-to-reward ratio of at least 1:2. Entry/Target/Stop levels are anchored to today's market price and follow the BUY / HOLD / SELL framework." />
         </h3>
         <Button
           variant="outline"
@@ -219,6 +259,7 @@ const NewsPanel = () => {
         </Tabs>
       )}
     </div>
+    </TooltipProvider>
   );
 };
 

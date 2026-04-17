@@ -64,6 +64,14 @@ STRICT Criteria — a stock MUST meet ALL of these to be included:
 4. Risk-to-reward ratio of AT LEAST 1:2 (limited downside, 2x+ upside potential)
 5. Good for a short-term earnings momentum trade (buy before earnings, ride the beat)
 
+PRICE LEVELS — MUST align with BUY / HOLD / SELL framework relative to TODAY'S CURRENT MARKET PRICE:
+- "current_price": Today's actual trading price for the ticker (use real, recent market data).
+- "entry_price" (BUY zone): An attractive entry typically 2-8% BELOW the current price — where the stock becomes a strong buy. Must be <= current_price.
+- "price_target" (SELL zone): A realistic post-earnings upside target, typically 10-30% ABOVE current price, aligned with analyst consensus targets. Must be > current_price.
+- "stop_loss": Below entry_price, defining max downside risk. Must be < entry_price.
+- Risk-to-reward calculation: (price_target - entry_price) / (entry_price - stop_loss) MUST be >= 2.0.
+- All three levels must be internally consistent and grounded in the stock's real current price.
+
 IMPORTANT RULES:
 - Return ONLY stocks that genuinely have earnings in the next 2-3 weeks
 - If only 1-2 stocks meet all criteria, return only those. Do NOT pad to 5.
@@ -95,9 +103,10 @@ IMPORTANT RULES:
                         consensus_eps: { type: 'number' },
                         expected_eps: { type: 'number' },
                         beat_confidence: { type: 'string', enum: ['High', 'Medium', 'Low'] },
-                        entry_price: { type: 'number' },
-                        price_target: { type: 'number' },
-                        stop_loss: { type: 'number' },
+                        current_price: { type: 'number', description: "Today's actual market price" },
+                        entry_price: { type: 'number', description: 'BUY zone, 2-8% below current_price' },
+                        price_target: { type: 'number', description: 'SELL zone, 10-30% above current_price' },
+                        stop_loss: { type: 'number', description: 'Max downside, below entry_price' },
                         risk_reward_ratio: { type: 'string' },
                         headline: { type: 'string' },
                         thesis: { type: 'string' },
@@ -105,7 +114,7 @@ IMPORTANT RULES:
                         risks: { type: 'array', items: { type: 'string' } },
                         next_quarter_growth: { type: 'string' },
                       },
-                      required: ['ticker', 'earnings_date', 'consensus_eps', 'expected_eps', 'beat_confidence', 'entry_price', 'price_target', 'stop_loss', 'risk_reward_ratio', 'headline', 'thesis', 'catalysts', 'risks', 'next_quarter_growth'],
+                      required: ['ticker', 'earnings_date', 'consensus_eps', 'expected_eps', 'beat_confidence', 'current_price', 'entry_price', 'price_target', 'stop_loss', 'risk_reward_ratio', 'headline', 'thesis', 'catalysts', 'risks', 'next_quarter_growth'],
                     },
                     minItems: 1,
                     maxItems: 5,
@@ -150,6 +159,7 @@ IMPORTANT RULES:
         consensus_eps: pick.consensus_eps,
         expected_eps: pick.expected_eps,
         beat_confidence: pick.beat_confidence,
+        current_price: pick.current_price,
         entry_price: pick.entry_price,
         price_target: pick.price_target,
         stop_loss: pick.stop_loss,
