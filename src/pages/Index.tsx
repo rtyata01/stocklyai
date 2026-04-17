@@ -12,8 +12,13 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, HelpCircle } from "lucide-react";
+
+const BUY_HELP = "BUY zone — aggregated entry price computed from: (1) analyst consensus & 52-week support, (2) intrinsic value from forward EPS × peer P/E, (3) PEG ratio < 1 signal, (4) margin-of-safety guardrail (typically 15–30% below fair value). Median of valid methods.";
+const HOLD_HELP = "HOLD / fair value — center estimate close to current price using analyst consensus 12-month target, forward intrinsic value, and PEG ≈ 1 signal. Holding here implies risk/reward is balanced.";
+const SELL_HELP = "SELL zone — aggregated upside exit computed from: (1) analyst price targets, (2) intrinsic value ceiling, (3) PEG > 1.5 / overvalued flag, (4) sentiment-adjusted stretch above last week's average (typically 10–30% above fair value).";
 
 const Index = () => {
   const queryClient = useQueryClient();
@@ -51,6 +56,7 @@ const Index = () => {
   };
 
   return (
+    <TooltipProvider delayDuration={150}>
     <div className="min-h-screen bg-background">
       <div className="max-w-[1400px] mx-auto bg-card border-x border-border shadow-2xl min-h-screen">
         <DashboardHeader
@@ -108,9 +114,39 @@ const Index = () => {
                               <TableRow className="bg-secondary/50 hover:bg-secondary/50">
                                 <TableHead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground h-8">Symbol</TableHead>
                                 <TableHead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground text-right h-8">Price</TableHead>
-                                <TableHead className="font-mono text-[10px] uppercase tracking-widest text-primary text-right h-8">Buy</TableHead>
-                                <TableHead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground text-right h-8">Hold</TableHead>
-                                <TableHead className="font-mono text-[10px] uppercase tracking-widest text-destructive text-right h-8">Sell</TableHead>
+                                <TableHead className="font-mono text-[10px] uppercase tracking-widest text-primary text-right h-8">
+                                  <span className="inline-flex items-center justify-end gap-1">
+                                    Buy
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <button type="button" className="text-primary/60 hover:text-primary"><HelpCircle className="h-3 w-3" /></button>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">{BUY_HELP}</TooltipContent>
+                                    </Tooltip>
+                                  </span>
+                                </TableHead>
+                                <TableHead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground text-right h-8">
+                                  <span className="inline-flex items-center justify-end gap-1">
+                                    Hold
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <button type="button" className="text-muted-foreground/60 hover:text-foreground"><HelpCircle className="h-3 w-3" /></button>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">{HOLD_HELP}</TooltipContent>
+                                    </Tooltip>
+                                  </span>
+                                </TableHead>
+                                <TableHead className="font-mono text-[10px] uppercase tracking-widest text-destructive text-right h-8">
+                                  <span className="inline-flex items-center justify-end gap-1">
+                                    Sell
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <button type="button" className="text-destructive/60 hover:text-destructive"><HelpCircle className="h-3 w-3" /></button>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">{SELL_HELP}</TooltipContent>
+                                    </Tooltip>
+                                  </span>
+                                </TableHead>
                                 <TableHead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground text-center h-8 w-14"></TableHead>
                               </TableRow>
                             </TableHeader>
@@ -141,19 +177,61 @@ const Index = () => {
                                       </span>
                                     </TableCell>
                                     <TableCell className="py-2 px-4 text-right">
-                                      <span className="font-mono text-sm text-primary tabular-nums">
-                                        {evalLoading ? "…" : ev ? formatCurrency(ev.buyPrice) : "—"}
-                                      </span>
+                                      {ev?.reasoning ? (
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <span className="font-mono text-sm text-primary tabular-nums cursor-help underline decoration-dotted decoration-primary/40 underline-offset-4">
+                                              {evalLoading ? "…" : formatCurrency(ev.buyPrice)}
+                                            </span>
+                                          </TooltipTrigger>
+                                          <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+                                            <strong className="text-primary">Why ${ev.buyPrice.toFixed(2)}?</strong>
+                                            <div className="mt-1">{ev.reasoning}</div>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      ) : (
+                                        <span className="font-mono text-sm text-primary tabular-nums">
+                                          {evalLoading ? "…" : ev ? formatCurrency(ev.buyPrice) : "—"}
+                                        </span>
+                                      )}
                                     </TableCell>
                                     <TableCell className="py-2 px-4 text-right">
-                                      <span className="font-mono text-sm text-muted-foreground tabular-nums">
-                                        {evalLoading ? "…" : ev ? formatCurrency(ev.holdPrice) : "—"}
-                                      </span>
+                                      {ev?.reasoning ? (
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <span className="font-mono text-sm text-muted-foreground tabular-nums cursor-help underline decoration-dotted decoration-muted-foreground/40 underline-offset-4">
+                                              {evalLoading ? "…" : formatCurrency(ev.holdPrice)}
+                                            </span>
+                                          </TooltipTrigger>
+                                          <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+                                            <strong>Why ${ev.holdPrice.toFixed(2)}?</strong>
+                                            <div className="mt-1">{ev.reasoning}</div>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      ) : (
+                                        <span className="font-mono text-sm text-muted-foreground tabular-nums">
+                                          {evalLoading ? "…" : ev ? formatCurrency(ev.holdPrice) : "—"}
+                                        </span>
+                                      )}
                                     </TableCell>
                                     <TableCell className="py-2 px-4 text-right">
-                                      <span className="font-mono text-sm text-destructive tabular-nums">
-                                        {evalLoading ? "…" : ev ? formatCurrency(ev.salePrice) : "—"}
-                                      </span>
+                                      {ev?.reasoning ? (
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <span className="font-mono text-sm text-destructive tabular-nums cursor-help underline decoration-dotted decoration-destructive/40 underline-offset-4">
+                                              {evalLoading ? "…" : formatCurrency(ev.salePrice)}
+                                            </span>
+                                          </TooltipTrigger>
+                                          <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+                                            <strong className="text-destructive">Why ${ev.salePrice.toFixed(2)}?</strong>
+                                            <div className="mt-1">{ev.reasoning}</div>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      ) : (
+                                        <span className="font-mono text-sm text-destructive tabular-nums">
+                                          {evalLoading ? "…" : ev ? formatCurrency(ev.salePrice) : "—"}
+                                        </span>
+                                      )}
                                     </TableCell>
                                     <TableCell className="py-2 px-4 text-center">
                                       <Link
@@ -191,6 +269,7 @@ const Index = () => {
         </div>
       </div>
     </div>
+    </TooltipProvider>
   );
 };
 

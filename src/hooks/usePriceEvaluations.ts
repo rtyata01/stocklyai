@@ -7,9 +7,10 @@ export interface PriceEvaluation {
   buyPrice: number;
   holdPrice: number;
   salePrice: number;
+  reasoning?: string;
 }
 
-const CACHE_KEY = "stock-price-evaluations";
+const CACHE_KEY = "stock-price-evaluations-v2";
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
 interface CachedData {
