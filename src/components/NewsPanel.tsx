@@ -55,12 +55,15 @@ const PickCard = ({ ticker, headline, pick }: ParsedPick) => (
     <div className="p-5 border-b border-primary/20">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
             <Badge className="bg-primary text-primary-foreground font-mono text-sm px-3 py-1">{ticker}</Badge>
             <Badge variant="outline" className={`text-[10px] font-mono ${confidenceColor(pick.beat_confidence)}`}>
               {pick.beat_confidence} Confidence
             </Badge>
-            <Badge variant="outline" className="text-[10px] font-mono">R:R {pick.risk_reward_ratio}</Badge>
+            <Badge variant="outline" className="text-[10px] font-mono inline-flex items-center gap-1">
+              R:R {pick.risk_reward_ratio}
+              <HelpTip text="Risk-to-Reward Ratio = (Target − Entry) ÷ (Entry − Stop Loss). A value of 1:2 means potential upside is at least 2× the downside risk." />
+            </Badge>
           </div>
           <h2 className="font-serif text-lg font-semibold text-foreground leading-tight">{headline}</h2>
         </div>
@@ -71,21 +74,35 @@ const PickCard = ({ ticker, headline, pick }: ParsedPick) => (
       </div>
     </div>
 
-    {/* Trade Setup */}
-    <div className="grid grid-cols-3 border-b border-primary/20">
+    {/* Trade Setup — aligned with BUY / HOLD / SELL framework */}
+    <div className="grid grid-cols-4 border-b border-primary/20">
       <div className="p-4 text-center border-r border-primary/20">
-        <div className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest mb-1">Entry</div>
-        <div className="font-mono text-base font-semibold text-foreground">${pick.entry_price.toFixed(2)}</div>
+        <div className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
+          Current
+          <HelpTip text="Today's actual market price for the stock. All entry/target/stop levels are anchored to this price." />
+        </div>
+        <div className="font-mono text-base font-semibold text-foreground">
+          {pick.current_price != null ? `$${pick.current_price.toFixed(2)}` : "—"}
+        </div>
+      </div>
+      <div className="p-4 text-center border-r border-primary/20">
+        <div className="text-[10px] font-mono text-pine uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
+          Entry · BUY
+          <HelpTip text="BUY zone: 2–8% below current price where the stock becomes attractive to enter. Matches the BUY rating in our price evaluation framework." />
+        </div>
+        <div className="font-mono text-base font-semibold text-pine">${pick.entry_price.toFixed(2)}</div>
       </div>
       <div className="p-4 text-center border-r border-primary/20">
         <div className="text-[10px] font-mono text-primary uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
-          <ArrowUpRight className="h-3 w-3" /> Target
+          <ArrowUpRight className="h-3 w-3" /> Target · SELL
+          <HelpTip text="SELL zone: 10–30% above current price, aligned with analyst consensus targets and post-earnings upside potential. Take profit here." />
         </div>
         <div className="font-mono text-base font-semibold text-primary">${pick.price_target.toFixed(2)}</div>
       </div>
       <div className="p-4 text-center">
         <div className="text-[10px] font-mono text-destructive uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
           <ArrowDownRight className="h-3 w-3" /> Stop Loss
+          <HelpTip text="Maximum downside before exiting. Set below entry price to cap losses if the earnings thesis fails." />
         </div>
         <div className="font-mono text-base font-semibold text-destructive">${pick.stop_loss.toFixed(2)}</div>
       </div>
@@ -94,11 +111,17 @@ const PickCard = ({ ticker, headline, pick }: ParsedPick) => (
     {/* EPS */}
     <div className="grid grid-cols-2 border-b border-primary/20">
       <div className="p-4 border-r border-primary/20">
-        <div className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest mb-1">Consensus EPS</div>
+        <div className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest mb-1 flex items-center gap-1">
+          Consensus EPS
+          <HelpTip text="Wall Street analyst average EPS estimate for the upcoming quarter." />
+        </div>
         <div className="font-mono text-sm text-foreground">${pick.consensus_eps.toFixed(2)}</div>
       </div>
       <div className="p-4">
-        <div className="text-[10px] font-mono text-pine uppercase tracking-widest mb-1">Expected EPS (Whisper)</div>
+        <div className="text-[10px] font-mono text-pine uppercase tracking-widest mb-1 flex items-center gap-1">
+          Expected EPS (Whisper)
+          <HelpTip text="Whisper number — the unofficial 'real' EPS expectation derived from buy-side trader sentiment, recent guidance raises, and sector tailwinds. Beating this drives momentum." />
+        </div>
         <div className="font-mono text-sm text-pine">${pick.expected_eps.toFixed(2)}</div>
       </div>
     </div>
