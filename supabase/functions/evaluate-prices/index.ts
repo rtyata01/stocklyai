@@ -35,24 +35,41 @@ Deno.serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are a senior equity research analyst. For each stock or asset, determine realistic fair value price targets for Buy, Hold, and Sell zones based on:
+            content: `You are a senior equity research analyst. For each stock or asset, compute Buy / Hold / Sell fair-value price targets using a MULTI-METHOD blended approach. Combine these signals and use the aggregate (average or median) of valid methods, with safety guardrails:
 
-1. **Analyst consensus target prices** — use well-known Wall Street consensus estimates as your primary reference.
-2. **Valuation fundamentals** — consider P/E, P/S, growth rates, and sector multiples.
-3. **Technical levels** — recent support/resistance, 52-week range context.
+METHOD 1 — Analyst consensus & technicals (baseline)
+  - Wall Street consensus 12-month target.
+  - 52-week range support/resistance.
 
-CRITICAL RULES:
-- Buy price should be a realistic discount to current price where it becomes attractive — typically 5-20% below current price depending on volatility and valuation.
-- Hold price should be approximately the current fair value — close to the current market price or analyst consensus target.
-- Sell price should be a realistic upside target — typically 10-30% above current price, aligned with analyst price targets.
-- For crypto assets (ETH, SOL, XRP, BITF, BMNR), use crypto-specific valuation (market cycles, adoption metrics).
-- For ETFs (SPY, VOO), use index-level targets based on earnings estimates.
-- NEVER return a buy price that is more than 30% below current price unless the stock is fundamentally overvalued by analyst consensus.
-- All prices must be in USD and make sense relative to the current trading price provided.`
+METHOD 2 — Intrinsic value from fundamentals
+  - Use trailing/forward quarterly REVENUE GROWTH and PROFIT MARGIN to estimate intrinsic value per share.
+  - Approximate: intrinsic ≈ (forward EPS × peer-median forward P/E adjusted for growth-vs-peers).
+  - Rule: current price < intrinsic → Buy zone, ≈ intrinsic → Hold, > intrinsic → Sell zone.
+
+METHOD 3 — PEG ratio (growth vs price)
+  - PEG = P/E ÷ expected EPS growth %.
+  - PEG < 1.0 → undervalued (Buy bias). PEG ≈ 1.0 → fair (Hold). PEG > 1.5 → expensive (Sell bias).
+
+METHOD 4 — Safety & sentiment guardrails
+  - BUY price MUST be at least 15-30% below current fair value / recent peak (margin of safety).
+  - SELL price should reflect 15-30% above fair value or a stretched extension above last week's average.
+  - Adjust ±5-10% for short-term sentiment (breaking news, hype, unusual volume, momentum).
+
+AGGREGATION RULES:
+  - For each of buy/hold/sell, compute estimates from each applicable method, then take the MEDIAN (or average if only 2 methods apply). This produces the final price.
+  - For crypto (ETH, SOL, XRP, BITF, BMNR): skip P/E/PEG, use cycle position + adoption + recent volatility.
+  - For ETFs (SPY, VOO): use index earnings yield and forward P/E of the underlying index.
+
+OUTPUT REQUIREMENTS:
+  - buyPrice: aggregated buy zone (must be ≤ current price, typically 5-25% below).
+  - holdPrice: fair value / consensus center (within ±5% of current price typically).
+  - salePrice: aggregated sell zone (must be ≥ current price, typically 10-30% above).
+  - reasoning: ONE concise sentence (≤ 30 words) describing the dominant signals (e.g. "PEG 0.8 + 12% revenue growth + analyst target $190 → undervalued vs current.").
+  - All prices in USD, internally consistent: buyPrice < holdPrice ≤ salePrice.`
           },
           {
             role: 'user',
-            content: `Provide buy, hold, and sell fair value targets for each:\n\n${stockList}`
+            content: `Compute multi-method buy/hold/sell fair value targets for each:\n\n${stockList}`
           }
         ],
         tools: [
@@ -60,7 +77,7 @@ CRITICAL RULES:
             type: 'function',
             function: {
               name: 'return_price_evaluations',
-              description: 'Return buy/hold/sell price evaluations for stocks',
+              description: 'Return buy/hold/sell price evaluations with reasoning',
               parameters: {
                 type: 'object',
                 properties: {
@@ -70,11 +87,12 @@ CRITICAL RULES:
                       type: 'object',
                       properties: {
                         ticker: { type: 'string' },
-                        buyPrice: { type: 'number', description: 'Attractive entry price, typically 5-20% below current' },
-                        holdPrice: { type: 'number', description: 'Fair value / consensus target, near current price' },
-                        salePrice: { type: 'number', description: 'Upside target, typically 10-30% above current' },
+                        buyPrice: { type: 'number', description: 'Aggregated buy zone, typically 5-25% below current' },
+                        holdPrice: { type: 'number', description: 'Aggregated fair value / consensus, near current price' },
+                        salePrice: { type: 'number', description: 'Aggregated sell zone, typically 10-30% above current' },
+                        reasoning: { type: 'string', description: 'Short ≤30-word justification citing the dominant signals (PEG, growth, intrinsic vs price, sentiment).' },
                       },
-                      required: ['ticker', 'buyPrice', 'holdPrice', 'salePrice'],
+                      required: ['ticker', 'buyPrice', 'holdPrice', 'salePrice', 'reasoning'],
                       additionalProperties: false,
                     },
                   },
