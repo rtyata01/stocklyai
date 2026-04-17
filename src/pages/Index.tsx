@@ -177,19 +177,61 @@ const Index = () => {
                                       </span>
                                     </TableCell>
                                     <TableCell className="py-2 px-4 text-right">
-                                      <span className="font-mono text-sm text-primary tabular-nums">
-                                        {evalLoading ? "…" : ev ? formatCurrency(ev.buyPrice) : "—"}
-                                      </span>
+                                      {ev?.reasoning ? (
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <span className="font-mono text-sm text-primary tabular-nums cursor-help underline decoration-dotted decoration-primary/40 underline-offset-4">
+                                              {evalLoading ? "…" : formatCurrency(ev.buyPrice)}
+                                            </span>
+                                          </TooltipTrigger>
+                                          <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+                                            <strong className="text-primary">Why ${ev.buyPrice.toFixed(2)}?</strong>
+                                            <div className="mt-1">{ev.reasoning}</div>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      ) : (
+                                        <span className="font-mono text-sm text-primary tabular-nums">
+                                          {evalLoading ? "…" : ev ? formatCurrency(ev.buyPrice) : "—"}
+                                        </span>
+                                      )}
                                     </TableCell>
                                     <TableCell className="py-2 px-4 text-right">
-                                      <span className="font-mono text-sm text-muted-foreground tabular-nums">
-                                        {evalLoading ? "…" : ev ? formatCurrency(ev.holdPrice) : "—"}
-                                      </span>
+                                      {ev?.reasoning ? (
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <span className="font-mono text-sm text-muted-foreground tabular-nums cursor-help underline decoration-dotted decoration-muted-foreground/40 underline-offset-4">
+                                              {evalLoading ? "…" : formatCurrency(ev.holdPrice)}
+                                            </span>
+                                          </TooltipTrigger>
+                                          <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+                                            <strong>Why ${ev.holdPrice.toFixed(2)}?</strong>
+                                            <div className="mt-1">{ev.reasoning}</div>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      ) : (
+                                        <span className="font-mono text-sm text-muted-foreground tabular-nums">
+                                          {evalLoading ? "…" : ev ? formatCurrency(ev.holdPrice) : "—"}
+                                        </span>
+                                      )}
                                     </TableCell>
                                     <TableCell className="py-2 px-4 text-right">
-                                      <span className="font-mono text-sm text-destructive tabular-nums">
-                                        {evalLoading ? "…" : ev ? formatCurrency(ev.salePrice) : "—"}
-                                      </span>
+                                      {ev?.reasoning ? (
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <span className="font-mono text-sm text-destructive tabular-nums cursor-help underline decoration-dotted decoration-destructive/40 underline-offset-4">
+                                              {evalLoading ? "…" : formatCurrency(ev.salePrice)}
+                                            </span>
+                                          </TooltipTrigger>
+                                          <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+                                            <strong className="text-destructive">Why ${ev.salePrice.toFixed(2)}?</strong>
+                                            <div className="mt-1">{ev.reasoning}</div>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      ) : (
+                                        <span className="font-mono text-sm text-destructive tabular-nums">
+                                          {evalLoading ? "…" : ev ? formatCurrency(ev.salePrice) : "—"}
+                                        </span>
+                                      )}
                                     </TableCell>
                                     <TableCell className="py-2 px-4 text-center">
                                       <Link
