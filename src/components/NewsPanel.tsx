@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useStockNews, useRefreshNews } from "@/hooks/useStockNews";
-import { RefreshCw, TrendingUp, ShieldAlert, Zap, CalendarDays, DollarSign, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { RefreshCw, TrendingUp, ShieldAlert, Zap, CalendarDays, DollarSign, ArrowUpRight, ArrowDownRight, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQueryClient } from "@tanstack/react-query";
 
 interface EarningsPick {
@@ -12,6 +13,7 @@ interface EarningsPick {
   consensus_eps: number;
   expected_eps: number;
   beat_confidence: string;
+  current_price?: number;
   entry_price: number;
   price_target: number;
   stop_loss: number;
@@ -33,6 +35,19 @@ const confidenceColor = (c: string) => {
   if (c === "Medium") return "text-yellow-500";
   return "text-destructive";
 };
+
+const HelpTip = ({ text }: { text: string }) => (
+  <Tooltip>
+    <TooltipTrigger asChild>
+      <button type="button" className="inline-flex text-muted-foreground hover:text-foreground transition-colors" aria-label="How is this calculated?">
+        <HelpCircle className="h-3 w-3" />
+      </button>
+    </TooltipTrigger>
+    <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+      {text}
+    </TooltipContent>
+  </Tooltip>
+);
 
 const PickCard = ({ ticker, headline, pick }: ParsedPick) => (
   <div className="border border-primary/40 rounded-sm bg-primary/5 overflow-hidden">
