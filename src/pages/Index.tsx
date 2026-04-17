@@ -56,6 +56,7 @@ const Index = () => {
   };
 
   return (
+    <TooltipProvider delayDuration={150}>
     <div className="min-h-screen bg-background">
       <div className="max-w-[1400px] mx-auto bg-card border-x border-border shadow-2xl min-h-screen">
         <DashboardHeader
@@ -113,9 +114,39 @@ const Index = () => {
                               <TableRow className="bg-secondary/50 hover:bg-secondary/50">
                                 <TableHead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground h-8">Symbol</TableHead>
                                 <TableHead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground text-right h-8">Price</TableHead>
-                                <TableHead className="font-mono text-[10px] uppercase tracking-widest text-primary text-right h-8">Buy</TableHead>
-                                <TableHead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground text-right h-8">Hold</TableHead>
-                                <TableHead className="font-mono text-[10px] uppercase tracking-widest text-destructive text-right h-8">Sell</TableHead>
+                                <TableHead className="font-mono text-[10px] uppercase tracking-widest text-primary text-right h-8">
+                                  <span className="inline-flex items-center justify-end gap-1">
+                                    Buy
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <button type="button" className="text-primary/60 hover:text-primary"><HelpCircle className="h-3 w-3" /></button>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">{BUY_HELP}</TooltipContent>
+                                    </Tooltip>
+                                  </span>
+                                </TableHead>
+                                <TableHead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground text-right h-8">
+                                  <span className="inline-flex items-center justify-end gap-1">
+                                    Hold
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <button type="button" className="text-muted-foreground/60 hover:text-foreground"><HelpCircle className="h-3 w-3" /></button>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">{HOLD_HELP}</TooltipContent>
+                                    </Tooltip>
+                                  </span>
+                                </TableHead>
+                                <TableHead className="font-mono text-[10px] uppercase tracking-widest text-destructive text-right h-8">
+                                  <span className="inline-flex items-center justify-end gap-1">
+                                    Sell
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <button type="button" className="text-destructive/60 hover:text-destructive"><HelpCircle className="h-3 w-3" /></button>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">{SELL_HELP}</TooltipContent>
+                                    </Tooltip>
+                                  </span>
+                                </TableHead>
                                 <TableHead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground text-center h-8 w-14"></TableHead>
                               </TableRow>
                             </TableHeader>
