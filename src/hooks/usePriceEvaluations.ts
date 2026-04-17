@@ -42,11 +42,15 @@ export function clearPriceCache() {
 }
 
 export function usePriceEvaluations(quotes: { ticker: string; price: number; dayMin: number; dayMax: number; change: number }[] | undefined) {
+  const tickerKey = (quotes ?? []).map(q => q.ticker).sort().join(",");
   return useQuery({
-    queryKey: ["price-evaluations"],
+    queryKey: ["price-evaluations", tickerKey],
     queryFn: async (): Promise<PriceEvaluation[]> => {
       const cached = getCached();
-      if (cached) return cached;
+      // Only use cache if it covers every requested ticker
+      if (cached && quotes && quotes.every(q => cached.some(c => c.ticker === q.ticker))) {
+        return cached;
+      }
 
       if (!quotes || quotes.length === 0) return [];
 
