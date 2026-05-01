@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { formatCurrency } from "@/data/stocks";
+import { formatCurrency, formatVolume } from "@/data/stocks";
 import { useStockData } from "@/hooks/useStockData";
 import { usePriceEvaluations, PriceEvaluation, clearPriceCache } from "@/hooks/usePriceEvaluations";
 import DashboardHeader from "@/components/DashboardHeader";
 import NewsPanel from "@/components/NewsPanel";
+import SwingTradingPanel from "@/components/SwingTradingPanel";
+import AnnouncementsPanel from "@/components/AnnouncementsPanel";
+import InvestingBasicsPanel from "@/components/InvestingBasicsPanel";
 import ManageWatchlistDialog, { getWatchlistSectors } from "@/components/ManageWatchlistDialog";
 import { SectorGroup, StockQuote } from "@/data/stocks";
 import {
@@ -19,6 +22,9 @@ import { ChevronDown, HelpCircle } from "lucide-react";
 const BUY_HELP = "BUY zone — aggregated entry price computed from: (1) analyst consensus & 52-week support, (2) intrinsic value from forward EPS × peer P/E, (3) PEG ratio < 1 signal, (4) margin-of-safety guardrail (typically 15–30% below fair value). Median of valid methods.";
 const HOLD_HELP = "HOLD / fair value — center estimate close to current price using analyst consensus 12-month target, forward intrinsic value, and PEG ≈ 1 signal. Holding here implies risk/reward is balanced.";
 const SELL_HELP = "SELL zone — aggregated upside exit computed from: (1) analyst price targets, (2) intrinsic value ceiling, (3) PEG > 1.5 / overvalued flag, (4) sentiment-adjusted stretch above last week's average (typically 10–30% above fair value).";
+const VOLUME_HELP = "Today's traded share volume. High volume confirms breakouts; low volume on a move suggests weak conviction.";
+
+const SHOW_WATCHLIST = import.meta.env.DEV;
 
 const Index = () => {
   const queryClient = useQueryClient();
@@ -62,21 +68,26 @@ const Index = () => {
         <DashboardHeader
           totalStocks={activeSectors.flatMap(s => s.tickers).length}
           onRefresh={handleRefresh}
-          onManageStocks={() => setWatchlistOpen(true)}
+          onManageStocks={SHOW_WATCHLIST ? () => setWatchlistOpen(true) : undefined}
           isRefreshing={evalLoading}
         />
 
-        <ManageWatchlistDialog
-          open={watchlistOpen}
-          onOpenChange={setWatchlistOpen}
-          onSave={handleWatchlistSave}
-        />
+        {SHOW_WATCHLIST && (
+          <ManageWatchlistDialog
+            open={watchlistOpen}
+            onOpenChange={setWatchlistOpen}
+            onSave={handleWatchlistSave}
+          />
+        )}
 
         <div className="px-4 md:px-8 pt-4">
           <Tabs defaultValue="portfolio">
-            <TabsList className="mb-4">
+            <TabsList className="mb-4 flex-wrap h-auto gap-1">
               <TabsTrigger value="portfolio" className="text-xs font-mono">Portfolio</TabsTrigger>
-              <TabsTrigger value="announcements" className="text-xs font-mono">Earnings Momentum</TabsTrigger>
+              <TabsTrigger value="earnings" className="text-xs font-mono">Earnings Momentum</TabsTrigger>
+              <TabsTrigger value="swing" className="text-xs font-mono">Swing Trading</TabsTrigger>
+              <TabsTrigger value="announcements" className="text-xs font-mono">Announcements</TabsTrigger>
+              <TabsTrigger value="basics" className="text-xs font-mono">Investing 101</TabsTrigger>
             </TabsList>
 
             <TabsContent value="portfolio">
@@ -114,6 +125,17 @@ const Index = () => {
                               <TableRow className="bg-secondary/50 hover:bg-secondary/50">
                                 <TableHead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground h-8">Symbol</TableHead>
                                 <TableHead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground text-right h-8">Price</TableHead>
+                                <TableHead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground text-right h-8">
+                                  <span className="inline-flex items-center justify-end gap-1">
+                                    Volume
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <button type="button" className="text-muted-foreground/60 hover:text-foreground"><HelpCircle className="h-3 w-3" /></button>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">{VOLUME_HELP}</TooltipContent>
+                                    </Tooltip>
+                                  </span>
+                                </TableHead>
                                 <TableHead className="font-mono text-[10px] uppercase tracking-widest text-primary text-right h-8">
                                   <span className="inline-flex items-center justify-end gap-1">
                                     Buy
@@ -174,6 +196,11 @@ const Index = () => {
                                     <TableCell className="py-2 px-4 text-right">
                                       <span className="font-mono text-sm text-foreground tabular-nums">
                                         {noData ? "—" : formatCurrency(price)}
+                                      </span>
+                                    </TableCell>
+                                    <TableCell className="py-2 px-4 text-right">
+                                      <span className="font-mono text-xs text-muted-foreground tabular-nums">
+                                        {formatVolume(quote?.volume)}
                                       </span>
                                     </TableCell>
                                     <TableCell className="py-2 px-4 text-right">
@@ -260,9 +287,27 @@ const Index = () => {
               </div>
             </TabsContent>
 
-            <TabsContent value="announcements">
+            <TabsContent value="earnings">
               <div className="pb-8">
                 <NewsPanel />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="swing">
+              <div className="pb-8">
+                <SwingTradingPanel />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="announcements">
+              <div className="pb-8">
+                <AnnouncementsPanel />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="basics">
+              <div className="pb-8">
+                <InvestingBasicsPanel />
               </div>
             </TabsContent>
           </Tabs>

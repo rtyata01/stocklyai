@@ -20,10 +20,12 @@ const DashboardHeader = ({ totalStocks, onRefresh, onManageStocks, isRefreshing 
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" onClick={onManageStocks} className="gap-1.5 text-xs">
-          <Settings className="h-3.5 w-3.5" />
-          Manage Watchlist
-        </Button>
+        {onManageStocks && (
+          <Button variant="outline" size="sm" onClick={onManageStocks} className="gap-1.5 text-xs">
+            <Settings className="h-3.5 w-3.5" />
+            Manage Watchlist
+          </Button>
+        )}
         <Button variant="outline" size="sm" onClick={onRefresh} disabled={isRefreshing} className="gap-1.5 text-xs">
           <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
           Re-evaluate
