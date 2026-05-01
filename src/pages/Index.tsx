@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { formatCurrency } from "@/data/stocks";
+import { formatCurrency, formatVolume } from "@/data/stocks";
 import { useStockData } from "@/hooks/useStockData";
 import { usePriceEvaluations, PriceEvaluation, clearPriceCache } from "@/hooks/usePriceEvaluations";
 import DashboardHeader from "@/components/DashboardHeader";
 import NewsPanel from "@/components/NewsPanel";
+import SwingTradingPanel from "@/components/SwingTradingPanel";
+import AnnouncementsPanel from "@/components/AnnouncementsPanel";
+import InvestingBasicsPanel from "@/components/InvestingBasicsPanel";
 import ManageWatchlistDialog, { getWatchlistSectors } from "@/components/ManageWatchlistDialog";
 import { SectorGroup, StockQuote } from "@/data/stocks";
 import {
@@ -19,6 +22,9 @@ import { ChevronDown, HelpCircle } from "lucide-react";
 const BUY_HELP = "BUY zone — aggregated entry price computed from: (1) analyst consensus & 52-week support, (2) intrinsic value from forward EPS × peer P/E, (3) PEG ratio < 1 signal, (4) margin-of-safety guardrail (typically 15–30% below fair value). Median of valid methods.";
 const HOLD_HELP = "HOLD / fair value — center estimate close to current price using analyst consensus 12-month target, forward intrinsic value, and PEG ≈ 1 signal. Holding here implies risk/reward is balanced.";
 const SELL_HELP = "SELL zone — aggregated upside exit computed from: (1) analyst price targets, (2) intrinsic value ceiling, (3) PEG > 1.5 / overvalued flag, (4) sentiment-adjusted stretch above last week's average (typically 10–30% above fair value).";
+const VOLUME_HELP = "Today's traded share volume. High volume confirms breakouts; low volume on a move suggests weak conviction.";
+
+const SHOW_WATCHLIST = import.meta.env.DEV;
 
 const Index = () => {
   const queryClient = useQueryClient();
