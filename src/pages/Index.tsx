@@ -125,6 +125,17 @@ const Index = () => {
                               <TableRow className="bg-secondary/50 hover:bg-secondary/50">
                                 <TableHead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground h-8">Symbol</TableHead>
                                 <TableHead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground text-right h-8">Price</TableHead>
+                                <TableHead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground text-right h-8">
+                                  <span className="inline-flex items-center justify-end gap-1">
+                                    Volume
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <button type="button" className="text-muted-foreground/60 hover:text-foreground"><HelpCircle className="h-3 w-3" /></button>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">{VOLUME_HELP}</TooltipContent>
+                                    </Tooltip>
+                                  </span>
+                                </TableHead>
                                 <TableHead className="font-mono text-[10px] uppercase tracking-widest text-primary text-right h-8">
                                   <span className="inline-flex items-center justify-end gap-1">
                                     Buy
@@ -185,6 +196,11 @@ const Index = () => {
                                     <TableCell className="py-2 px-4 text-right">
                                       <span className="font-mono text-sm text-foreground tabular-nums">
                                         {noData ? "—" : formatCurrency(price)}
+                                      </span>
+                                    </TableCell>
+                                    <TableCell className="py-2 px-4 text-right">
+                                      <span className="font-mono text-xs text-muted-foreground tabular-nums">
+                                        {formatVolume(quote?.volume)}
                                       </span>
                                     </TableCell>
                                     <TableCell className="py-2 px-4 text-right">
@@ -271,9 +287,27 @@ const Index = () => {
               </div>
             </TabsContent>
 
-            <TabsContent value="announcements">
+            <TabsContent value="earnings">
               <div className="pb-8">
                 <NewsPanel />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="swing">
+              <div className="pb-8">
+                <SwingTradingPanel />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="announcements">
+              <div className="pb-8">
+                <AnnouncementsPanel />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="basics">
+              <div className="pb-8">
+                <InvestingBasicsPanel />
               </div>
             </TabsContent>
           </Tabs>
