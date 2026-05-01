@@ -12,6 +12,7 @@ interface StockQuote {
   dayMax: number;
   peRatio: number | null;
   change: number;
+  volume?: number;
 }
 
 // Cache to avoid rate limits
@@ -39,6 +40,7 @@ async function fetchAlphaVantage(ticker: string): Promise<StockQuote | null> {
         dayMax: price * 1.03,
         peRatio: null,
         change: parseFloat(rate['9. Change Percent']?.replace('%', '') || '0'),
+        volume: 0,
       };
     }
 
@@ -55,6 +57,7 @@ async function fetchAlphaVantage(ticker: string): Promise<StockQuote | null> {
       dayMax: parseFloat(quote['03. high']),
       peRatio: null, // AV Global Quote doesn't include PE
       change: parseFloat(quote['10. change percent']?.replace('%', '') || '0'),
+      volume: parseFloat(quote['06. volume'] || '0'),
     };
   } catch {
     return null;
@@ -89,6 +92,7 @@ async function fetchYahoo(ticker: string): Promise<StockQuote | null> {
       dayMax: meta.regularMarketDayHigh ?? price * 1.03,
       peRatio: null, // Will try to get from summary
       change: changePercent,
+      volume: meta.regularMarketVolume ?? 0,
     };
   } catch {
     return null;
@@ -106,7 +110,7 @@ async function fetchQuote(ticker: string): Promise<StockQuote> {
     quote = await fetchYahoo(ticker);
   }
   if (!quote) {
-    quote = { ticker, price: 0, dayMin: 0, dayMax: 0, peRatio: null, change: 0 };
+    quote = { ticker, price: 0, dayMin: 0, dayMax: 0, peRatio: null, change: 0, volume: 0 };
   }
 
   cache.set(ticker, { data: quote, ts: Date.now() });

@@ -5,6 +5,15 @@ export interface StockQuote {
   dayMax: number;
   peRatio: number | null;
   change: number;
+  volume?: number;
+}
+
+export function formatVolume(v?: number): string {
+  if (!v || v <= 0) return "—";
+  if (v >= 1_000_000_000) return `${(v / 1_000_000_000).toFixed(2)}B`;
+  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(2)}M`;
+  if (v >= 1_000) return `${(v / 1_000).toFixed(1)}K`;
+  return `${v}`;
 }
 
 export interface SectorGroup {
