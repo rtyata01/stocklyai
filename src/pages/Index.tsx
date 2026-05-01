@@ -68,21 +68,26 @@ const Index = () => {
         <DashboardHeader
           totalStocks={activeSectors.flatMap(s => s.tickers).length}
           onRefresh={handleRefresh}
-          onManageStocks={() => setWatchlistOpen(true)}
+          onManageStocks={SHOW_WATCHLIST ? () => setWatchlistOpen(true) : undefined}
           isRefreshing={evalLoading}
         />
 
-        <ManageWatchlistDialog
-          open={watchlistOpen}
-          onOpenChange={setWatchlistOpen}
-          onSave={handleWatchlistSave}
-        />
+        {SHOW_WATCHLIST && (
+          <ManageWatchlistDialog
+            open={watchlistOpen}
+            onOpenChange={setWatchlistOpen}
+            onSave={handleWatchlistSave}
+          />
+        )}
 
         <div className="px-4 md:px-8 pt-4">
           <Tabs defaultValue="portfolio">
-            <TabsList className="mb-4">
+            <TabsList className="mb-4 flex-wrap h-auto gap-1">
               <TabsTrigger value="portfolio" className="text-xs font-mono">Portfolio</TabsTrigger>
-              <TabsTrigger value="announcements" className="text-xs font-mono">Earnings Momentum</TabsTrigger>
+              <TabsTrigger value="earnings" className="text-xs font-mono">Earnings Momentum</TabsTrigger>
+              <TabsTrigger value="swing" className="text-xs font-mono">Swing Trading</TabsTrigger>
+              <TabsTrigger value="announcements" className="text-xs font-mono">Announcements</TabsTrigger>
+              <TabsTrigger value="basics" className="text-xs font-mono">Investing 101</TabsTrigger>
             </TabsList>
 
             <TabsContent value="portfolio">
