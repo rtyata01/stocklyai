@@ -29,11 +29,17 @@ const SIGNAL_META: Record<SwingSignal["signal_type"], { label: string; icon: any
 const confColor = (c: string) =>
   c === "High" ? "text-pine" : c === "Medium" ? "text-yellow-500" : "text-destructive";
 
-const SignalCard = ({ s }: { s: SwingSignal }) => {
+const SignalCard = ({ s, livePrice, ev }: { s: SwingSignal; livePrice?: number; ev?: PriceEvaluation }) => {
   const meta = SIGNAL_META[s.signal_type];
   const Icon = meta.icon;
-  const upside = ((s.target_price - s.current_price) / s.current_price) * 100;
-  const rr = ((s.target_price - s.entry_price) / Math.max(0.01, s.entry_price - s.stop_loss)).toFixed(2);
+  const current = livePrice && livePrice > 0 ? livePrice : s.current_price;
+  // Align with BUY/HOLD/SELL framework when evaluation exists; keep catalyst-driven values otherwise
+  const entry = ev ? ev.buyPrice : s.entry_price;
+  const target = ev ? Math.max(ev.salePrice, s.target_price) : s.target_price;
+  const stop = ev ? +(ev.buyPrice * 0.93).toFixed(2) : s.stop_loss;
+  const upside = ((target - current) / Math.max(0.01, current)) * 100;
+  const rr = ((target - entry) / Math.max(0.01, entry - stop)).toFixed(2);
+  const evalNote = ev?.reasoning ? ` Portfolio evaluation: ${ev.reasoning}` : "";
 
   return (
     <div className="border border-border rounded-sm bg-card overflow-hidden">
@@ -55,10 +61,10 @@ const SignalCard = ({ s }: { s: SwingSignal }) => {
       </div>
 
       <div className="grid grid-cols-4 border-b border-border">
-        <Stat label="Current" value={`$${s.current_price.toFixed(2)}`} />
-        <Stat label="Entry" value={`$${s.entry_price.toFixed(2)}`} className="text-pine" />
-        <Stat label="Target" value={`$${s.target_price.toFixed(2)}`} sub={`+${upside.toFixed(1)}%`} className="text-primary" />
-        <Stat label="Stop" value={`$${s.stop_loss.toFixed(2)}`} className="text-destructive" />
+        <Stat label="Current" value={`$${current.toFixed(2)}`} help={HELP.current} />
+        <Stat label="Entry · BUY" value={`$${entry.toFixed(2)}`} help={HELP.entry + evalNote} className="text-pine" />
+        <Stat label="Target · SELL" value={`$${target.toFixed(2)}`} sub={`+${upside.toFixed(1)}%`} help={HELP.target + evalNote} className="text-primary" />
+        <Stat label="Stop" value={`$${stop.toFixed(2)}`} help={HELP.stop} className="text-destructive" />
       </div>
 
       <div className="p-4 space-y-3">
@@ -80,9 +86,19 @@ const SignalCard = ({ s }: { s: SwingSignal }) => {
   );
 };
 
-const Stat = ({ label, value, sub, className = "" }: { label: string; value: string; sub?: string; className?: string }) => (
+const Stat = ({ label, value, sub, help, className = "" }: { label: string; value: string; sub?: string; help?: string; className?: string }) => (
   <div className="p-3 text-center border-r border-border last:border-r-0">
-    <div className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest mb-1">{label}</div>
+    <div className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest mb-1 inline-flex items-center justify-center gap-1">
+      {label}
+      {help && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button type="button" className="text-muted-foreground/60 hover:text-foreground"><HelpCircle className="h-3 w-3" /></button>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">{help}</TooltipContent>
+        </Tooltip>
+      )}
+    </div>
     <div className={`font-mono text-sm font-semibold ${className || "text-foreground"}`}>{value}</div>
     {sub && <div className="text-[10px] font-mono text-muted-foreground mt-0.5">{sub}</div>}
   </div>
