@@ -118,18 +118,37 @@ Watchlist tickers (prioritize but include other strong signals too): ${tickers.j
 
     const aiData = await response.json();
     const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
-    if (!toolCall) throw new Error('No tool call in response');
+    let signals: unknown[] = [];
 
-    const parsed = JSON.parse(toolCall.function.arguments);
+    if (toolCall) {
+      try {
+        const parsed = JSON.parse(toolCall.function.arguments);
+        signals = parsed.signals ?? [];
+      } catch (e) {
+        console.error('Failed to parse tool arguments:', e);
+      }
+    } else {
+      // Fallback: try to extract JSON from message content
+      const content = aiData.choices?.[0]?.message?.content;
+      console.warn('No tool call returned. Content:', content?.slice?.(0, 300));
+      if (typeof content === 'string') {
+        const match = content.match(/\{[\s\S]*"signals"[\s\S]*\}/);
+        if (match) {
+          try {
+            signals = JSON.parse(match[0]).signals ?? [];
+          } catch {}
+        }
+      }
+    }
 
-    return new Response(JSON.stringify({ signals: parsed.signals ?? [] }), {
+    return new Response(JSON.stringify({ signals }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error';
     console.error('scrape-swing-signals error:', msg);
-    return new Response(JSON.stringify({ error: msg }), {
-      status: 500,
+    // Return 200 with empty signals so the UI doesn't blank-screen
+    return new Response(JSON.stringify({ signals: [], error: msg }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
