@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useStockNews, useRefreshNews } from "@/hooks/useStockNews";
+import { useStockData } from "@/hooks/useStockData";
+import { usePriceEvaluations } from "@/hooks/usePriceEvaluations";
 import { RefreshCw, TrendingUp, ShieldAlert, Zap, CalendarDays, DollarSign, ArrowUpRight, ArrowDownRight, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -49,7 +51,15 @@ const HelpTip = ({ text }: { text: string }) => (
   </Tooltip>
 );
 
-const PickCard = ({ ticker, headline, pick }: ParsedPick) => (
+const PickCard = ({ ticker, headline, pick, livePrice, ev }: ParsedPick & { livePrice?: number; ev?: { buyPrice: number; holdPrice: number; salePrice: number; reasoning?: string } }) => {
+  const current = livePrice && livePrice > 0 ? livePrice : pick.current_price ?? 0;
+  // Align entry/target/stop with BUY/HOLD/SELL framework when AI evaluation is available
+  const entry = ev ? ev.buyPrice : pick.entry_price;
+  const target = ev ? ev.salePrice : pick.price_target;
+  const stop = ev ? +(ev.buyPrice * 0.93).toFixed(2) : pick.stop_loss;
+  const evalNote = ev?.reasoning ? ` Aligned with portfolio BUY/HOLD/SELL evaluation: ${ev.reasoning}` : "";
+
+  return (
   <div className="border border-primary/40 rounded-sm bg-primary/5 overflow-hidden">
     {/* Header */}
     <div className="p-5 border-b border-primary/20">
@@ -79,34 +89,35 @@ const PickCard = ({ ticker, headline, pick }: ParsedPick) => (
       <div className="p-4 text-center border-r border-primary/20">
         <div className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
           Current
-          <HelpTip text="Today's actual market price for the stock. All entry/target/stop levels are anchored to this price." />
+          <HelpTip text="Live market price pulled from Yahoo Finance / Alpha Vantage in real time. All entry/target/stop levels are anchored to this price." />
         </div>
         <div className="font-mono text-base font-semibold text-foreground">
-          {pick.current_price != null ? `$${pick.current_price.toFixed(2)}` : "—"}
+          {current > 0 ? `$${current.toFixed(2)}` : "—"}
         </div>
       </div>
       <div className="p-4 text-center border-r border-primary/20">
         <div className="text-[10px] font-mono text-pine uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
           Entry · BUY
-          <HelpTip text="BUY zone: 2–8% below current price where the stock becomes attractive to enter. Matches the BUY rating in our price evaluation framework." />
+          <HelpTip text={`BUY zone — aggregated entry from analyst consensus, intrinsic value (forward EPS × peer P/E), PEG < 1 signal, and 15–30% margin-of-safety guardrail. Same logic as the Portfolio BUY column.${evalNote}`} />
         </div>
-        <div className="font-mono text-base font-semibold text-pine">${pick.entry_price.toFixed(2)}</div>
+        <div className="font-mono text-base font-semibold text-pine">${entry.toFixed(2)}</div>
       </div>
       <div className="p-4 text-center border-r border-primary/20">
         <div className="text-[10px] font-mono text-primary uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
           <ArrowUpRight className="h-3 w-3" /> Target · SELL
-          <HelpTip text="SELL zone: 10–30% above current price, aligned with analyst consensus targets and post-earnings upside potential. Take profit here." />
+          <HelpTip text={`SELL zone — aggregated upside from analyst targets, intrinsic value ceiling, PEG > 1.5 flag, and sentiment-adjusted stretch (10–30% above fair value). Same logic as the Portfolio SELL column.${evalNote}`} />
         </div>
-        <div className="font-mono text-base font-semibold text-primary">${pick.price_target.toFixed(2)}</div>
+        <div className="font-mono text-base font-semibold text-primary">${target.toFixed(2)}</div>
       </div>
       <div className="p-4 text-center">
         <div className="text-[10px] font-mono text-destructive uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
           <ArrowDownRight className="h-3 w-3" /> Stop Loss
-          <HelpTip text="Maximum downside before exiting. Set below entry price to cap losses if the earnings thesis fails." />
+          <HelpTip text="Maximum downside before exiting — set ~7% below the BUY entry to cap losses if the earnings thesis fails." />
         </div>
-        <div className="font-mono text-base font-semibold text-destructive">${pick.stop_loss.toFixed(2)}</div>
+        <div className="font-mono text-base font-semibold text-destructive">${stop.toFixed(2)}</div>
       </div>
     </div>
+
 
     {/* EPS */}
     <div className="grid grid-cols-2 border-b border-primary/20">
@@ -174,13 +185,19 @@ const PickCard = ({ ticker, headline, pick }: ParsedPick) => (
       <p className="text-xs text-foreground">{pick.next_quarter_growth}</p>
     </div>
   </div>
-);
+  );
+};
 
 const NewsPanel = () => {
   const { data: news, isLoading } = useStockNews();
+  const { data: quotes } = useStockData();
+  const { data: evaluations } = usePriceEvaluations(quotes);
   const refreshNews = useRefreshNews();
   const queryClient = useQueryClient();
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const quoteMap = new Map((quotes ?? []).map(q => [q.ticker, q]));
+  const evalMap = new Map((evaluations ?? []).map(e => [e.ticker, e]));
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -238,7 +255,7 @@ const NewsPanel = () => {
       )}
 
       {!isLoading && picks.length === 1 && (
-        <PickCard {...picks[0]} />
+        <PickCard {...picks[0]} livePrice={quoteMap.get(picks[0].ticker)?.price} ev={evalMap.get(picks[0].ticker)} />
       )}
 
       {!isLoading && picks.length > 1 && (
@@ -253,7 +270,7 @@ const NewsPanel = () => {
           </TabsList>
           {picks.map(p => (
             <TabsContent key={p.ticker} value={p.ticker}>
-              <PickCard {...p} />
+              <PickCard {...p} livePrice={quoteMap.get(p.ticker)?.price} ev={evalMap.get(p.ticker)} />
             </TabsContent>
           ))}
         </Tabs>

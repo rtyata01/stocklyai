@@ -1,9 +1,19 @@
 import { useState } from "react";
 import { useSwingSignals, clearSwingCache, SwingSignal } from "@/hooks/useSwingSignals";
+import { useStockData } from "@/hooks/useStockData";
+import { usePriceEvaluations, PriceEvaluation } from "@/hooks/usePriceEvaluations";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, Activity, FlaskConical, Trophy, TrendingUp, Rocket, Users, Flame, Wind, BarChart3, ExternalLink } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { RefreshCw, Activity, FlaskConical, Trophy, TrendingUp, Rocket, Users, Flame, Wind, BarChart3, ExternalLink, HelpCircle } from "lucide-react";
+
+const HELP = {
+  current: "Live market price from Yahoo Finance / Alpha Vantage. Entry/Target/Stop are anchored to this price.",
+  entry: "BUY zone — aligned with the Portfolio BUY column: aggregated from analyst consensus, intrinsic value (forward EPS × peer P/E), PEG < 1 signal, and 15–30% margin-of-safety guardrail. For swing trades we use the catalyst-adjusted BUY level.",
+  target: "SELL zone — aligned with the Portfolio SELL column: aggregated from analyst targets, intrinsic value ceiling, PEG > 1.5 flag, and short-term catalyst upside (FDA, contract win, breakout).",
+  stop: "Maximum downside before exiting — typically ~7% below the BUY entry to cap losses if the catalyst fails.",
+};
 
 const SIGNAL_META: Record<SwingSignal["signal_type"], { label: string; icon: any; color: string }> = {
   FDA_APPROVAL:      { label: "FDA Approval",      icon: FlaskConical, color: "text-pine border-pine/40 bg-pine/10" },
@@ -19,11 +29,17 @@ const SIGNAL_META: Record<SwingSignal["signal_type"], { label: string; icon: any
 const confColor = (c: string) =>
   c === "High" ? "text-pine" : c === "Medium" ? "text-yellow-500" : "text-destructive";
 
-const SignalCard = ({ s }: { s: SwingSignal }) => {
+const SignalCard = ({ s, livePrice, ev }: { s: SwingSignal; livePrice?: number; ev?: PriceEvaluation }) => {
   const meta = SIGNAL_META[s.signal_type];
   const Icon = meta.icon;
-  const upside = ((s.target_price - s.current_price) / s.current_price) * 100;
-  const rr = ((s.target_price - s.entry_price) / Math.max(0.01, s.entry_price - s.stop_loss)).toFixed(2);
+  const current = livePrice && livePrice > 0 ? livePrice : s.current_price;
+  // Align with BUY/HOLD/SELL framework when evaluation exists; keep catalyst-driven values otherwise
+  const entry = ev ? ev.buyPrice : s.entry_price;
+  const target = ev ? Math.max(ev.salePrice, s.target_price) : s.target_price;
+  const stop = ev ? +(ev.buyPrice * 0.93).toFixed(2) : s.stop_loss;
+  const upside = ((target - current) / Math.max(0.01, current)) * 100;
+  const rr = ((target - entry) / Math.max(0.01, entry - stop)).toFixed(2);
+  const evalNote = ev?.reasoning ? ` Portfolio evaluation: ${ev.reasoning}` : "";
 
   return (
     <div className="border border-border rounded-sm bg-card overflow-hidden">
@@ -45,10 +61,10 @@ const SignalCard = ({ s }: { s: SwingSignal }) => {
       </div>
 
       <div className="grid grid-cols-4 border-b border-border">
-        <Stat label="Current" value={`$${s.current_price.toFixed(2)}`} />
-        <Stat label="Entry" value={`$${s.entry_price.toFixed(2)}`} className="text-pine" />
-        <Stat label="Target" value={`$${s.target_price.toFixed(2)}`} sub={`+${upside.toFixed(1)}%`} className="text-primary" />
-        <Stat label="Stop" value={`$${s.stop_loss.toFixed(2)}`} className="text-destructive" />
+        <Stat label="Current" value={`$${current.toFixed(2)}`} help={HELP.current} />
+        <Stat label="Entry · BUY" value={`$${entry.toFixed(2)}`} help={HELP.entry + evalNote} className="text-pine" />
+        <Stat label="Target · SELL" value={`$${target.toFixed(2)}`} sub={`+${upside.toFixed(1)}%`} help={HELP.target + evalNote} className="text-primary" />
+        <Stat label="Stop" value={`$${stop.toFixed(2)}`} help={HELP.stop} className="text-destructive" />
       </div>
 
       <div className="p-4 space-y-3">
@@ -70,9 +86,19 @@ const SignalCard = ({ s }: { s: SwingSignal }) => {
   );
 };
 
-const Stat = ({ label, value, sub, className = "" }: { label: string; value: string; sub?: string; className?: string }) => (
+const Stat = ({ label, value, sub, help, className = "" }: { label: string; value: string; sub?: string; help?: string; className?: string }) => (
   <div className="p-3 text-center border-r border-border last:border-r-0">
-    <div className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest mb-1">{label}</div>
+    <div className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest mb-1 inline-flex items-center justify-center gap-1">
+      {label}
+      {help && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button type="button" className="text-muted-foreground/60 hover:text-foreground"><HelpCircle className="h-3 w-3" /></button>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">{help}</TooltipContent>
+        </Tooltip>
+      )}
+    </div>
     <div className={`font-mono text-sm font-semibold ${className || "text-foreground"}`}>{value}</div>
     {sub && <div className="text-[10px] font-mono text-muted-foreground mt-0.5">{sub}</div>}
   </div>
@@ -81,8 +107,13 @@ const Stat = ({ label, value, sub, className = "" }: { label: string; value: str
 const SwingTradingPanel = () => {
   const [enabled, setEnabled] = useState(true);
   const { data: signals, isLoading, error, refetch } = useSwingSignals(enabled);
+  const { data: quotes } = useStockData();
+  const { data: evaluations } = usePriceEvaluations(quotes);
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
+
+  const quoteMap = new Map((quotes ?? []).map(q => [q.ticker, q]));
+  const evalMap = new Map((evaluations ?? []).map(e => [e.ticker, e]));
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -97,6 +128,7 @@ const SwingTradingPanel = () => {
   const otherSignals = (signals ?? []).filter((s) => s.signal_type !== "FDA_APPROVAL");
 
   return (
+    <TooltipProvider delayDuration={150}>
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="font-serif text-sm text-muted-foreground inline-flex items-center gap-1.5">
@@ -121,17 +153,18 @@ const SwingTradingPanel = () => {
           <h4 className="font-serif text-xs text-pine uppercase tracking-widest flex items-center gap-1.5">
             <FlaskConical className="h-3.5 w-3.5" /> FDA Approvals — Highest Priority
           </h4>
-          <div className="space-y-3">{fdaSignals.map((s, i) => <SignalCard key={`fda-${i}`} s={s} />)}</div>
+          <div className="space-y-3">{fdaSignals.map((s, i) => <SignalCard key={`fda-${i}`} s={s} livePrice={quoteMap.get(s.ticker)?.price} ev={evalMap.get(s.ticker)} />)}</div>
         </div>
       )}
 
       {otherSignals.length > 0 && (
         <div className="space-y-3">
           <h4 className="font-serif text-xs text-muted-foreground uppercase tracking-widest">Other Swing Catalysts</h4>
-          <div className="space-y-3">{otherSignals.map((s, i) => <SignalCard key={`o-${i}`} s={s} />)}</div>
+          <div className="space-y-3">{otherSignals.map((s, i) => <SignalCard key={`o-${i}`} s={s} livePrice={quoteMap.get(s.ticker)?.price} ev={evalMap.get(s.ticker)} />)}</div>
         </div>
       )}
     </div>
+    </TooltipProvider>
   );
 };
 
