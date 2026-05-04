@@ -1,9 +1,19 @@
 import { useState } from "react";
 import { useSwingSignals, clearSwingCache, SwingSignal } from "@/hooks/useSwingSignals";
+import { useStockData } from "@/hooks/useStockData";
+import { usePriceEvaluations, PriceEvaluation } from "@/hooks/usePriceEvaluations";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, Activity, FlaskConical, Trophy, TrendingUp, Rocket, Users, Flame, Wind, BarChart3, ExternalLink } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { RefreshCw, Activity, FlaskConical, Trophy, TrendingUp, Rocket, Users, Flame, Wind, BarChart3, ExternalLink, HelpCircle } from "lucide-react";
+
+const HELP = {
+  current: "Live market price from Yahoo Finance / Alpha Vantage. Entry/Target/Stop are anchored to this price.",
+  entry: "BUY zone — aligned with the Portfolio BUY column: aggregated from analyst consensus, intrinsic value (forward EPS × peer P/E), PEG < 1 signal, and 15–30% margin-of-safety guardrail. For swing trades we use the catalyst-adjusted BUY level.",
+  target: "SELL zone — aligned with the Portfolio SELL column: aggregated from analyst targets, intrinsic value ceiling, PEG > 1.5 flag, and short-term catalyst upside (FDA, contract win, breakout).",
+  stop: "Maximum downside before exiting — typically ~7% below the BUY entry to cap losses if the catalyst fails.",
+};
 
 const SIGNAL_META: Record<SwingSignal["signal_type"], { label: string; icon: any; color: string }> = {
   FDA_APPROVAL:      { label: "FDA Approval",      icon: FlaskConical, color: "text-pine border-pine/40 bg-pine/10" },
