@@ -185,7 +185,8 @@ const PickCard = ({ ticker, headline, pick, livePrice, ev }: ParsedPick & { live
       <p className="text-xs text-foreground">{pick.next_quarter_growth}</p>
     </div>
   </div>
-);
+  );
+};
 
 const NewsPanel = () => {
   const { data: news, isLoading } = useStockNews();
