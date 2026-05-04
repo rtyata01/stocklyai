@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useStockNews, useRefreshNews } from "@/hooks/useStockNews";
+import { useStockData } from "@/hooks/useStockData";
+import { usePriceEvaluations } from "@/hooks/usePriceEvaluations";
 import { RefreshCw, TrendingUp, ShieldAlert, Zap, CalendarDays, DollarSign, ArrowUpRight, ArrowDownRight, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
