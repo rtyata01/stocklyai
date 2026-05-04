@@ -255,7 +255,7 @@ const NewsPanel = () => {
       )}
 
       {!isLoading && picks.length === 1 && (
-        <PickCard {...picks[0]} />
+        <PickCard {...picks[0]} livePrice={quoteMap.get(picks[0].ticker)?.price} ev={evalMap.get(picks[0].ticker)} />
       )}
 
       {!isLoading && picks.length > 1 && (
@@ -270,7 +270,7 @@ const NewsPanel = () => {
           </TabsList>
           {picks.map(p => (
             <TabsContent key={p.ticker} value={p.ticker}>
-              <PickCard {...p} />
+              <PickCard {...p} livePrice={quoteMap.get(p.ticker)?.price} ev={evalMap.get(p.ticker)} />
             </TabsContent>
           ))}
         </Tabs>
