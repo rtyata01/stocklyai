@@ -107,8 +107,13 @@ const Stat = ({ label, value, sub, help, className = "" }: { label: string; valu
 const SwingTradingPanel = () => {
   const [enabled, setEnabled] = useState(true);
   const { data: signals, isLoading, error, refetch } = useSwingSignals(enabled);
+  const { data: quotes } = useStockData();
+  const { data: evaluations } = usePriceEvaluations(quotes);
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
+
+  const quoteMap = new Map((quotes ?? []).map(q => [q.ticker, q]));
+  const evalMap = new Map((evaluations ?? []).map(e => [e.ticker, e]));
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -123,6 +128,7 @@ const SwingTradingPanel = () => {
   const otherSignals = (signals ?? []).filter((s) => s.signal_type !== "FDA_APPROVAL");
 
   return (
+    <TooltipProvider delayDuration={150}>
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="font-serif text-sm text-muted-foreground inline-flex items-center gap-1.5">
@@ -147,17 +153,18 @@ const SwingTradingPanel = () => {
           <h4 className="font-serif text-xs text-pine uppercase tracking-widest flex items-center gap-1.5">
             <FlaskConical className="h-3.5 w-3.5" /> FDA Approvals — Highest Priority
           </h4>
-          <div className="space-y-3">{fdaSignals.map((s, i) => <SignalCard key={`fda-${i}`} s={s} />)}</div>
+          <div className="space-y-3">{fdaSignals.map((s, i) => <SignalCard key={`fda-${i}`} s={s} livePrice={quoteMap.get(s.ticker)?.price} ev={evalMap.get(s.ticker)} />)}</div>
         </div>
       )}
 
       {otherSignals.length > 0 && (
         <div className="space-y-3">
           <h4 className="font-serif text-xs text-muted-foreground uppercase tracking-widest">Other Swing Catalysts</h4>
-          <div className="space-y-3">{otherSignals.map((s, i) => <SignalCard key={`o-${i}`} s={s} />)}</div>
+          <div className="space-y-3">{otherSignals.map((s, i) => <SignalCard key={`o-${i}`} s={s} livePrice={quoteMap.get(s.ticker)?.price} ev={evalMap.get(s.ticker)} />)}</div>
         </div>
       )}
     </div>
+    </TooltipProvider>
   );
 };
 
