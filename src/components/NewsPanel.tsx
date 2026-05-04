@@ -190,9 +190,14 @@ const PickCard = ({ ticker, headline, pick, livePrice, ev }: ParsedPick & { live
 
 const NewsPanel = () => {
   const { data: news, isLoading } = useStockNews();
+  const { data: quotes } = useStockData();
+  const { data: evaluations } = usePriceEvaluations(quotes);
   const refreshNews = useRefreshNews();
   const queryClient = useQueryClient();
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const quoteMap = new Map((quotes ?? []).map(q => [q.ticker, q]));
+  const evalMap = new Map((evaluations ?? []).map(e => [e.ticker, e]));
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
