@@ -142,6 +142,8 @@ Watchlist tickers (prioritize but include other strong signals too): ${tickers.j
       }
     }
 
+    await writeAppCache(`swing-signals:${[...tickers].sort().join(',')}`, { signals }, 60 * 60 * 1000);
+
     return new Response(JSON.stringify({ signals }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
