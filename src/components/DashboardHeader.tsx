@@ -3,12 +3,10 @@ import { Button } from "@/components/ui/button";
 
 interface DashboardHeaderProps {
   totalStocks: number;
-  onRefresh?: () => void;
   onManageStocks?: () => void;
-  isRefreshing?: boolean;
 }
 
-const DashboardHeader = ({ totalStocks, onRefresh, onManageStocks, isRefreshing }: DashboardHeaderProps) => {
+const DashboardHeader = ({ totalStocks, onManageStocks }: DashboardHeaderProps) => {
   return (
     <header className="relative z-10 px-6 md:px-10 pt-8 md:pt-10 pb-6 md:pb-8 border-b border-border flex flex-col md:flex-row justify-between md:items-end gap-4 bg-gradient-to-b from-secondary/30 to-transparent">
       <div>
@@ -26,10 +24,6 @@ const DashboardHeader = ({ totalStocks, onRefresh, onManageStocks, isRefreshing 
             Manage Watchlist
           </Button>
         )}
-        <Button variant="outline" size="sm" onClick={onRefresh} disabled={isRefreshing} className="gap-1.5 text-xs">
-          <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
-          Re-evaluate
-        </Button>
       </div>
     </header>
   );
