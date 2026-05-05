@@ -17,7 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, HelpCircle, RefreshCw } from "lucide-react";
+import { ChevronDown, HelpCircle, RefreshCw, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const BUY_HELP = "BUY zone — aggregated entry price computed from: (1) analyst consensus & 52-week support, (2) intrinsic value from forward EPS × peer P/E, (3) PEG ratio < 1 signal, (4) margin-of-safety guardrail (typically 15–30% below fair value). Median of valid methods.";
@@ -68,7 +68,6 @@ const Index = () => {
       <div className="max-w-[1400px] mx-auto bg-card border-x border-border shadow-2xl min-h-screen">
         <DashboardHeader
           totalStocks={activeSectors.flatMap(s => s.tickers).length}
-          onManageStocks={SHOW_WATCHLIST ? () => setWatchlistOpen(true) : undefined}
         />
 
         {SHOW_WATCHLIST && (
@@ -90,7 +89,13 @@ const Index = () => {
             </TabsList>
 
             <TabsContent value="portfolio">
-              <div className="flex justify-end mb-3">
+              <div className="flex justify-end gap-2 mb-3">
+                {SHOW_WATCHLIST && (
+                  <Button variant="outline" size="sm" onClick={() => setWatchlistOpen(true)} className="gap-1.5 text-xs">
+                    <Settings className="h-3.5 w-3.5" />
+                    Manage Watchlist
+                  </Button>
+                )}
                 <Button variant="outline" size="sm" onClick={handleRefresh} disabled={evalLoading} className="gap-1.5 text-xs">
                   <RefreshCw className={`h-3.5 w-3.5 ${evalLoading ? "animate-spin" : ""}`} />
                   Re-evaluate
