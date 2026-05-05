@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { loadFromCache, saveLocalCache } from "@/lib/cacheClient";
 
 export interface QuarterlyEarning {
   quarter: string;
