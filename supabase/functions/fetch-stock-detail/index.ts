@@ -1,3 +1,5 @@
+import { writeAppCache } from '../_shared/cache.ts';
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -300,6 +302,8 @@ Deno.serve(async (req) => {
       investmentSimulation: { initialInvestment: 1000, periodReturns },
       catalysts,
     };
+
+    await writeAppCache(`stock-detail:${ticker}`, { detail }, 4 * 60 * 60 * 1000);
 
     return new Response(JSON.stringify({ detail }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

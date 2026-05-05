@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getWatchlistSectors } from "@/components/ManageWatchlistDialog";
+import { loadFromCache, saveLocalCache, clearCache } from "@/lib/cacheClient";
 
 export interface SwingSignal {
   ticker: string;
@@ -27,28 +28,36 @@ export interface SwingSignal {
   source_url?: string;
 }
 
-const CACHE_KEY = "swing-signals-cache-v1";
 const CACHE_TTL = 60 * 60 * 1000; // 1 hour
 
 export function useSwingSignals(enabled: boolean) {
+  const tickers = (() => {
+    try {
+      return getWatchlistSectors().flatMap((s) => s.tickers);
+    } catch {
+      return [];
+    }
+  })();
+  const cacheKey = `swing-signals:${[...tickers].sort().join(",")}`;
+
   return useQuery({
-    queryKey: ["swing-signals"],
+    queryKey: ["swing-signals", cacheKey],
     enabled,
     queryFn: async (): Promise<SwingSignal[]> => {
-      const cached = localStorage.getItem(CACHE_KEY);
+      const cached = await loadFromCache<{ signals: SwingSignal[] } | SwingSignal[]>(
+        cacheKey,
+        CACHE_TTL,
+      );
       if (cached) {
-        try {
-          const { ts, data } = JSON.parse(cached);
-          if (Date.now() - ts < CACHE_TTL) return data;
-        } catch {}
+        const signals = Array.isArray(cached) ? cached : cached.signals;
+        if (signals?.length) return signals;
       }
-      const tickers = getWatchlistSectors().flatMap((s) => s.tickers);
       const { data, error } = await supabase.functions.invoke("scrape-swing-signals", {
         body: { tickers },
       });
       if (error) throw error;
-      const signals = data?.signals ?? [];
-      localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: signals }));
+      const signals: SwingSignal[] = data?.signals ?? [];
+      saveLocalCache(cacheKey, { signals }, CACHE_TTL);
       return signals;
     },
     staleTime: CACHE_TTL,
@@ -56,5 +65,11 @@ export function useSwingSignals(enabled: boolean) {
 }
 
 export function clearSwingCache() {
-  localStorage.removeItem(CACHE_KEY);
+  try {
+    Object.keys(localStorage)
+      .filter((k) => k.startsWith("swing-signals:"))
+      .forEach((k) => clearCache(k));
+  } catch {
+    /* ignore */
+  }
 }

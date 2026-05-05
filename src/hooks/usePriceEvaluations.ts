@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { sectors } from "@/data/stocks";
+import { loadFromCache, saveLocalCache, clearCache } from "@/lib/cacheClient";
 
 export interface PriceEvaluation {
   ticker: string;
@@ -10,57 +11,52 @@ export interface PriceEvaluation {
   reasoning?: string;
 }
 
-const CACHE_KEY = "stock-price-evaluations-v2";
-const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+const CACHE_TTL = 24 * 60 * 60 * 1000;
 
-interface CachedData {
-  evaluations: PriceEvaluation[];
-  ts: number;
-}
+const keyFor = (tickers: string[]) =>
+  `price-evaluations:${[...tickers].sort().join(",")}`;
 
-function getCached(): PriceEvaluation[] | null {
+export function clearPriceCache() {
+  // best-effort: clear all known evaluation keys for current page
   try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    if (!raw) return null;
-    const parsed: CachedData = JSON.parse(raw);
-    if (Date.now() - parsed.ts > CACHE_TTL) {
-      localStorage.removeItem(CACHE_KEY);
-      return null;
-    }
-    return parsed.evaluations;
+    Object.keys(localStorage)
+      .filter((k) => k.startsWith("price-evaluations:"))
+      .forEach((k) => clearCache(k));
   } catch {
-    return null;
+    /* ignore */
   }
 }
 
-function setCache(evaluations: PriceEvaluation[]) {
-  const data: CachedData = { evaluations, ts: Date.now() };
-  localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-}
+export function usePriceEvaluations(
+  quotes:
+    | { ticker: string; price: number; dayMin: number; dayMax: number; change: number }[]
+    | undefined,
+) {
+  const tickers = (quotes ?? []).map((q) => q.ticker);
+  const cacheKey = keyFor(tickers);
 
-export function clearPriceCache() {
-  localStorage.removeItem(CACHE_KEY);
-}
-
-export function usePriceEvaluations(quotes: { ticker: string; price: number; dayMin: number; dayMax: number; change: number }[] | undefined) {
-  const tickerKey = (quotes ?? []).map(q => q.ticker).sort().join(",");
   return useQuery({
-    queryKey: ["price-evaluations", tickerKey],
+    queryKey: ["price-evaluations", cacheKey],
     queryFn: async (): Promise<PriceEvaluation[]> => {
-      const cached = getCached();
-      // Only use cache if it covers every requested ticker
-      if (cached && quotes && quotes.every(q => cached.some(c => c.ticker === q.ticker))) {
-        return cached;
-      }
-
       if (!quotes || quotes.length === 0) return [];
 
+      const cached = await loadFromCache<{ evaluations: PriceEvaluation[] } | PriceEvaluation[]>(
+        cacheKey,
+        CACHE_TTL,
+      );
+      if (cached) {
+        const evals = Array.isArray(cached) ? cached : cached.evaluations;
+        if (evals && quotes.every((q) => evals.some((c) => c.ticker === q.ticker))) {
+          return evals;
+        }
+      }
+
       const sectorMap = new Map<string, string>();
-      sectors.forEach(s => s.tickers.forEach(t => sectorMap.set(t, s.name)));
+      sectors.forEach((s) => s.tickers.forEach((t) => sectorMap.set(t, s.name)));
 
       const stocks = quotes
-        .filter(q => q.price > 0)
-        .map(q => ({
+        .filter((q) => q.price > 0)
+        .map((q) => ({
           ticker: q.ticker,
           price: q.price,
           dayMin: q.dayMin,
@@ -72,14 +68,13 @@ export function usePriceEvaluations(quotes: { ticker: string; price: number; day
       const { data, error } = await supabase.functions.invoke("evaluate-prices", {
         body: { stocks },
       });
-
       if (error) throw error;
       const evaluations: PriceEvaluation[] = data.evaluations;
-      setCache(evaluations);
+      saveLocalCache(cacheKey, { evaluations }, CACHE_TTL);
       return evaluations;
     },
     enabled: !!quotes && quotes.length > 0,
-    staleTime: 24 * 60 * 60 * 1000,
+    staleTime: CACHE_TTL,
     retry: 1,
   });
 }

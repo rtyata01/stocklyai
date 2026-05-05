@@ -1,3 +1,5 @@
+import { writeAppCache } from '../_shared/cache.ts';
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -141,6 +143,9 @@ Deno.serve(async (req) => {
         await new Promise(r => setTimeout(r, 1200)); // Rate limit pause
       }
     }
+
+    const cacheKey = `stock-quotes:${[...tickers].sort().join(',')}`;
+    await writeAppCache(cacheKey, { quotes: results }, 15 * 60 * 1000);
 
     return new Response(JSON.stringify({ quotes: results }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

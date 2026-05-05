@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { writeAppCache } from '../_shared/cache.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -140,6 +141,8 @@ Watchlist tickers (prioritize but include other strong signals too): ${tickers.j
         }
       }
     }
+
+    await writeAppCache(`swing-signals:${[...tickers].sort().join(',')}`, { signals }, 60 * 60 * 1000);
 
     return new Response(JSON.stringify({ signals }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
