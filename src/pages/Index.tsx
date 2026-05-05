@@ -17,7 +17,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, HelpCircle } from "lucide-react";
+import { ChevronDown, HelpCircle, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const BUY_HELP = "BUY zone — aggregated entry price computed from: (1) analyst consensus & 52-week support, (2) intrinsic value from forward EPS × peer P/E, (3) PEG ratio < 1 signal, (4) margin-of-safety guardrail (typically 15–30% below fair value). Median of valid methods.";
 const HOLD_HELP = "HOLD / fair value — center estimate close to current price using analyst consensus 12-month target, forward intrinsic value, and PEG ≈ 1 signal. Holding here implies risk/reward is balanced.";
@@ -67,9 +68,7 @@ const Index = () => {
       <div className="max-w-[1400px] mx-auto bg-card border-x border-border shadow-2xl min-h-screen">
         <DashboardHeader
           totalStocks={activeSectors.flatMap(s => s.tickers).length}
-          onRefresh={handleRefresh}
           onManageStocks={SHOW_WATCHLIST ? () => setWatchlistOpen(true) : undefined}
-          isRefreshing={evalLoading}
         />
 
         {SHOW_WATCHLIST && (
@@ -91,6 +90,12 @@ const Index = () => {
             </TabsList>
 
             <TabsContent value="portfolio">
+              <div className="flex justify-end mb-3">
+                <Button variant="outline" size="sm" onClick={handleRefresh} disabled={evalLoading} className="gap-1.5 text-xs">
+                  <RefreshCw className={`h-3.5 w-3.5 ${evalLoading ? "animate-spin" : ""}`} />
+                  Re-evaluate
+                </Button>
+              </div>
               <div className="space-y-4 pb-8">
                 {isLoading && (
                   <div className="text-center text-muted-foreground py-20 font-mono text-sm">
