@@ -57,43 +57,25 @@ export interface StockDetail {
   catalysts: Catalyst[];
 }
 
-const CACHE_KEY = "stock-detail-cache-v3";
 const CACHE_TTL = 4 * 60 * 60 * 1000; // 4 hours
-
-function getCached(ticker: string): StockDetail | null {
-  try {
-    const raw = localStorage.getItem(`${CACHE_KEY}-${ticker}`);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (Date.now() - parsed.ts > CACHE_TTL) {
-      localStorage.removeItem(`${CACHE_KEY}-${ticker}`);
-      return null;
-    }
-    return parsed.detail;
-  } catch {
-    return null;
-  }
-}
-
-function setCache(ticker: string, detail: StockDetail) {
-  localStorage.setItem(`${CACHE_KEY}-${ticker}`, JSON.stringify({ detail, ts: Date.now() }));
-}
 
 export function useStockDetail(ticker: string | undefined) {
   return useQuery({
     queryKey: ["stock-detail", ticker],
     queryFn: async (): Promise<StockDetail> => {
       if (!ticker) throw new Error("No ticker");
-
-      const cached = getCached(ticker);
-      if (cached) return cached;
-
+      const key = `stock-detail:${ticker}`;
+      const cached = await loadFromCache<{ detail: StockDetail } | StockDetail>(key, CACHE_TTL);
+      if (cached) {
+        const detail = (cached as { detail?: StockDetail }).detail ?? (cached as StockDetail);
+        if (detail) return detail;
+      }
       const { data, error } = await supabase.functions.invoke("fetch-stock-detail", {
         body: { ticker },
       });
       if (error) throw error;
       const detail: StockDetail = data.detail;
-      setCache(ticker, detail);
+      saveLocalCache(key, { detail }, CACHE_TTL);
       return detail;
     },
     enabled: !!ticker,
