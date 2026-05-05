@@ -144,6 +144,9 @@ Deno.serve(async (req) => {
       }
     }
 
+    const cacheKey = `stock-quotes:${[...tickers].sort().join(',')}`;
+    await writeAppCache(cacheKey, { quotes: results }, 15 * 60 * 1000);
+
     return new Response(JSON.stringify({ quotes: results }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
