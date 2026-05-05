@@ -130,6 +130,8 @@ OUTPUT REQUIREMENTS:
     if (!toolCall) throw new Error('No tool call in response');
 
     const parsed = JSON.parse(toolCall.function.arguments);
+    const tickerKey = stocks.map((s: { ticker: string }) => s.ticker).sort().join(',');
+    await writeAppCache(`price-evaluations:${tickerKey}`, { evaluations: parsed.evaluations }, 24 * 60 * 60 * 1000);
     return new Response(JSON.stringify({ evaluations: parsed.evaluations }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
