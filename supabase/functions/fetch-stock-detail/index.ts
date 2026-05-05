@@ -303,6 +303,8 @@ Deno.serve(async (req) => {
       catalysts,
     };
 
+    await writeAppCache(`stock-detail:${ticker}`, { detail }, 4 * 60 * 60 * 1000);
+
     return new Response(JSON.stringify({ detail }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
