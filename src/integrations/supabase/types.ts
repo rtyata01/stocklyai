@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_cache: {
+        Row: {
+          cache_key: string
+          created_at: string
+          expires_at: string
+          payload: Json
+          updated_at: string
+        }
+        Insert: {
+          cache_key: string
+          created_at?: string
+          expires_at: string
+          payload: Json
+          updated_at?: string
+        }
+        Update: {
+          cache_key?: string
+          created_at?: string
+          expires_at?: string
+          payload?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       stock_news: {
         Row: {
           created_at: string
