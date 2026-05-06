@@ -292,11 +292,13 @@ Deno.serve(async (req) => {
     const supplements = await fetchAiSupplements(ticker, currentPrice, historical.quarterly, historical.yearly);
 
     const quarterlyEarnings = [
+      ...((supplements?.pastQuarters ?? []).map((q: any) => ({ ...q, isEstimate: false }))),
       ...historical.quarterly.map(q => ({ ...q, isEstimate: false })),
       ...((supplements?.forwardQuarters ?? []).map((q: any) => ({ ...q, isEstimate: true }))),
     ];
 
     const yearlyEarnings = [
+      ...((supplements?.pastYears ?? []).map((y: any) => ({ ...y, isEstimate: false }))),
       ...historical.yearly.map(y => ({ ...y, isEstimate: false })),
       ...((supplements?.forwardYears ?? []).map((y: any) => ({ ...y, isEstimate: true }))),
     ];
