@@ -129,7 +129,9 @@ async function fetchAiSupplements(ticker: string, currentPrice: number, historic
   if (!LOVABLE_API_KEY) return null;
 
   const today = new Date().toISOString().split('T')[0];
-  const histCtx = `Recent actual quarterly earnings: ${JSON.stringify(historicalQuarters)}\nRecent actual yearly earnings: ${JSON.stringify(historicalYears)}\nCurrent price: $${currentPrice}`;
+  const needPastQuarters = Math.max(0, 3 - historicalQuarters.length);
+  const needPastYears = Math.max(0, 3 - historicalYears.length);
+  const histCtx = `Recent actual quarterly earnings (already known, do NOT repeat): ${JSON.stringify(historicalQuarters)}\nRecent actual yearly earnings (already known, do NOT repeat): ${JSON.stringify(historicalYears)}\nCurrent price: $${currentPrice}`;
 
   try {
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -138,8 +140,8 @@ async function fetchAiSupplements(ticker: string, currentPrice: number, historic
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: [
-          { role: 'system', content: `You provide ONLY forward-looking analyst consensus estimates and upcoming catalysts. Never fabricate historical actuals — those are provided. Use Wall Street consensus where available; if uncertain, give a conservative estimate. All revenue in millions USD.` },
-          { role: 'user', content: `Ticker: ${ticker}. Today: ${today}.\n${histCtx}\n\nProvide:\n1. Next 4 quarters EPS and revenue ESTIMATES (consensus).\n2. Next 4 years EPS and revenue ESTIMATES (consensus).\n3. 3-8 upcoming major catalysts with dates if known.` },
+          { role: 'system', content: `You provide forward-looking analyst consensus estimates and upcoming catalysts. You may also provide REPORTED past actuals when explicitly asked to fill gaps. Use Wall Street consensus where available. All revenue in millions USD.` },
+          { role: 'user', content: `Ticker: ${ticker}. Today: ${today}.\n${histCtx}\n\nProvide:\n1. ${needPastQuarters > 0 ? `${needPastQuarters} most-recent REPORTED past quarters (actuals) NOT already in the known list — put these in pastQuarters.` : 'No past quarters needed.'}\n2. Next 4 quarters EPS and revenue ESTIMATES (current quarter + 3 future) — put in forwardQuarters.\n3. ${needPastYears > 0 ? `${needPastYears} most-recent REPORTED past years (actuals) NOT in known list — put in pastYears.` : 'No past years needed.'}\n4. Next 4 years EPS and revenue ESTIMATES (current year + 3 future) — put in forwardYears.\n5. 3-8 upcoming major catalysts with dates if known.` },
         ],
         tools: [{
           type: 'function',
@@ -148,12 +150,28 @@ async function fetchAiSupplements(ticker: string, currentPrice: number, historic
             parameters: {
               type: 'object',
               properties: {
+                pastQuarters: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: { quarter: { type: 'string' }, eps: { type: 'number' }, revenue: { type: 'number' } },
+                    required: ['quarter', 'eps', 'revenue'],
+                  },
+                },
                 forwardQuarters: {
                   type: 'array',
                   items: {
                     type: 'object',
                     properties: { quarter: { type: 'string' }, eps: { type: 'number' }, revenue: { type: 'number' } },
                     required: ['quarter', 'eps', 'revenue'],
+                  },
+                },
+                pastYears: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: { year: { type: 'string' }, eps: { type: 'number' }, revenue: { type: 'number' } },
+                    required: ['year', 'eps', 'revenue'],
                   },
                 },
                 forwardYears: {
