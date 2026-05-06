@@ -11,6 +11,14 @@ import {
   ResponsiveContainer, ReferenceLine, Cell,
 } from "recharts";
 
+const sliceEarnings = <T extends { isEstimate: boolean }>(arr: T[] | undefined): T[] => {
+  if (!arr || arr.length === 0) return [];
+  const historical = arr.filter(e => !e.isEstimate);
+  const estimates = arr.filter(e => e.isEstimate);
+  // last 3 past + current (first estimate) + next 3 estimates = 7
+  return [...historical.slice(-3), ...estimates.slice(0, 4)];
+};
+
 const StockDetail = () => {
   const { ticker } = useParams<{ ticker: string }>();
   const navigate = useNavigate();
