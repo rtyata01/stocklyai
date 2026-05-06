@@ -1,11 +1,10 @@
-import { Moon, Sun, SunMedium } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 import { useTheme, Theme } from "@/hooks/useTheme";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const options: { value: Theme; label: string; icon: typeof Sun }[] = [
   { value: "light", label: "Light", icon: Sun },
-  { value: "medium", label: "Medium", icon: SunMedium },
   { value: "dark", label: "Dark", icon: Moon },
 ];
 
