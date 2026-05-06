@@ -11,6 +11,14 @@ import {
   ResponsiveContainer, ReferenceLine, Cell,
 } from "recharts";
 
+const sliceEarnings = <T extends { isEstimate: boolean }>(arr: T[] | undefined): T[] => {
+  if (!arr || arr.length === 0) return [];
+  const historical = arr.filter(e => !e.isEstimate);
+  const estimates = arr.filter(e => e.isEstimate);
+  // last 3 past + current (first estimate) + next 3 estimates = 7
+  return [...historical.slice(-3), ...estimates.slice(0, 4)];
+};
+
 const StockDetail = () => {
   const { ticker } = useParams<{ ticker: string }>();
   const navigate = useNavigate();
@@ -131,148 +139,6 @@ const StockDetail = () => {
                 )}
               </section>
 
-              {/* Catalysts */}
-              {detail.catalysts && detail.catalysts.length > 0 && (
-                <section>
-                  <h2 className="font-serif text-base text-foreground mb-3 flex items-center gap-3">
-                    Upcoming Catalysts <span className="flex-1 h-[1px] bg-border" />
-                  </h2>
-                  <div className="grid gap-2">
-                    {detail.catalysts.map((c, i) => (
-                      <div key={i} className="border border-border rounded-sm p-3 bg-secondary/20 flex items-start gap-3">
-                        <div className={`mt-0.5 w-2 h-2 rounded-full shrink-0 ${
-                          c.impact === 'bullish' ? 'bg-pine' : c.impact === 'bearish' ? 'bg-destructive' : 'bg-muted-foreground'
-                        }`} />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-mono text-sm text-foreground">{c.event}</span>
-                            {c.date && (
-                              <span className="text-[10px] font-mono text-muted-foreground bg-secondary px-1.5 py-0.5 rounded">
-                                {c.date}
-                              </span>
-                            )}
-                            <span className={`text-[10px] font-mono uppercase px-1.5 py-0.5 rounded ${
-                              c.impact === 'bullish' ? 'text-pine bg-pine/10' : c.impact === 'bearish' ? 'text-destructive bg-destructive/10' : 'text-muted-foreground bg-secondary'
-                            }`}>
-                              {c.impact}
-                            </span>
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">{c.details}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {/* Earnings Charts */}
-              <section>
-                <h2 className="font-serif text-base text-foreground mb-3 flex items-center gap-3">
-                  Earnings <span className="flex-1 h-[1px] bg-border" />
-                </h2>
-                <Tabs defaultValue="quarterly">
-                  <TabsList className="mb-4 border border-border bg-secondary/30">
-                    <TabsTrigger value="quarterly" className="text-xs font-mono">Quarterly</TabsTrigger>
-                    <TabsTrigger value="yearly" className="text-xs font-mono">Yearly</TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="quarterly">
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div className={chartCardClassName}>
-                        <div className="text-[10px] font-mono text-muted-foreground uppercase mb-3">EPS by Quarter</div>
-                        <ResponsiveContainer width="100%" height={220}>
-                          <BarChart data={detail.quarterlyEarnings}>
-                            <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} />
-                            <XAxis dataKey="quarter" tick={{ fontSize: 10, fill: chartAxisColor }} />
-                            <YAxis tick={{ fontSize: 10, fill: chartAxisColor }} />
-                            <Tooltip
-                              contentStyle={{ background: chartTooltipBg, border: `1px solid ${chartTooltipBorder}`, borderRadius: 4, fontSize: 12 }}
-                              labelStyle={{ color: chartTooltipText }}
-                              itemStyle={{ color: chartTooltipText }}
-                            />
-                            <Bar dataKey="eps" name="EPS">
-                              {detail.quarterlyEarnings.map((entry, i) => (
-                                <Cell key={i} fill={entry.isEstimate ? 'hsl(33 30% 56% / 0.5)' : 'hsl(33 30% 56%)'} />
-                              ))}
-                            </Bar>
-                          </BarChart>
-                        </ResponsiveContainer>
-                        <div className="flex gap-4 mt-2 text-[10px] font-mono text-muted-foreground">
-                          <span className="flex items-center gap-1"><span className="w-3 h-2 rounded-sm" style={{ background: 'hsl(33 30% 56%)' }} /> Actual</span>
-                          <span className="flex items-center gap-1"><span className="w-3 h-2 rounded-sm" style={{ background: 'hsl(33 30% 56% / 0.5)' }} /> Estimate</span>
-                        </div>
-                      </div>
-                      <div className={chartCardClassName}>
-                        <div className="text-[10px] font-mono text-muted-foreground uppercase mb-3">Revenue by Quarter ($M)</div>
-                        <ResponsiveContainer width="100%" height={220}>
-                          <BarChart data={detail.quarterlyEarnings}>
-                            <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} />
-                            <XAxis dataKey="quarter" tick={{ fontSize: 10, fill: chartAxisColor }} />
-                            <YAxis tick={{ fontSize: 10, fill: chartAxisColor }} />
-                            <Tooltip
-                              contentStyle={{ background: chartTooltipBg, border: `1px solid ${chartTooltipBorder}`, borderRadius: 4, fontSize: 12 }}
-                              labelStyle={{ color: chartTooltipText }}
-                              itemStyle={{ color: chartTooltipText }}
-                            />
-                            <Bar dataKey="revenue" name="Revenue ($M)">
-                              {detail.quarterlyEarnings.map((entry, i) => (
-                                <Cell key={i} fill={entry.isEstimate ? 'hsl(134 17% 31% / 0.5)' : 'hsl(134 17% 31%)'} />
-                              ))}
-                            </Bar>
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="yearly">
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div className={chartCardClassName}>
-                        <div className="text-[10px] font-mono text-muted-foreground uppercase mb-3">EPS by Year</div>
-                        <ResponsiveContainer width="100%" height={220}>
-                          <BarChart data={detail.yearlyEarnings}>
-                            <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} />
-                            <XAxis dataKey="year" tick={{ fontSize: 10, fill: chartAxisColor }} />
-                            <YAxis tick={{ fontSize: 10, fill: chartAxisColor }} />
-                            <Tooltip
-                              contentStyle={{ background: chartTooltipBg, border: `1px solid ${chartTooltipBorder}`, borderRadius: 4, fontSize: 12 }}
-                              labelStyle={{ color: chartTooltipText }}
-                              itemStyle={{ color: chartTooltipText }}
-                            />
-                            <Bar dataKey="eps" name="EPS">
-                              {detail.yearlyEarnings.map((entry, i) => (
-                                <Cell key={i} fill={entry.isEstimate ? 'hsl(33 30% 56% / 0.5)' : 'hsl(33 30% 56%)'} />
-                              ))}
-                            </Bar>
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                      <div className={chartCardClassName}>
-                        <div className="text-[10px] font-mono text-muted-foreground uppercase mb-3">Revenue by Year ($M)</div>
-                        <ResponsiveContainer width="100%" height={220}>
-                          <BarChart data={detail.yearlyEarnings}>
-                            <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} />
-                            <XAxis dataKey="year" tick={{ fontSize: 10, fill: chartAxisColor }} />
-                            <YAxis tick={{ fontSize: 10, fill: chartAxisColor }} />
-                            <Tooltip
-                              contentStyle={{ background: chartTooltipBg, border: `1px solid ${chartTooltipBorder}`, borderRadius: 4, fontSize: 12 }}
-                              labelStyle={{ color: chartTooltipText }}
-                              itemStyle={{ color: chartTooltipText }}
-                            />
-                            <Bar dataKey="revenue" name="Revenue ($M)">
-                              {detail.yearlyEarnings.map((entry, i) => (
-                                <Cell key={i} fill={entry.isEstimate ? 'hsl(134 17% 31% / 0.5)' : 'hsl(134 17% 31%)'} />
-                              ))}
-                            </Bar>
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-                  </TabsContent>
-                </Tabs>
-              </section>
-
-
               {/* $1000 Investment Simulation */}
               {detail.investmentSimulation && detail.investmentSimulation.periodReturns?.length > 0 && (() => {
                 const currentPriceForSimulation = detail.currentPrice > 0 ? detail.currentPrice : (quote?.price ?? 0);
@@ -356,6 +222,168 @@ const StockDetail = () => {
                 </section>
                 );
               })()}
+
+              {/* Catalysts */}
+              {detail.catalysts && detail.catalysts.length > 0 && (
+                <section>
+                  <h2 className="font-serif text-base text-foreground mb-3 flex items-center gap-3">
+                    Upcoming Catalysts <span className="flex-1 h-[1px] bg-border" />
+                  </h2>
+                  <div className="grid gap-2">
+                    {detail.catalysts.map((c, i) => (
+                      <div key={i} className="border border-border rounded-sm p-3 bg-secondary/20 flex items-start gap-3">
+                        <div className={`mt-0.5 w-2 h-2 rounded-full shrink-0 ${
+                          c.impact === 'bullish' ? 'bg-pine' : c.impact === 'bearish' ? 'bg-destructive' : 'bg-muted-foreground'
+                        }`} />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-mono text-sm text-foreground">{c.event}</span>
+                            {c.date && (
+                              <span className="text-[10px] font-mono text-muted-foreground bg-secondary px-1.5 py-0.5 rounded">
+                                {c.date}
+                              </span>
+                            )}
+                            <span className={`text-[10px] font-mono uppercase px-1.5 py-0.5 rounded ${
+                              c.impact === 'bullish' ? 'text-pine bg-pine/10' : c.impact === 'bearish' ? 'text-destructive bg-destructive/10' : 'text-muted-foreground bg-secondary'
+                            }`}>
+                              {c.impact}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">{c.details}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* Earnings Charts */}
+              {(() => {
+                const quarterly = sliceEarnings(detail.quarterlyEarnings);
+                const yearly = sliceEarnings(detail.yearlyEarnings);
+                const epsLabel = (v: number) => `$${v.toFixed(2)}`;
+                const revLabel = (v: number) => v >= 1000 ? `$${(v / 1000).toFixed(1)}B` : `$${v.toFixed(0)}M`;
+                return (
+                <section>
+                  <h2 className="font-serif text-base text-foreground mb-3 flex items-center gap-3">
+                    Earnings <span className="flex-1 h-[1px] bg-border" />
+                  </h2>
+                  <Tabs defaultValue="quarterly">
+                    <TabsList className="mb-4 border border-border bg-secondary/30">
+                      <TabsTrigger value="quarterly" className="text-xs font-mono">Quarterly</TabsTrigger>
+                      <TabsTrigger value="yearly" className="text-xs font-mono">Yearly</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="quarterly">
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div className={chartCardClassName}>
+                          <div className="text-[10px] font-mono text-muted-foreground uppercase mb-3">EPS by Quarter (3 past · current · 3 future)</div>
+                          <ResponsiveContainer width="100%" height={260}>
+                            <BarChart data={quarterly} margin={{ top: 16, right: 8, left: 0, bottom: 8 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} />
+                              <XAxis dataKey="quarter" tick={{ fontSize: 10, fill: chartAxisColor }} />
+                              <YAxis tick={{ fontSize: 10, fill: chartAxisColor }} />
+                              <Tooltip
+                                cursor={{ fill: 'hsl(var(--muted) / 0.18)' }}
+                                contentStyle={{ background: chartTooltipBg, border: `1px solid ${chartTooltipBorder}`, borderRadius: 4, fontSize: 12 }}
+                                labelStyle={{ color: chartTooltipText }}
+                                itemStyle={{ color: chartTooltipText }}
+                                formatter={(v: number) => epsLabel(v)}
+                              />
+                              <Bar dataKey="eps" name="EPS">
+                                {quarterly.map((entry, i) => (
+                                  <Cell key={i} fill={entry.isEstimate ? 'hsl(33 30% 56% / 0.5)' : 'hsl(33 30% 56%)'} />
+                                ))}
+                                <LabelList dataKey="eps" position="top" formatter={epsLabel} style={{ fill: chartTooltipText, fontSize: 9, fontFamily: 'monospace' }} />
+                              </Bar>
+                            </BarChart>
+                          </ResponsiveContainer>
+                          <div className="flex gap-4 mt-2 text-[10px] font-mono text-muted-foreground">
+                            <span className="flex items-center gap-1"><span className="w-3 h-2 rounded-sm" style={{ background: 'hsl(33 30% 56%)' }} /> Actual</span>
+                            <span className="flex items-center gap-1"><span className="w-3 h-2 rounded-sm" style={{ background: 'hsl(33 30% 56% / 0.5)' }} /> Estimate</span>
+                          </div>
+                        </div>
+                        <div className={chartCardClassName}>
+                          <div className="text-[10px] font-mono text-muted-foreground uppercase mb-3">Revenue by Quarter (3 past · current · 3 future)</div>
+                          <ResponsiveContainer width="100%" height={260}>
+                            <BarChart data={quarterly} margin={{ top: 16, right: 8, left: 0, bottom: 8 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} />
+                              <XAxis dataKey="quarter" tick={{ fontSize: 10, fill: chartAxisColor }} />
+                              <YAxis tick={{ fontSize: 10, fill: chartAxisColor }} tickFormatter={revLabel} />
+                              <Tooltip
+                                cursor={{ fill: 'hsl(var(--muted) / 0.18)' }}
+                                contentStyle={{ background: chartTooltipBg, border: `1px solid ${chartTooltipBorder}`, borderRadius: 4, fontSize: 12 }}
+                                labelStyle={{ color: chartTooltipText }}
+                                itemStyle={{ color: chartTooltipText }}
+                                formatter={(v: number) => revLabel(v)}
+                              />
+                              <Bar dataKey="revenue" name="Revenue">
+                                {quarterly.map((entry, i) => (
+                                  <Cell key={i} fill={entry.isEstimate ? 'hsl(134 17% 31% / 0.5)' : 'hsl(134 17% 31%)'} />
+                                ))}
+                                <LabelList dataKey="revenue" position="top" formatter={revLabel} style={{ fill: chartTooltipText, fontSize: 9, fontFamily: 'monospace' }} />
+                              </Bar>
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="yearly">
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div className={chartCardClassName}>
+                          <div className="text-[10px] font-mono text-muted-foreground uppercase mb-3">EPS by Year (3 past · current · 3 future)</div>
+                          <ResponsiveContainer width="100%" height={260}>
+                            <BarChart data={yearly} margin={{ top: 16, right: 8, left: 0, bottom: 8 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} />
+                              <XAxis dataKey="year" tick={{ fontSize: 10, fill: chartAxisColor }} />
+                              <YAxis tick={{ fontSize: 10, fill: chartAxisColor }} />
+                              <Tooltip
+                                cursor={{ fill: 'hsl(var(--muted) / 0.18)' }}
+                                contentStyle={{ background: chartTooltipBg, border: `1px solid ${chartTooltipBorder}`, borderRadius: 4, fontSize: 12 }}
+                                labelStyle={{ color: chartTooltipText }}
+                                itemStyle={{ color: chartTooltipText }}
+                                formatter={(v: number) => epsLabel(v)}
+                              />
+                              <Bar dataKey="eps" name="EPS">
+                                {yearly.map((entry, i) => (
+                                  <Cell key={i} fill={entry.isEstimate ? 'hsl(33 30% 56% / 0.5)' : 'hsl(33 30% 56%)'} />
+                                ))}
+                                <LabelList dataKey="eps" position="top" formatter={epsLabel} style={{ fill: chartTooltipText, fontSize: 9, fontFamily: 'monospace' }} />
+                              </Bar>
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                        <div className={chartCardClassName}>
+                          <div className="text-[10px] font-mono text-muted-foreground uppercase mb-3">Revenue by Year (3 past · current · 3 future)</div>
+                          <ResponsiveContainer width="100%" height={260}>
+                            <BarChart data={yearly} margin={{ top: 16, right: 8, left: 0, bottom: 8 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} />
+                              <XAxis dataKey="year" tick={{ fontSize: 10, fill: chartAxisColor }} />
+                              <YAxis tick={{ fontSize: 10, fill: chartAxisColor }} tickFormatter={revLabel} />
+                              <Tooltip
+                                cursor={{ fill: 'hsl(var(--muted) / 0.18)' }}
+                                contentStyle={{ background: chartTooltipBg, border: `1px solid ${chartTooltipBorder}`, borderRadius: 4, fontSize: 12 }}
+                                labelStyle={{ color: chartTooltipText }}
+                                itemStyle={{ color: chartTooltipText }}
+                                formatter={(v: number) => revLabel(v)}
+                              />
+                              <Bar dataKey="revenue" name="Revenue">
+                                {yearly.map((entry, i) => (
+                                  <Cell key={i} fill={entry.isEstimate ? 'hsl(134 17% 31% / 0.5)' : 'hsl(134 17% 31%)'} />
+                                ))}
+                                <LabelList dataKey="revenue" position="top" formatter={revLabel} style={{ fill: chartTooltipText, fontSize: 9, fontFamily: 'monospace' }} />
+                              </Bar>
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                </section>
+                );
+              })()}
+
             </>
           )}
         </main>

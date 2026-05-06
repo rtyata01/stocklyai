@@ -38,6 +38,24 @@ export type Database = {
         }
         Relationships: []
       }
+      site_visits: {
+        Row: {
+          created_at: string
+          id: string
+          visitor_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          visitor_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          visitor_id?: string
+        }
+        Relationships: []
+      }
       stock_news: {
         Row: {
           created_at: string
@@ -76,7 +94,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_visit_stats: {
+        Args: never
+        Returns: {
+          total_visits: number
+          unique_visitors: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
