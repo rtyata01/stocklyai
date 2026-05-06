@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
-export type Theme = "light" | "medium" | "dark";
+export type Theme = "light" | "dark";
 
 const STORAGE_KEY = "stockly_theme";
 
