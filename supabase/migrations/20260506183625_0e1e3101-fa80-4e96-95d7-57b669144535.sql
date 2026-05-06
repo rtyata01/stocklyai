@@ -1,0 +1,1 @@
+delete from app_cache where cache_key like 'stock-detail:%';
