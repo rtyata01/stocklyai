@@ -8,10 +8,37 @@ import { sectors, SectorGroup } from "@/data/stocks";
 
 const WATCHLIST_KEY = "stockly-watchlist";
 
+/**
+ * Returns the user's saved watchlist merged with any new sectors/tickers added
+ * to the default `sectors` list since they last saved. This keeps production
+ * (and returning users) automatically in sync when defaults are updated.
+ */
 export function getWatchlistSectors(): SectorGroup[] {
   try {
     const raw = localStorage.getItem(WATCHLIST_KEY);
-    if (raw) return JSON.parse(raw);
+    if (!raw) return sectors;
+    const stored: SectorGroup[] = JSON.parse(raw);
+    const byName = new Map(stored.map((s) => [s.name, { ...s, tickers: [...s.tickers] }]));
+    let changed = false;
+    for (const def of sectors) {
+      const existing = byName.get(def.name);
+      if (!existing) {
+        byName.set(def.name, { ...def, tickers: [...def.tickers] });
+        changed = true;
+      } else {
+        for (const t of def.tickers) {
+          if (!existing.tickers.includes(t)) {
+            existing.tickers.push(t);
+            changed = true;
+          }
+        }
+      }
+    }
+    const merged = Array.from(byName.values());
+    if (changed) {
+      try { localStorage.setItem(WATCHLIST_KEY, JSON.stringify(merged)); } catch { /* ignore */ }
+    }
+    return merged;
   } catch { /* fallback */ }
   return sectors;
 }
