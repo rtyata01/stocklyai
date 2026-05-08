@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { writeAppCache } from '../_shared/cache.ts';
+import { sanitizeTickers } from '../_shared/validation.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,13 +21,14 @@ Deno.serve(async (req) => {
       throw new Error('Missing environment variables');
     }
 
-    let tickers: string[] = [];
+    let rawTickers: string[] = [];
     try {
       const body = await req.json();
-      tickers = body.tickers || [];
+      rawTickers = body.tickers || [];
     } catch {
-      tickers = [];
+      rawTickers = [];
     }
+    const tickers = sanitizeTickers(rawTickers);
 
     const today = new Date().toISOString().split('T')[0];
 
@@ -148,10 +150,9 @@ Watchlist tickers (prioritize but include other strong signals too): ${tickers.j
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Unknown error';
-    console.error('scrape-swing-signals error:', msg);
+    console.error('scrape-swing-signals error:', error);
     // Return 200 with empty signals so the UI doesn't blank-screen
-    return new Response(JSON.stringify({ signals: [], error: msg }), {
+    return new Response(JSON.stringify({ signals: [], error: 'Internal server error' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

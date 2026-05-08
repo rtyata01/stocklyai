@@ -28,7 +28,8 @@ export function useVisitStats() {
       const sessionFlag = sessionStorage.getItem("stockly_visit_logged");
       if (!sessionFlag) {
         sessionStorage.setItem("stockly_visit_logged", "1");
-        await supabase.from("site_visits").insert({ visitor_id: visitorId });
+        // unique (visitor_id, day) constraint may reject — that is fine
+        try { await supabase.from("site_visits").insert({ visitor_id: visitorId }); } catch { /* ignore */ }
       }
       const { data } = await supabase.rpc("get_visit_stats");
       if (!cancelled && data && data.length > 0) {

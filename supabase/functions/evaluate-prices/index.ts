@@ -1,4 +1,5 @@
 import { writeAppCache } from '../_shared/cache.ts';
+import { isValidTicker, MAX_TICKERS } from '../_shared/validation.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,18 +12,35 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { stocks } = await req.json();
-    if (!Array.isArray(stocks) || stocks.length === 0) {
+    const { stocks: rawStocks } = await req.json();
+    if (!Array.isArray(rawStocks) || rawStocks.length === 0) {
       return new Response(JSON.stringify({ error: 'stocks array required' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    // Validate + cap to prevent prompt injection / credit drain
+    const stocks = rawStocks
+      .filter((s: any) => s && isValidTicker(String(s.ticker || '').toUpperCase()))
+      .slice(0, MAX_TICKERS)
+      .map((s: any) => ({
+        ticker: String(s.ticker).toUpperCase(),
+        price: Number(s.price) || 0,
+        dayMin: Number(s.dayMin) || 0,
+        dayMax: Number(s.dayMax) || 0,
+        change: Number(s.change) || 0,
+        sector: String(s.sector || 'Other').slice(0, 40).replace(/[^A-Za-z0-9 &.\-]/g, ''),
+      }));
+    if (stocks.length === 0) {
+      return new Response(JSON.stringify({ error: 'no valid stocks' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
 
-    const stockList = stocks.map((s: { ticker: string; price: number; sector: string; dayMin: number; dayMax: number; change: number }) =>
+    const stockList = stocks.map((s) =>
       `${s.ticker}: current $${s.price.toFixed(2)}, day range $${s.dayMin.toFixed(2)}-$${s.dayMax.toFixed(2)}, change ${s.change.toFixed(2)}%, sector: ${s.sector}`
     ).join('\n');
 
@@ -136,9 +154,8 @@ OUTPUT REQUIREMENTS:
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Unknown error';
-    console.error('evaluate-prices error:', msg);
-    return new Response(JSON.stringify({ error: msg }), {
+    console.error('evaluate-prices error:', error);
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

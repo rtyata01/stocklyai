@@ -30,6 +30,7 @@ export const sectors: SectorGroup[] = [
   { name: "Quantum Computing", tickers: ["RGTI", "QBTS"] },
   { name: "eVTOL & Aviation", tickers: ["ACHR", "JOBY"] },
   { name: "Biotech & Genomics", tickers: ["RZLV", "NTLA", "CRSP"] },
+  { name: "Nuclear Energy", tickers: ["NNE", "OKLO"] },
   { name: "Crypto Assets", tickers: ["ETH", "SOL", "XRP", "BITF", "BMNR"] },
   { name: "Other", tickers: ["RR", "TLX"] },
 ];

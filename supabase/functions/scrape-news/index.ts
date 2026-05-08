@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { sanitizeTickers } from '../_shared/validation.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -25,20 +26,21 @@ Deno.serve(async (req) => {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     await supabase.from('stock_news').delete().lt('published_at', sevenDaysAgo);
 
-    let tickers: string[];
+    let rawTickers: string[] = [];
     try {
       const body = await req.json();
-      tickers = body.tickers || [];
+      rawTickers = body.tickers || [];
     } catch {
-      tickers = [];
+      rawTickers = [];
     }
 
+    let tickers = sanitizeTickers(rawTickers);
     if (tickers.length === 0) {
       tickers = [
         "SPY", "VOO", "GOOGL", "MSFT", "AAPL", "AMZN", "META", "TSLA",
         "NVDA", "AMD", "MU", "SMCI", "PLTR", "CRWV", "NBIS", "BBAI", "APLD",
         "SOFI", "HOOD", "COIN", "MSTR", "RGTI", "QBTS", "ACHR", "JOBY",
-        "RZLV", "NTLA", "CRSP", "BITF", "BMNR", "RR", "TLX"
+        "RZLV", "NTLA", "CRSP", "BITF", "BMNR", "RR", "TLX", "NNE", "OKLO"
       ];
     }
 
@@ -184,9 +186,8 @@ IMPORTANT RULES:
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Unknown error';
-    console.error('scrape-news error:', msg);
-    return new Response(JSON.stringify({ error: msg }), {
+    console.error('scrape-news error:', error);
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

@@ -1,4 +1,5 @@
 import { writeAppCache } from '../_shared/cache.ts';
+import { sanitizeTickers } from '../_shared/validation.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -29,7 +30,7 @@ async function fetchAlphaVantage(ticker: string): Promise<StockQuote | null> {
     };
 
     if (cryptoTickers[ticker]) {
-      const url = `https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=${ticker}&to_currency=USD&apikey=${ALPHA_VANTAGE_KEY}`;
+      const url = `https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=${encodeURIComponent(ticker)}&to_currency=USD&apikey=${ALPHA_VANTAGE_KEY}`;
       const res = await fetch(url);
       const data = await res.json();
       const rate = data?.['Realtime Currency Exchange Rate'];
@@ -46,7 +47,7 @@ async function fetchAlphaVantage(ticker: string): Promise<StockQuote | null> {
       };
     }
 
-    const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${ticker}&apikey=${ALPHA_VANTAGE_KEY}`;
+    const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(ticker)}&apikey=${ALPHA_VANTAGE_KEY}`;
     const res = await fetch(url);
     const data = await res.json();
     const quote = data?.['Global Quote'];
@@ -74,7 +75,7 @@ async function fetchYahoo(ticker: string): Promise<StockQuote | null> {
     };
     const symbol = yahooTicker[ticker] || ticker;
 
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`;
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`;
     const res = await fetch(url, {
       headers: { 'User-Agent': 'Mozilla/5.0' }
     });
@@ -125,9 +126,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { tickers } = await req.json();
-    if (!Array.isArray(tickers) || tickers.length === 0) {
-      return new Response(JSON.stringify({ error: 'tickers array required' }), {
+    const { tickers: rawTickers } = await req.json();
+    const tickers = sanitizeTickers(rawTickers);
+    if (tickers.length === 0) {
+      return new Response(JSON.stringify({ error: 'valid tickers array required (max 60, format A-Z0-9.-)' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -151,8 +153,8 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Unknown error';
-    return new Response(JSON.stringify({ error: msg }), {
+    console.error('fetch-stocks error:', error);
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

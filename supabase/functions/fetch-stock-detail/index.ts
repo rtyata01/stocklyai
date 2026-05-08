@@ -1,4 +1,5 @@
 import { writeAppCache } from '../_shared/cache.ts';
+import { isValidTicker } from '../_shared/validation.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,7 +21,7 @@ interface PeriodReturn {
 // ---------- Yahoo Finance data fetchers ----------
 
 async function yahooChart(symbol: string, range: string, interval: string) {
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?range=${range}&interval=${interval}&includePrePost=false`;
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${encodeURIComponent(range)}&interval=${encodeURIComponent(interval)}&includePrePost=false`;
   const res = await fetch(url, { headers: UA });
   if (!res.ok) throw new Error(`Yahoo chart ${res.status}`);
   return await res.json();
@@ -30,7 +31,7 @@ async function yahooQuoteSummary(symbol: string): Promise<any | null> {
   // Try the v10 quoteSummary (often blocked) then fall back to v7 quote.
   const modules = 'summaryDetail,defaultKeyStatistics,financialData,price,calendarEvents,earnings';
   try {
-    const url = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${symbol}?modules=${modules}`;
+    const url = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(symbol)}?modules=${modules}`;
     const res = await fetch(url, { headers: UA });
     if (res.ok) {
       const j = await res.json();
@@ -40,7 +41,7 @@ async function yahooQuoteSummary(symbol: string): Promise<any | null> {
   } catch { /* ignore */ }
 
   try {
-    const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}`;
+    const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbol)}`;
     const res = await fetch(url, { headers: UA });
     if (res.ok) {
       const j = await res.json();
@@ -220,9 +221,10 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    const { ticker } = await req.json();
-    if (!ticker) {
-      return new Response(JSON.stringify({ error: 'ticker required' }), {
+    const body = await req.json();
+    const ticker = typeof body?.ticker === 'string' ? body.ticker.trim().toUpperCase() : '';
+    if (!isValidTicker(ticker)) {
+      return new Response(JSON.stringify({ error: 'valid ticker required (A-Z 0-9 . - up to 10 chars)' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -329,9 +331,8 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Unknown error';
-    console.error('fetch-stock-detail error:', msg);
-    return new Response(JSON.stringify({ error: msg }), {
+    console.error('fetch-stock-detail error:', error);
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
