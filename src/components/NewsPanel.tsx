@@ -212,7 +212,7 @@ const NewsPanel = () => {
   };
 
   // Parse all picks
-  const picks: ParsedPick[] = (news ?? []).map(item => {
+  const allPicks: ParsedPick[] = (news ?? []).map(item => {
     try {
       const parsed = JSON.parse(item.summary ?? "");
       return { ticker: item.ticker, headline: item.headline, pick: parsed };
@@ -220,6 +220,24 @@ const NewsPanel = () => {
       return null;
     }
   }).filter(Boolean) as ParsedPick[];
+
+  // Filter out stale picks: earnings_date must be between today and ~24 days ahead,
+  // and Risk:Reward must be at least 1:2.
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const maxDate = today + 24 * 24 * 60 * 60 * 1000;
+  const parseRR = (s: string): number => {
+    if (!s) return 0;
+    const m = s.match(/([\d.]+)\s*:\s*([\d.]+)/);
+    if (m) return parseFloat(m[2]) / parseFloat(m[1] || "1");
+    const n = parseFloat(s);
+    return isNaN(n) ? 0 : n;
+  };
+  const picks = allPicks.filter(p => {
+    const d = new Date(p.pick.earnings_date).getTime();
+    if (isNaN(d) || d < today || d > maxDate) return false;
+    return parseRR(p.pick.risk_reward_ratio) >= 2;
+  });
 
   // Sort by rank
   picks.sort((a, b) => (a.pick.rank ?? 99) - (b.pick.rank ?? 99));
