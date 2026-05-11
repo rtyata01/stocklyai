@@ -107,8 +107,8 @@ const Index = () => {
                     Manage Watchlist
                   </Button>
                 )}
-                <Button variant="outline" size="sm" onClick={handleRefresh} disabled={evalLoading} className="gap-1.5 text-xs">
-                  <RefreshCw className={`h-3.5 w-3.5 ${evalLoading ? "animate-spin" : ""}`} />
+                <Button variant="outline" size="sm" onClick={handleRefresh} disabled={evalLoading || isLoading} className="gap-1.5 text-xs">
+                  <RefreshCw className={`h-3.5 w-3.5 ${(evalLoading || isLoading) ? "animate-spin" : ""}`} />
                   Re-evaluate
                 </Button>
               </div>
