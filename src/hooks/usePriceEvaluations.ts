@@ -31,23 +31,26 @@ export function usePriceEvaluations(
   quotes:
     | { ticker: string; price: number; dayMin: number; dayMax: number; change: number }[]
     | undefined,
+  refreshNonce = 0,
 ) {
   const tickers = (quotes ?? []).map((q) => q.ticker);
   const cacheKey = keyFor(tickers);
 
   return useQuery({
-    queryKey: ["price-evaluations", cacheKey],
+    queryKey: ["price-evaluations", cacheKey, refreshNonce],
     queryFn: async (): Promise<PriceEvaluation[]> => {
       if (!quotes || quotes.length === 0) return [];
 
-      const cached = await loadFromCache<{ evaluations: PriceEvaluation[] } | PriceEvaluation[]>(
-        cacheKey,
-        CACHE_TTL,
-      );
-      if (cached) {
-        const evals = Array.isArray(cached) ? cached : cached.evaluations;
-        if (evals && quotes.every((q) => evals.some((c) => c.ticker === q.ticker))) {
-          return evals;
+      if (refreshNonce === 0) {
+        const cached = await loadFromCache<{ evaluations: PriceEvaluation[] } | PriceEvaluation[]>(
+          cacheKey,
+          CACHE_TTL,
+        );
+        if (cached) {
+          const evals = Array.isArray(cached) ? cached : cached.evaluations;
+          if (evals && quotes.every((q) => evals.some((c) => c.ticker === q.ticker))) {
+            return evals;
+          }
         }
       }
 
@@ -66,7 +69,7 @@ export function usePriceEvaluations(
         }));
 
       const { data, error } = await supabase.functions.invoke("evaluate-prices", {
-        body: { stocks },
+        body: { stocks, force: refreshNonce > 0 },
       });
       if (error) throw error;
       const evaluations: PriceEvaluation[] = data.evaluations;
