@@ -16,6 +16,7 @@ interface StockQuote {
   peRatio: number | null;
   change: number;
   volume?: number;
+  volumeChange?: number;
 }
 
 // Cache to avoid rate limits
