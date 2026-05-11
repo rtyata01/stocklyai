@@ -89,6 +89,10 @@ async function fetchYahoo(ticker: string): Promise<StockQuote | null> {
     const prevClose = meta.previousClose || meta.chartPreviousClose;
     const changePercent = prevClose ? ((price - prevClose) / prevClose) * 100 : 0;
 
+    const volume = meta.regularMarketVolume ?? 0;
+    const avgVolume = meta.averageDailyVolume3Month ?? meta.averageDailyVolume10Day ?? 0;
+    const volumeChange = avgVolume > 0 && volume > 0 ? ((volume - avgVolume) / avgVolume) * 100 : 0;
+
     return {
       ticker,
       price,
@@ -96,7 +100,8 @@ async function fetchYahoo(ticker: string): Promise<StockQuote | null> {
       dayMax: meta.regularMarketDayHigh ?? price * 1.03,
       peRatio: null, // Will try to get from summary
       change: changePercent,
-      volume: meta.regularMarketVolume ?? 0,
+      volume,
+      volumeChange,
     };
   } catch {
     return null;
