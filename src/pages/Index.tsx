@@ -209,9 +209,16 @@ const Index = () => {
                                       </span>
                                     </TableCell>
                                     <TableCell className="py-2 px-4 text-right">
-                                      <span className="font-mono text-xs text-muted-foreground tabular-nums">
-                                        {formatVolume(quote?.volume)}
-                                      </span>
+                                      <div className="flex items-center justify-end gap-2">
+                                        <span className="font-mono text-xs text-muted-foreground tabular-nums">
+                                          {formatVolume(quote?.volume)}
+                                        </span>
+                                        {quote?.volumeChange !== undefined && quote.volumeChange !== 0 && (
+                                          <span className={`text-[10px] font-mono ${quote.volumeChange >= 0 ? "text-pine" : "text-destructive"}`}>
+                                            {quote.volumeChange >= 0 ? "+" : ""}{quote.volumeChange.toFixed(1)}%
+                                          </span>
+                                        )}
+                                      </div>
                                     </TableCell>
                                     <TableCell className="py-2 px-4 text-right">
                                       {ev?.reasoning ? (
