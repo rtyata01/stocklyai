@@ -130,12 +130,12 @@ const Index = () => {
                       </CollapsibleTrigger>
                       <CollapsibleContent>
                         <div className="border border-border rounded-sm overflow-hidden">
-                          <Table>
+                          <Table className="table-fixed w-full">
                             <TableHeader>
                               <TableRow className="bg-secondary/50 hover:bg-secondary/50">
-                                <TableHead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground h-8">Symbol</TableHead>
-                                <TableHead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground text-right h-8">Price</TableHead>
-                                <TableHead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground text-right h-8">
+                                <TableHead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground h-8 w-[16%]">Symbol</TableHead>
+                                <TableHead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground text-right h-8 w-[14%]">Price</TableHead>
+                                <TableHead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground text-right h-8 w-[16%]">
                                   <span className="inline-flex items-center justify-end gap-1">
                                     Volume
                                     <Tooltip>
@@ -146,7 +146,7 @@ const Index = () => {
                                     </Tooltip>
                                   </span>
                                 </TableHead>
-                                <TableHead className="font-mono text-[10px] uppercase tracking-widest text-primary text-right h-8">
+                                <TableHead className="font-mono text-[10px] uppercase tracking-widest text-primary text-right h-8 w-[14%]">
                                   <span className="inline-flex items-center justify-end gap-1">
                                     Buy
                                     <Tooltip>
@@ -157,7 +157,7 @@ const Index = () => {
                                     </Tooltip>
                                   </span>
                                 </TableHead>
-                                <TableHead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground text-right h-8">
+                                <TableHead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground text-right h-8 w-[14%]">
                                   <span className="inline-flex items-center justify-end gap-1">
                                     Hold
                                     <Tooltip>
@@ -168,7 +168,7 @@ const Index = () => {
                                     </Tooltip>
                                   </span>
                                 </TableHead>
-                                <TableHead className="font-mono text-[10px] uppercase tracking-widest text-destructive text-right h-8">
+                                <TableHead className="font-mono text-[10px] uppercase tracking-widest text-destructive text-right h-8 w-[14%]">
                                   <span className="inline-flex items-center justify-end gap-1">
                                     Sell
                                     <Tooltip>
@@ -179,7 +179,7 @@ const Index = () => {
                                     </Tooltip>
                                   </span>
                                 </TableHead>
-                                <TableHead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground text-center h-8 w-14"></TableHead>
+                                <TableHead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground text-center h-8 w-[12%]"></TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
