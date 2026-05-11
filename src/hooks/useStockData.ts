@@ -16,19 +16,21 @@ function getActiveTickers(): string[] {
 
 const TTL = 15 * 60 * 1000;
 
-export function useStockData() {
+export function useStockData(refreshNonce = 0) {
   const tickers = getActiveTickers();
   const cacheKey = `stock-quotes:${[...tickers].sort().join(",")}`;
   return useQuery({
-    queryKey: ["stock-quotes", cacheKey],
+    queryKey: ["stock-quotes", cacheKey, refreshNonce],
     queryFn: async (): Promise<StockQuote[]> => {
-      const cached = await loadFromCache<{ quotes: StockQuote[] } | StockQuote[]>(cacheKey, TTL);
-      if (cached) {
-        const quotes = Array.isArray(cached) ? cached : cached.quotes;
-        if (quotes?.length) return quotes;
+      if (refreshNonce === 0) {
+        const cached = await loadFromCache<{ quotes: StockQuote[] } | StockQuote[]>(cacheKey, TTL);
+        if (cached) {
+          const quotes = Array.isArray(cached) ? cached : cached.quotes;
+          if (quotes?.length) return quotes;
+        }
       }
       const { data, error } = await supabase.functions.invoke("fetch-stocks", {
-        body: { tickers },
+        body: { tickers, force: refreshNonce > 0 },
       });
       if (error) throw error;
       saveLocalCache(cacheKey, { quotes: data.quotes }, TTL);
