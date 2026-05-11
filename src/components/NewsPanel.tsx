@@ -229,8 +229,8 @@ const NewsPanel = () => {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="font-serif text-sm text-muted-foreground inline-flex items-center gap-1.5">
-          Top Earnings Momentum Picks — Next 2-3 Weeks (R:R ≥ 1:2)
-          <HelpTip text="AI scans the watchlist for stocks reporting earnings in 2–3 weeks with: (1) high probability of beating EPS estimates, (2) strong next-quarter growth outlook, and (3) a risk-to-reward ratio of at least 1:2. Entry/Target/Stop levels are anchored to today's market price and follow the BUY / HOLD / SELL framework." />
+          Top Earnings Momentum Picks — Next 2-3 Weeks (Risk:Reward ≥ 1:2)
+          <HelpTip text="AI scans the watchlist for stocks reporting earnings in 2–3 weeks with: (1) high probability of beating EPS estimates, (2) strong next-quarter growth outlook, and (3) a Risk:Reward of at least 1:2. Entry/Target/Stop levels are anchored to today's market price and follow the BUY / HOLD / SELL framework." />
         </h3>
         <Button
           variant="outline"
