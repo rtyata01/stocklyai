@@ -29,8 +29,9 @@ const SHOW_WATCHLIST = import.meta.env.DEV;
 
 const Index = () => {
   const queryClient = useQueryClient();
-  const { data: quotes, isLoading, error } = useStockData();
-  const { data: evaluations, isLoading: evalLoading } = usePriceEvaluations(quotes);
+  const [refreshNonce, setRefreshNonce] = useState(0);
+  const { data: quotes, isLoading, error } = useStockData(refreshNonce);
+  const { data: evaluations, isLoading: evalLoading } = usePriceEvaluations(quotes, refreshNonce);
   const [collapsedSectors, setCollapsedSectors] = useState<Set<string>>(new Set());
   const [watchlistOpen, setWatchlistOpen] = useState(false);
   const [activeSectors, setActiveSectors] = useState<SectorGroup[]>(() => getWatchlistSectors());
@@ -42,7 +43,17 @@ const Index = () => {
   evaluations?.forEach((e) => evalMap.set(e.ticker, e));
 
   const handleRefresh = () => {
+    // Clear all relevant local cache entries
+    try {
+      Object.keys(localStorage)
+        .filter((k) => k.startsWith("price-evaluations:") || k.startsWith("stock-quotes:"))
+        .forEach((k) => localStorage.removeItem(k));
+    } catch {
+      /* ignore */
+    }
     clearPriceCache();
+    setRefreshNonce((n) => n + 1);
+    queryClient.invalidateQueries({ queryKey: ["stock-quotes"] });
     queryClient.invalidateQueries({ queryKey: ["price-evaluations"] });
   };
 
@@ -96,8 +107,8 @@ const Index = () => {
                     Manage Watchlist
                   </Button>
                 )}
-                <Button variant="outline" size="sm" onClick={handleRefresh} disabled={evalLoading} className="gap-1.5 text-xs">
-                  <RefreshCw className={`h-3.5 w-3.5 ${evalLoading ? "animate-spin" : ""}`} />
+                <Button variant="outline" size="sm" onClick={handleRefresh} disabled={evalLoading || isLoading} className="gap-1.5 text-xs">
+                  <RefreshCw className={`h-3.5 w-3.5 ${(evalLoading || isLoading) ? "animate-spin" : ""}`} />
                   Re-evaluate
                 </Button>
               </div>
