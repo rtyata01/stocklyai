@@ -71,8 +71,8 @@ const PickCard = ({ ticker, headline, pick, livePrice, ev }: ParsedPick & { live
               {pick.beat_confidence} Confidence
             </Badge>
             <Badge variant="outline" className="text-[10px] font-mono inline-flex items-center gap-1">
-              R:R {pick.risk_reward_ratio}
-              <HelpTip text="Risk-to-Reward Ratio = (Target − Entry) ÷ (Entry − Stop Loss). A value of 1:2 means potential upside is at least 2× the downside risk." />
+              Risk:Reward {pick.risk_reward_ratio}
+              <HelpTip text="Risk:Reward = (Target − Entry) ÷ (Entry − Stop Loss). A value of 1:2 means potential upside is at least 2× the downside risk." />
             </Badge>
           </div>
           <h2 className="font-serif text-lg font-semibold text-foreground leading-tight">{headline}</h2>
@@ -212,7 +212,7 @@ const NewsPanel = () => {
   };
 
   // Parse all picks
-  const picks: ParsedPick[] = (news ?? []).map(item => {
+  const allPicks: ParsedPick[] = (news ?? []).map(item => {
     try {
       const parsed = JSON.parse(item.summary ?? "");
       return { ticker: item.ticker, headline: item.headline, pick: parsed };
@@ -220,6 +220,24 @@ const NewsPanel = () => {
       return null;
     }
   }).filter(Boolean) as ParsedPick[];
+
+  // Filter out stale picks: earnings_date must be between today and ~24 days ahead,
+  // and Risk:Reward must be at least 1:2.
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const maxDate = today + 24 * 24 * 60 * 60 * 1000;
+  const parseRR = (s: string): number => {
+    if (!s) return 0;
+    const m = s.match(/([\d.]+)\s*:\s*([\d.]+)/);
+    if (m) return parseFloat(m[2]) / parseFloat(m[1] || "1");
+    const n = parseFloat(s);
+    return isNaN(n) ? 0 : n;
+  };
+  const picks = allPicks.filter(p => {
+    const d = new Date(p.pick.earnings_date).getTime();
+    if (isNaN(d) || d < today || d > maxDate) return false;
+    return parseRR(p.pick.risk_reward_ratio) >= 2;
+  });
 
   // Sort by rank
   picks.sort((a, b) => (a.pick.rank ?? 99) - (b.pick.rank ?? 99));
@@ -229,8 +247,8 @@ const NewsPanel = () => {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="font-serif text-sm text-muted-foreground inline-flex items-center gap-1.5">
-          Top Earnings Momentum Picks — Next 2-3 Weeks (R:R ≥ 1:2)
-          <HelpTip text="AI scans the watchlist for stocks reporting earnings in 2–3 weeks with: (1) high probability of beating EPS estimates, (2) strong next-quarter growth outlook, and (3) a risk-to-reward ratio of at least 1:2. Entry/Target/Stop levels are anchored to today's market price and follow the BUY / HOLD / SELL framework." />
+          Top Earnings Momentum Picks — Next 2-3 Weeks (Risk:Reward ≥ 1:2)
+          <HelpTip text="AI scans the watchlist for stocks reporting earnings in 2–3 weeks with: (1) high probability of beating EPS estimates, (2) strong next-quarter growth outlook, and (3) a Risk:Reward of at least 1:2. Entry/Target/Stop levels are anchored to today's market price and follow the BUY / HOLD / SELL framework." />
         </h3>
         <Button
           variant="outline"
