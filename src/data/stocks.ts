@@ -6,6 +6,7 @@ export interface StockQuote {
   peRatio: number | null;
   change: number;
   volume?: number;
+  volumeChange?: number;
 }
 
 export function formatVolume(v?: number): string {
