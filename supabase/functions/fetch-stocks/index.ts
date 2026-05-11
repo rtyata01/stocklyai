@@ -114,9 +114,10 @@ async function fetchQuote(ticker: string): Promise<StockQuote> {
     return cached.data;
   }
 
-  let quote = await fetchAlphaVantage(ticker);
+  // Prefer Yahoo (has volume + averageDailyVolume for volumeChange); fall back to Alpha Vantage.
+  let quote = await fetchYahoo(ticker);
   if (!quote) {
-    quote = await fetchYahoo(ticker);
+    quote = await fetchAlphaVantage(ticker);
   }
   if (!quote) {
     quote = { ticker, price: 0, dayMin: 0, dayMax: 0, peRatio: null, change: 0, volume: 0 };
