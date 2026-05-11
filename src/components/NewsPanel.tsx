@@ -71,8 +71,8 @@ const PickCard = ({ ticker, headline, pick, livePrice, ev }: ParsedPick & { live
               {pick.beat_confidence} Confidence
             </Badge>
             <Badge variant="outline" className="text-[10px] font-mono inline-flex items-center gap-1">
-              R:R {pick.risk_reward_ratio}
-              <HelpTip text="Risk-to-Reward Ratio = (Target − Entry) ÷ (Entry − Stop Loss). A value of 1:2 means potential upside is at least 2× the downside risk." />
+              Risk:Reward {pick.risk_reward_ratio}
+              <HelpTip text="Risk:Reward = (Target − Entry) ÷ (Entry − Stop Loss). A value of 1:2 means potential upside is at least 2× the downside risk." />
             </Badge>
           </div>
           <h2 className="font-serif text-lg font-semibold text-foreground leading-tight">{headline}</h2>
