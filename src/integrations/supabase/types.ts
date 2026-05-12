@@ -94,13 +94,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_visit_stats: {
-        Args: never
-        Returns: {
-          total_visits: number
-          unique_visitors: number
-        }[]
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
