@@ -18,7 +18,7 @@ const TTL = 15 * 60 * 1000;
 
 export function useStockData(refreshNonce = 0) {
   const tickers = getActiveTickers();
-  const cacheKey = `stock-quotes:${[...tickers].sort().join(",")}`;
+  const cacheKey = `stock-quotes:v2:${[...tickers].sort().join(",")}`;
   return useQuery({
     queryKey: ["stock-quotes", cacheKey, refreshNonce],
     queryFn: async (): Promise<StockQuote[]> => {

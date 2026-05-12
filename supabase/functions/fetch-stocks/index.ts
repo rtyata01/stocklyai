@@ -76,7 +76,7 @@ async function fetchYahoo(ticker: string): Promise<StockQuote | null> {
     };
     const symbol = yahooTicker[ticker] || ticker;
 
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`;
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=5d`;
     const res = await fetch(url, {
       headers: { 'User-Agent': 'Mozilla/5.0' }
     });
@@ -90,8 +90,14 @@ async function fetchYahoo(ticker: string): Promise<StockQuote | null> {
     const changePercent = prevClose ? ((price - prevClose) / prevClose) * 100 : 0;
 
     const volume = meta.regularMarketVolume ?? 0;
-    const avgVolume = meta.averageDailyVolume3Month ?? meta.averageDailyVolume10Day ?? 0;
-    const volumeChange = avgVolume > 0 && volume > 0 ? ((volume - avgVolume) / avgVolume) * 100 : 0;
+    const historicalVolumes = (result.indicators?.quote?.[0]?.volume ?? [])
+      .filter((value: number | null | undefined): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0);
+
+    const priorVolumes = historicalVolumes.slice(0, -1);
+    const avgVolume = priorVolumes.length > 0
+      ? priorVolumes.reduce((sum, current) => sum + current, 0) / priorVolumes.length
+      : meta.averageDailyVolume3Month ?? meta.averageDailyVolume10Day ?? 0;
+    const volumeChange = avgVolume > 0 && volume >= 0 ? ((volume - avgVolume) / avgVolume) * 100 : 0;
 
     return {
       ticker,
@@ -133,13 +139,17 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { tickers: rawTickers } = await req.json();
+    const { tickers: rawTickers, force } = await req.json();
     const tickers = sanitizeTickers(rawTickers);
     if (tickers.length === 0) {
       return new Response(JSON.stringify({ error: 'valid tickers array required (max 60, format A-Z0-9.-)' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    if (force) {
+      for (const ticker of tickers) cache.delete(ticker);
     }
 
     // Fetch in batches of 5 to respect rate limits
