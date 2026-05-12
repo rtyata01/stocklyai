@@ -224,7 +224,7 @@ const Index = () => {
                                         <span className="font-mono text-xs text-muted-foreground tabular-nums">
                                           {formatVolume(quote?.volume)}
                                         </span>
-                                        {quote?.volumeChange !== undefined && quote.volumeChange !== 0 && (
+                                        {quote?.volumeChange !== undefined && Number.isFinite(quote.volumeChange) && (
                                           <span className={`text-[10px] font-mono ${quote.volumeChange >= 0 ? "text-pine" : "text-destructive"}`}>
                                             {quote.volumeChange >= 0 ? "+" : ""}{quote.volumeChange.toFixed(1)}%
                                           </span>
