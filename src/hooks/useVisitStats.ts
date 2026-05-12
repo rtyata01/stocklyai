@@ -52,16 +52,18 @@ export function useVisitStats() {
         sessionStorage.setItem("stockly_visit_logged", "1");
         try { await supabase.from("site_visits").insert({ visitor_id: visitorId }); } catch { /* ignore */ }
       }
-      const { data } = await supabase.rpc("get_visit_stats");
+      const { data } = await supabase.functions.invoke("visit-stats", {
+        body: { visitorId },
+      });
       if (cancelled) return;
 
       const cached = readCachedMax();
       let total = cached.total;
       let unique = cached.unique;
 
-      if (data && data.length > 0) {
-        const dbTotal = Number(data[0].total_visits) + BASELINE_TOTAL;
-        const dbUnique = Number(data[0].unique_visitors) + BASELINE_UNIQUE;
+      if (data) {
+        const dbTotal = Number(data.total ?? 0) + BASELINE_TOTAL;
+        const dbUnique = Number(data.unique ?? 0) + BASELINE_UNIQUE;
         // Always non-decreasing
         total = Math.max(total, dbTotal);
         unique = Math.max(unique, dbUnique);
