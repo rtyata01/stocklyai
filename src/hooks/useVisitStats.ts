@@ -48,14 +48,17 @@ export function useVisitStats() {
     (async () => {
       const visitorId = getVisitorId();
       const sessionFlag = sessionStorage.getItem("stockly_visit_logged");
-      if (!sessionFlag) {
-        sessionStorage.setItem("stockly_visit_logged", "1");
-        try { await supabase.from("site_visits").insert({ visitor_id: visitorId }); } catch { /* ignore */ }
-      }
       const { data } = await supabase.functions.invoke("visit-stats", {
-        body: { visitorId },
+        body: {
+          visitorId,
+          shouldTrack: !sessionFlag,
+        },
       });
       if (cancelled) return;
+
+      if (!sessionFlag) {
+        sessionStorage.setItem("stockly_visit_logged", "1");
+      }
 
       const cached = readCachedMax();
       let total = cached.total;
