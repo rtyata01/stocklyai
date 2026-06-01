@@ -26,9 +26,11 @@ const StockDetail = () => {
   const { data: detail, isLoading, error } = useStockDetail(ticker);
   const { data: quotes } = useStockData();
   const { data: evaluations } = usePriceEvaluations(quotes);
+  const { data: insights } = useStockInsights(quotes);
 
   const quote = quotes?.find(q => q.ticker === ticker);
   const evalData = evaluations?.find(e => e.ticker === ticker);
+  const insight = insights?.find(i => i.ticker === ticker);
 
   if (!ticker) return null;
 
