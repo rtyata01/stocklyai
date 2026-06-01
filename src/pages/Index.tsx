@@ -34,6 +34,7 @@ const Index = () => {
   const [refreshNonce, setRefreshNonce] = useState(0);
   const { data: quotes, isLoading, error } = useStockData(refreshNonce);
   const { data: evaluations, isLoading: evalLoading } = usePriceEvaluations(quotes, refreshNonce);
+  const { data: insights } = useStockInsights(quotes, refreshNonce);
   const [collapsedSectors, setCollapsedSectors] = useState<Set<string>>(new Set());
   const [watchlistOpen, setWatchlistOpen] = useState(false);
   const [activeSectors, setActiveSectors] = useState<SectorGroup[]>(() => getWatchlistSectors());
@@ -43,6 +44,9 @@ const Index = () => {
 
   const evalMap = new Map<string, PriceEvaluation>();
   evaluations?.forEach((e) => evalMap.set(e.ticker, e));
+
+  const insightMap = new Map<string, StockInsight>();
+  insights?.forEach((i) => insightMap.set(i.ticker, i));
 
   const handleRefresh = () => {
     // Clear all relevant local cache entries
