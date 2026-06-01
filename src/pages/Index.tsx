@@ -3,11 +3,13 @@ import { Link } from "react-router-dom";
 import { formatCurrency, formatVolume } from "@/data/stocks";
 import { useStockData } from "@/hooks/useStockData";
 import { usePriceEvaluations, PriceEvaluation, clearPriceCache } from "@/hooks/usePriceEvaluations";
+import { useStockInsights, StockInsight } from "@/hooks/useStockInsights";
 import DashboardHeader from "@/components/DashboardHeader";
 import NewsPanel from "@/components/NewsPanel";
 import SwingTradingPanel from "@/components/SwingTradingPanel";
 import AnnouncementsPanel from "@/components/AnnouncementsPanel";
 import InvestingBasicsPanel from "@/components/InvestingBasicsPanel";
+import StockComparisonPanel from "@/components/StockComparisonPanel";
 import ManageWatchlistDialog, { getWatchlistSectors } from "@/components/ManageWatchlistDialog";
 import { SectorGroup, StockQuote } from "@/data/stocks";
 import {
@@ -17,7 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, HelpCircle, RefreshCw, Settings } from "lucide-react";
+import { ChevronDown, Crown, HelpCircle, RefreshCw, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const BUY_HELP = "BUY zone — aggregated entry price computed from: (1) analyst consensus & 52-week support, (2) intrinsic value from forward EPS × peer P/E, (3) PEG ratio < 1 signal, (4) margin-of-safety guardrail (typically 15–30% below fair value). Median of valid methods.";
@@ -32,6 +34,7 @@ const Index = () => {
   const [refreshNonce, setRefreshNonce] = useState(0);
   const { data: quotes, isLoading, error } = useStockData(refreshNonce);
   const { data: evaluations, isLoading: evalLoading } = usePriceEvaluations(quotes, refreshNonce);
+  const { data: insights } = useStockInsights(quotes, refreshNonce);
   const [collapsedSectors, setCollapsedSectors] = useState<Set<string>>(new Set());
   const [watchlistOpen, setWatchlistOpen] = useState(false);
   const [activeSectors, setActiveSectors] = useState<SectorGroup[]>(() => getWatchlistSectors());
@@ -42,11 +45,14 @@ const Index = () => {
   const evalMap = new Map<string, PriceEvaluation>();
   evaluations?.forEach((e) => evalMap.set(e.ticker, e));
 
+  const insightMap = new Map<string, StockInsight>();
+  insights?.forEach((i) => insightMap.set(i.ticker, i));
+
   const handleRefresh = () => {
     // Clear all relevant local cache entries
     try {
       Object.keys(localStorage)
-        .filter((k) => k.startsWith("price-evaluations:") || k.startsWith("stock-quotes:"))
+        .filter((k) => k.startsWith("price-evaluations:") || k.startsWith("stock-quotes:") || k.startsWith("stock-insights:"))
         .forEach((k) => localStorage.removeItem(k));
     } catch {
       /* ignore */
@@ -55,6 +61,7 @@ const Index = () => {
     setRefreshNonce((n) => n + 1);
     queryClient.invalidateQueries({ queryKey: ["stock-quotes"] });
     queryClient.invalidateQueries({ queryKey: ["price-evaluations"] });
+    queryClient.invalidateQueries({ queryKey: ["stock-insights"] });
   };
 
   const toggleSector = (name: string) => {
@@ -93,6 +100,7 @@ const Index = () => {
           <Tabs defaultValue="portfolio">
             <TabsList className="mb-4 flex-wrap h-auto gap-1">
               <TabsTrigger value="portfolio" className="text-xs font-mono">Portfolio</TabsTrigger>
+              <TabsTrigger value="compare" className="text-xs font-mono">AI Compare</TabsTrigger>
               <TabsTrigger value="earnings" className="text-xs font-mono">Earnings Momentum</TabsTrigger>
               <TabsTrigger value="swing" className="text-xs font-mono">Swing Trading</TabsTrigger>
               <TabsTrigger value="announcements" className="text-xs font-mono">Announcements</TabsTrigger>
@@ -197,6 +205,7 @@ const Index = () => {
                               {sector.tickers.map((ticker) => {
                                 const quote = quoteMap.get(ticker);
                                 const ev = evalMap.get(ticker);
+                                const insight = insightMap.get(ticker);
                                 const price = quote?.price ?? 0;
                                 const noData = price === 0;
                                 const change = quote?.change ?? 0;
@@ -206,6 +215,19 @@ const Index = () => {
                                   <TableRow key={ticker} className="hover:bg-secondary/30 border-border">
                                     <TableCell className="py-2 px-4">
                                       <div className="flex items-center gap-2">
+                                        {insight?.isKing && (
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <span className="inline-flex shrink-0 cursor-help" aria-label="Category king">
+                                                <Crown className="h-3.5 w-3.5 text-amber-500" fill="currentColor" />
+                                              </span>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+                                              <strong className="text-amber-500">Category King</strong>
+                                              <div className="mt-1">{insight.dominanceReason}</div>
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        )}
                                         <span className="font-serif text-sm font-medium text-foreground">{ticker}</span>
                                         {!noData && (
                                           <span className={`text-[10px] font-mono ${isPositive ? "text-pine" : "text-destructive"}`}>
@@ -314,6 +336,14 @@ const Index = () => {
                 )}
               </div>
             </TabsContent>
+
+            <TabsContent value="compare">
+              <div className="pb-8">
+                <StockComparisonPanel />
+              </div>
+            </TabsContent>
+
+
 
             <TabsContent value="earnings">
               <div className="pb-8">

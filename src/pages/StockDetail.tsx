@@ -2,6 +2,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useStockDetail } from "@/hooks/useStockDetail";
 import { usePriceEvaluations } from "@/hooks/usePriceEvaluations";
 import { useStockData } from "@/hooks/useStockData";
+import { useStockInsights } from "@/hooks/useStockInsights";
 import { formatCurrency } from "@/data/stocks";
 import { ArrowLeft, TrendingUp, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,9 +26,11 @@ const StockDetail = () => {
   const { data: detail, isLoading, error } = useStockDetail(ticker);
   const { data: quotes } = useStockData();
   const { data: evaluations } = usePriceEvaluations(quotes);
+  const { data: insights } = useStockInsights(quotes);
 
   const quote = quotes?.find(q => q.ticker === ticker);
   const evalData = evaluations?.find(e => e.ticker === ticker);
+  const insight = insights?.find(i => i.ticker === ticker);
 
   if (!ticker) return null;
 
@@ -223,7 +226,51 @@ const StockDetail = () => {
                 );
               })()}
 
+              {/* Bull / Bear / Risk */}
+              {insight && (() => {
+                const curr = quote?.price ?? detail.currentPrice ?? 0;
+                const bullPct = curr > 0 ? ((insight.bullPrice - curr) / curr) * 100 : 0;
+                const bearPct = curr > 0 ? ((insight.bearPrice - curr) / curr) * 100 : 0;
+                const riskTone = insight.riskPct >= 70 ? "text-destructive" : insight.riskPct >= 40 ? "text-foreground" : "text-pine";
+                const riskBar = insight.riskPct >= 70 ? "bg-destructive" : insight.riskPct >= 40 ? "bg-amber-500" : "bg-pine";
+                return (
+                  <section>
+                    <h2 className="font-serif text-base text-foreground mb-3 flex items-center gap-3">
+                      Bull / Bear / Risk <span className="flex-1 h-[1px] bg-border" />
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="border border-border rounded-sm p-4 bg-pine/5">
+                        <div className="text-[10px] font-mono uppercase tracking-widest text-pine">Bull Case</div>
+                        <div className="font-mono text-2xl text-pine mt-1">{formatCurrency(insight.bullPrice)}</div>
+                        {curr > 0 && (
+                          <div className="font-mono text-xs text-pine/80 mt-0.5">
+                            {bullPct >= 0 ? "+" : ""}{bullPct.toFixed(1)}% vs current
+                          </div>
+                        )}
+                      </div>
+                      <div className="border border-border rounded-sm p-4 bg-destructive/5">
+                        <div className="text-[10px] font-mono uppercase tracking-widest text-destructive">Bear Case</div>
+                        <div className="font-mono text-2xl text-destructive mt-1">{formatCurrency(insight.bearPrice)}</div>
+                        {curr > 0 && (
+                          <div className="font-mono text-xs text-destructive/80 mt-0.5">
+                            {bearPct >= 0 ? "+" : ""}{bearPct.toFixed(1)}% vs current
+                          </div>
+                        )}
+                      </div>
+                      <div className="border border-border rounded-sm p-4 bg-secondary/20">
+                        <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Risk Score</div>
+                        <div className={`font-mono text-2xl mt-1 ${riskTone}`}>{insight.riskPct}/100</div>
+                        <div className="mt-2 h-1.5 w-full bg-border rounded-full overflow-hidden">
+                          <div className={`h-full ${riskBar}`} style={{ width: `${Math.min(100, Math.max(0, insight.riskPct))}%` }} />
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+                );
+              })()}
+
               {/* Catalysts */}
+
               {detail.catalysts && detail.catalysts.length > 0 && (
                 <section>
                   <h2 className="font-serif text-base text-foreground mb-3 flex items-center gap-3">
