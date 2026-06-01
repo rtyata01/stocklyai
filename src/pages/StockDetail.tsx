@@ -2,6 +2,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useStockDetail } from "@/hooks/useStockDetail";
 import { usePriceEvaluations } from "@/hooks/usePriceEvaluations";
 import { useStockData } from "@/hooks/useStockData";
+import { useStockInsights } from "@/hooks/useStockInsights";
 import { formatCurrency } from "@/data/stocks";
 import { ArrowLeft, TrendingUp, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
