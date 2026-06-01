@@ -337,6 +337,14 @@ const Index = () => {
               </div>
             </TabsContent>
 
+            <TabsContent value="compare">
+              <div className="pb-8">
+                <StockComparisonPanel />
+              </div>
+            </TabsContent>
+
+
+
             <TabsContent value="earnings">
               <div className="pb-8">
                 <NewsPanel />
