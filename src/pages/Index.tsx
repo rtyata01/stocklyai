@@ -100,6 +100,7 @@ const Index = () => {
           <Tabs defaultValue="portfolio">
             <TabsList className="mb-4 flex-wrap h-auto gap-1">
               <TabsTrigger value="portfolio" className="text-xs font-mono">Portfolio</TabsTrigger>
+              <TabsTrigger value="compare" className="text-xs font-mono">AI Compare</TabsTrigger>
               <TabsTrigger value="earnings" className="text-xs font-mono">Earnings Momentum</TabsTrigger>
               <TabsTrigger value="swing" className="text-xs font-mono">Swing Trading</TabsTrigger>
               <TabsTrigger value="announcements" className="text-xs font-mono">Announcements</TabsTrigger>
