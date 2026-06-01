@@ -3,11 +3,13 @@ import { Link } from "react-router-dom";
 import { formatCurrency, formatVolume } from "@/data/stocks";
 import { useStockData } from "@/hooks/useStockData";
 import { usePriceEvaluations, PriceEvaluation, clearPriceCache } from "@/hooks/usePriceEvaluations";
+import { useStockInsights, StockInsight } from "@/hooks/useStockInsights";
 import DashboardHeader from "@/components/DashboardHeader";
 import NewsPanel from "@/components/NewsPanel";
 import SwingTradingPanel from "@/components/SwingTradingPanel";
 import AnnouncementsPanel from "@/components/AnnouncementsPanel";
 import InvestingBasicsPanel from "@/components/InvestingBasicsPanel";
+import StockComparisonPanel from "@/components/StockComparisonPanel";
 import ManageWatchlistDialog, { getWatchlistSectors } from "@/components/ManageWatchlistDialog";
 import { SectorGroup, StockQuote } from "@/data/stocks";
 import {
@@ -17,7 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, HelpCircle, RefreshCw, Settings } from "lucide-react";
+import { ChevronDown, Crown, HelpCircle, RefreshCw, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const BUY_HELP = "BUY zone — aggregated entry price computed from: (1) analyst consensus & 52-week support, (2) intrinsic value from forward EPS × peer P/E, (3) PEG ratio < 1 signal, (4) margin-of-safety guardrail (typically 15–30% below fair value). Median of valid methods.";
