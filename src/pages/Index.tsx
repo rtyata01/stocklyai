@@ -205,6 +205,7 @@ const Index = () => {
                               {sector.tickers.map((ticker) => {
                                 const quote = quoteMap.get(ticker);
                                 const ev = evalMap.get(ticker);
+                                const insight = insightMap.get(ticker);
                                 const price = quote?.price ?? 0;
                                 const noData = price === 0;
                                 const change = quote?.change ?? 0;
@@ -214,6 +215,19 @@ const Index = () => {
                                   <TableRow key={ticker} className="hover:bg-secondary/30 border-border">
                                     <TableCell className="py-2 px-4">
                                       <div className="flex items-center gap-2">
+                                        {insight?.isKing && (
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <span className="inline-flex shrink-0 cursor-help" aria-label="Category king">
+                                                <Crown className="h-3.5 w-3.5 text-amber-500" fill="currentColor" />
+                                              </span>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+                                              <strong className="text-amber-500">Category King</strong>
+                                              <div className="mt-1">{insight.dominanceReason}</div>
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        )}
                                         <span className="font-serif text-sm font-medium text-foreground">{ticker}</span>
                                         {!noData && (
                                           <span className={`text-[10px] font-mono ${isPositive ? "text-pine" : "text-destructive"}`}>
