@@ -52,7 +52,7 @@ const Index = () => {
     // Clear all relevant local cache entries
     try {
       Object.keys(localStorage)
-        .filter((k) => k.startsWith("price-evaluations:") || k.startsWith("stock-quotes:"))
+        .filter((k) => k.startsWith("price-evaluations:") || k.startsWith("stock-quotes:") || k.startsWith("stock-insights:"))
         .forEach((k) => localStorage.removeItem(k));
     } catch {
       /* ignore */
@@ -61,6 +61,7 @@ const Index = () => {
     setRefreshNonce((n) => n + 1);
     queryClient.invalidateQueries({ queryKey: ["stock-quotes"] });
     queryClient.invalidateQueries({ queryKey: ["price-evaluations"] });
+    queryClient.invalidateQueries({ queryKey: ["stock-insights"] });
   };
 
   const toggleSector = (name: string) => {
