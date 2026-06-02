@@ -169,29 +169,51 @@ IMPORTANT RULES:
     // Clear existing picks
     await supabase.from('stock_news').delete().gte('created_at', sevenDaysAgo);
 
-    // Insert all picks
-    const inserts = picks.map((pick: any, index: number) => ({
-      ticker: pick.ticker,
-      headline: pick.headline,
-      summary: JSON.stringify({
-        rank: index + 1,
-        earnings_date: pick.earnings_date,
-        consensus_eps: pick.consensus_eps,
-        expected_eps: pick.expected_eps,
-        beat_confidence: pick.beat_confidence,
-        current_price: pick.current_price,
-        entry_price: pick.entry_price,
-        price_target: pick.price_target,
-        stop_loss: pick.stop_loss,
-        risk_reward_ratio: pick.risk_reward_ratio,
-        thesis: pick.thesis,
-        catalysts: pick.catalysts,
-        risks: pick.risks,
-        next_quarter_growth: pick.next_quarter_growth,
-      }),
-      is_fda_related: false,
-      published_at: new Date().toISOString(),
-    }));
+    // Insert all picks — override current_price with live Yahoo price and rescale levels
+    const inserts = picks.map((pick: any, index: number) => {
+      const live = livePrices[String(pick.ticker || '').toUpperCase()] || 0;
+      const aiCurrent = Number(pick.current_price) || 0;
+      let current = live > 0 ? live : aiCurrent;
+      let entry = Number(pick.entry_price) || 0;
+      let target = Number(pick.price_target) || 0;
+      let stop = Number(pick.stop_loss) || 0;
+      // If we have a live price and AI quoted a different current, scale levels proportionally
+      if (live > 0 && aiCurrent > 0 && Math.abs(live - aiCurrent) / aiCurrent > 0.02) {
+        const r = live / aiCurrent;
+        entry = +(entry * r).toFixed(2);
+        target = +(target * r).toFixed(2);
+        stop = +(stop * r).toFixed(2);
+        current = live;
+      }
+      // Safety: enforce stop < entry <= current < target
+      if (!(entry > 0 && entry <= current)) entry = +(current * 0.95).toFixed(2);
+      if (!(target > current)) target = +(current * 1.15).toFixed(2);
+      if (!(stop > 0 && stop < entry)) stop = +(entry * 0.93).toFixed(2);
+      const rr = ((target - entry) / Math.max(0.01, entry - stop)).toFixed(2);
+      return {
+        ticker: pick.ticker,
+        headline: pick.headline,
+        summary: JSON.stringify({
+          rank: index + 1,
+          earnings_date: pick.earnings_date,
+          consensus_eps: pick.consensus_eps,
+          expected_eps: pick.expected_eps,
+          beat_confidence: pick.beat_confidence,
+          current_price: current,
+          entry_price: entry,
+          price_target: target,
+          stop_loss: stop,
+          risk_reward_ratio: `1:${rr}`,
+          thesis: pick.thesis,
+          catalysts: pick.catalysts,
+          risks: pick.risks,
+          next_quarter_growth: pick.next_quarter_growth,
+        }),
+        is_fda_related: false,
+        published_at: new Date().toISOString(),
+      };
+    });
+
 
     const { error: insertError } = await supabase.from('stock_news').insert(inserts);
 
