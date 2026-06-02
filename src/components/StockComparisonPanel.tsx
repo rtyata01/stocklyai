@@ -1,13 +1,14 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, KeyboardEvent } from "react";
 import { useStockData } from "@/hooks/useStockData";
 import { supabase } from "@/integrations/supabase/client";
 import { loadFromCache, saveLocalCache } from "@/lib/cacheClient";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles, Loader2, Globe2, Plus, X } from "lucide-react";
 import { formatCurrency } from "@/data/stocks";
+import { toast } from "@/hooks/use-toast";
 
 interface ComparisonRow {
   ticker: string;
@@ -25,9 +26,12 @@ interface ComparisonRow {
 interface ComparisonResult {
   comparisons: ComparisonRow[];
   verdict: string;
+  tickers?: string[];
+  mode?: "compare" | "market";
 }
 
-const CACHE_TTL = 12 * 60 * 60 * 1000;
+const CACHE_TTL = 6 * 60 * 60 * 1000;
+const TICKER_RE = /^[A-Z0-9.\-]{1,10}$/;
 
 const ROWS: { key: keyof ComparisonRow; label: string }[] = [
   { key: "growth", label: "Growth" },
@@ -40,39 +44,64 @@ const ROWS: { key: keyof ComparisonRow; label: string }[] = [
 
 export default function StockComparisonPanel() {
   const { data: quotes } = useStockData();
-  const universe = useMemo(
-    () => (quotes ?? []).map(q => q.ticker).sort(),
+  const baseUniverse = useMemo(
+    () => Array.from(new Set((quotes ?? []).map(q => q.ticker))).sort(),
     [quotes]
   );
 
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [selected, setSelected] = useState<string[]>([]);
+  const [extraTickers, setExtraTickers] = useState<string[]>([]);
+  const [newTicker, setNewTicker] = useState("");
   const [result, setResult] = useState<ComparisonResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const [marketLoading, setMarketLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const universe = useMemo(
+    () => Array.from(new Set([...baseUniverse, ...extraTickers])).sort(),
+    [baseUniverse, extraTickers]
+  );
 
   const toggle = (t: string) => {
     setSelected(prev => {
-      const next = new Set(prev);
-      if (next.has(t)) next.delete(t);
-      else if (next.size < 8) next.add(t);
-      return next;
+      if (prev.includes(t)) return prev.filter(x => x !== t);
+      if (prev.length >= 8) return prev;
+      return [...prev, t];
     });
   };
 
-  const runCompare = async () => {
-    if (selected.size < 2) return;
-    setLoading(true);
+  const remove = (t: string) => setSelected(prev => prev.filter(x => x !== t));
+
+  const addCustom = () => {
+    const t = newTicker.trim().toUpperCase();
+    if (!TICKER_RE.test(t)) {
+      toast({ title: "Invalid ticker", description: "Use 1–10 letters/digits/.-", variant: "destructive" });
+      return;
+    }
+    setExtraTickers(prev => prev.includes(t) ? prev : [...prev, t]);
+    setSelected(prev => prev.includes(t) ? prev : (prev.length < 8 ? [...prev, t] : prev));
+    setNewTicker("");
+  };
+
+  const onInputKey = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") { e.preventDefault(); addCustom(); }
+  };
+
+  const runCompare = async (mode: "compare" | "market" = "compare") => {
+    if (mode === "compare" && selected.length < 2) return;
+    if (mode === "market" && selected.length !== 1) return;
+    mode === "market" ? setMarketLoading(true) : setLoading(true);
     setError(null);
-    const tickers = Array.from(selected).sort();
-    const key = `stock-comparison:${tickers.join(",")}`;
+    const tickers = [...selected].sort();
+    const key = `stock-comparison:${mode}:${tickers.join(",")}`;
     try {
-      const cached = await loadFromCache<ComparisonResult>(key, CACHE_TTL);
-      if (cached) {
-        setResult(cached);
-        setLoading(false);
-        return;
+      if (mode === "compare") {
+        const cached = await loadFromCache<ComparisonResult>(key, CACHE_TTL);
+        if (cached) { setResult(cached); return; }
       }
-      const { data, error } = await supabase.functions.invoke("compare-stocks", { body: { tickers } });
+      const { data, error } = await supabase.functions.invoke("compare-stocks", {
+        body: { tickers, mode },
+      });
       if (error) throw error;
       saveLocalCache(key, data, CACHE_TTL);
       setResult(data as ComparisonResult);
@@ -80,6 +109,7 @@ export default function StockComparisonPanel() {
       setError(e?.message || "Failed to compare");
     } finally {
       setLoading(false);
+      setMarketLoading(false);
     }
   };
 
@@ -90,38 +120,78 @@ export default function StockComparisonPanel() {
   return (
     <div className="space-y-6">
       <div className="border border-border rounded-sm p-4 bg-secondary/20">
-        <div className="flex items-start justify-between gap-4 mb-3">
-          <div>
+        <div className="flex items-start justify-between gap-4 mb-3 flex-wrap">
+          <div className="min-w-0">
             <h3 className="font-serif text-base text-foreground flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-primary" /> AI Stock Comparison
             </h3>
             <p className="text-xs text-muted-foreground mt-1">
-              Pick 2–8 stocks from your watchlist for a head-to-head AI breakdown across growth, margins, TAM, valuation, AI positioning, moat, and risk.
+              Pick 2–8 stocks for a head-to-head AI breakdown. Add custom tickers, or select one and hit Market Compare to auto-find peers.
             </p>
           </div>
-          <Button onClick={runCompare} disabled={selected.size < 2 || loading} size="sm" className="gap-1.5 text-xs shrink-0">
-            {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-            Compare ({selected.size})
+          <div className="flex items-center gap-2 shrink-0">
+            {selected.length === 1 && (
+              <Button onClick={() => runCompare("market")} disabled={marketLoading} size="sm" variant="outline" className="gap-1.5 text-xs">
+                {marketLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Globe2 className="h-3.5 w-3.5" />}
+                Market Compare
+              </Button>
+            )}
+            <Button onClick={() => runCompare("compare")} disabled={selected.length < 2 || loading} size="sm" className="gap-1.5 text-xs">
+              {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+              Compare ({selected.length})
+            </Button>
+          </div>
+        </div>
+
+        {/* Selected chips */}
+        <div className="flex flex-wrap gap-1.5 mb-2 min-h-[28px]">
+          {selected.length === 0 ? (
+            <span className="text-[11px] text-muted-foreground font-mono">No tickers selected.</span>
+          ) : selected.map(t => (
+            <Badge key={t} variant="outline" className="font-mono text-xs gap-1 border-primary text-primary bg-primary/10">
+              {t}
+              <button onClick={() => remove(t)} className="hover:text-destructive" aria-label={`Remove ${t}`}>
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          ))}
+        </div>
+
+        {/* Add custom */}
+        <div className="flex items-center gap-2 mb-2">
+          <Input
+            value={newTicker}
+            onChange={e => setNewTicker(e.target.value.toUpperCase())}
+            onKeyDown={onInputKey}
+            placeholder="Add ticker (e.g. NVDA)"
+            maxLength={10}
+            className="h-8 text-xs font-mono w-44"
+          />
+          <Button onClick={addCustom} size="sm" variant="outline" className="gap-1 text-xs h-8">
+            <Plus className="h-3.5 w-3.5" /> Add
           </Button>
         </div>
 
-        <ScrollArea className="h-32 border border-border rounded-sm bg-background p-2">
+        <ScrollArea className="h-28 border border-border rounded-sm bg-background p-2">
           <div className="flex flex-wrap gap-1.5">
             {universe.length === 0 && (
               <span className="text-xs text-muted-foreground font-mono">Loading tickers…</span>
             )}
             {universe.map(t => {
-              const checked = selected.has(t);
+              const checked = selected.includes(t);
               return (
-                <label
+                <button
                   key={t}
-                  className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-sm border cursor-pointer text-xs font-mono transition-colors ${
-                    checked ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary/30 text-foreground hover:bg-secondary"
+                  type="button"
+                  onClick={() => toggle(t)}
+                  className={`px-2 py-1 rounded-sm border text-xs font-mono transition-colors ${
+                    checked
+                      ? "border-primary bg-primary/20 text-primary"
+                      : "border-border bg-secondary/30 text-foreground hover:bg-secondary"
                   }`}
                 >
-                  <Checkbox checked={checked} onCheckedChange={() => toggle(t)} className="h-3 w-3" />
                   {t}
-                </label>
+                </button>
               );
             })}
           </div>
@@ -134,6 +204,11 @@ export default function StockComparisonPanel() {
 
       {result && (
         <div className="space-y-4">
+          {result.mode === "market" && (
+            <div className="text-[11px] font-mono text-muted-foreground">
+              Market peers auto-selected: {result.comparisons.map(c => c.ticker).join(", ")}
+            </div>
+          )}
           <div className="border border-border rounded-sm overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -161,11 +236,12 @@ export default function StockComparisonPanel() {
                 <tr className="border-t border-border bg-secondary/20">
                   <td className="font-mono text-[10px] uppercase tracking-widest text-pine p-3 align-top">Bull Case</td>
                   {result.comparisons.map(c => {
-                    const p = pct(c.bullPrice, priceFor(c.ticker));
+                    const cur = priceFor(c.ticker);
+                    const p = pct(c.bullPrice, cur);
                     return (
                       <td key={c.ticker} className="p-3 align-top">
                         <div className="font-mono text-sm text-pine">{formatCurrency(c.bullPrice)}</div>
-                        {priceFor(c.ticker) > 0 && (
+                        {cur > 0 && (
                           <div className="font-mono text-[10px] text-pine/80">{p >= 0 ? "+" : ""}{p.toFixed(1)}%</div>
                         )}
                       </td>
@@ -175,11 +251,12 @@ export default function StockComparisonPanel() {
                 <tr className="border-t border-border bg-secondary/20">
                   <td className="font-mono text-[10px] uppercase tracking-widest text-destructive p-3 align-top">Bear Case</td>
                   {result.comparisons.map(c => {
-                    const p = pct(c.bearPrice, priceFor(c.ticker));
+                    const cur = priceFor(c.ticker);
+                    const p = pct(c.bearPrice, cur);
                     return (
                       <td key={c.ticker} className="p-3 align-top">
                         <div className="font-mono text-sm text-destructive">{formatCurrency(c.bearPrice)}</div>
-                        {priceFor(c.ticker) > 0 && (
+                        {cur > 0 && (
                           <div className="font-mono text-[10px] text-destructive/80">{p >= 0 ? "+" : ""}{p.toFixed(1)}%</div>
                         )}
                       </td>
@@ -210,9 +287,9 @@ export default function StockComparisonPanel() {
         </div>
       )}
 
-      {!result && !loading && !error && (
+      {!result && !loading && !marketLoading && !error && (
         <div className="text-center text-muted-foreground py-10 font-mono text-xs">
-          Select stocks above and hit Compare.
+          Select 2+ stocks and hit Compare — or pick 1 and use Market Compare.
         </div>
       )}
     </div>

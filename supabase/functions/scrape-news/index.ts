@@ -46,6 +46,26 @@ Deno.serve(async (req) => {
 
     const today = new Date().toISOString().split('T')[0];
 
+    // Fetch real current prices so picks anchor to live market data, not stale AI estimates
+    async function fetchYahooPrice(ticker: string): Promise<number> {
+      try {
+        const map: Record<string, string> = { ETH: 'ETH-USD', SOL: 'SOL-USD', XRP: 'XRP-USD' };
+        const symbol = map[ticker] || ticker;
+        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`;
+        const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+        const d = await r.json();
+        const p = d?.chart?.result?.[0]?.meta?.regularMarketPrice;
+        return typeof p === 'number' && p > 0 ? p : 0;
+      } catch { return 0; }
+    }
+    const livePrices: Record<string, number> = {};
+    const priceResults = await Promise.all(tickers.map(t => fetchYahooPrice(t)));
+    tickers.forEach((t, i) => { livePrices[t] = priceResults[i]; });
+    const priceList = tickers
+      .filter(t => livePrices[t] > 0)
+      .map(t => `${t}: $${livePrices[t].toFixed(2)}`)
+      .join('\n');
+
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -66,26 +86,24 @@ STRICT Criteria — a stock MUST meet ALL of these to be included:
 4. Risk-to-reward ratio of AT LEAST 1:2 (limited downside, 2x+ upside potential)
 5. Good for a short-term earnings momentum trade (buy before earnings, ride the beat)
 
-PRICE LEVELS — MUST align with BUY / HOLD / SELL framework relative to TODAY'S CURRENT MARKET PRICE:
-- "current_price": Today's actual trading price for the ticker (use real, recent market data).
-- "entry_price" (BUY zone): An attractive entry typically 2-8% BELOW the current price — where the stock becomes a strong buy. Must be <= current_price.
-- "price_target" (SELL zone): A realistic post-earnings upside target, typically 10-30% ABOVE current price, aligned with analyst consensus targets. Must be > current_price.
-- "stop_loss": Below entry_price, defining max downside risk. Must be < entry_price.
-- Risk-to-reward calculation: (price_target - entry_price) / (entry_price - stop_loss) MUST be >= 2.0.
-- All three levels must be internally consistent and grounded in the stock's real current price.
+PRICE LEVELS — MUST be anchored to the REAL CURRENT MARKET PRICES PROVIDED BELOW. Do NOT invent or use stale prices:
+- "current_price": MUST match the provided live price for the ticker exactly.
+- "entry_price" (BUY zone): 2-8% BELOW current_price. Must be <= current_price.
+- "price_target" (SELL zone): 10-30% ABOVE current_price, aligned with analyst consensus.
+- "stop_loss": Below entry_price; (price_target - entry_price) / (entry_price - stop_loss) MUST be >= 2.0.
 
 IMPORTANT RULES:
 - Return ONLY stocks that genuinely have earnings in the next 2-3 weeks
 - If only 1-2 stocks meet all criteria, return only those. Do NOT pad to 5.
 - Maximum 5 picks. Minimum 1.
-- Each pick must have risk:reward of 1:2 or better
 - Rank by confidence (highest first)`
           },
           {
             role: 'user',
-            content: `From these tickers, identify the best earnings momentum trades for the next 2-3 weeks: ${tickers.join(', ')}. Today is ${today}. Return ONLY those that truly qualify (1-5 picks).`
+            content: `Today is ${today}. Use these REAL live prices to anchor all price levels:\n${priceList}\n\nFrom these tickers, identify the best earnings momentum trades for the next 2-3 weeks: ${tickers.join(', ')}. Return ONLY those that truly qualify (1-5 picks).`
           }
         ],
+
         tools: [
           {
             type: 'function',
@@ -151,29 +169,51 @@ IMPORTANT RULES:
     // Clear existing picks
     await supabase.from('stock_news').delete().gte('created_at', sevenDaysAgo);
 
-    // Insert all picks
-    const inserts = picks.map((pick: any, index: number) => ({
-      ticker: pick.ticker,
-      headline: pick.headline,
-      summary: JSON.stringify({
-        rank: index + 1,
-        earnings_date: pick.earnings_date,
-        consensus_eps: pick.consensus_eps,
-        expected_eps: pick.expected_eps,
-        beat_confidence: pick.beat_confidence,
-        current_price: pick.current_price,
-        entry_price: pick.entry_price,
-        price_target: pick.price_target,
-        stop_loss: pick.stop_loss,
-        risk_reward_ratio: pick.risk_reward_ratio,
-        thesis: pick.thesis,
-        catalysts: pick.catalysts,
-        risks: pick.risks,
-        next_quarter_growth: pick.next_quarter_growth,
-      }),
-      is_fda_related: false,
-      published_at: new Date().toISOString(),
-    }));
+    // Insert all picks — override current_price with live Yahoo price and rescale levels
+    const inserts = picks.map((pick: any, index: number) => {
+      const live = livePrices[String(pick.ticker || '').toUpperCase()] || 0;
+      const aiCurrent = Number(pick.current_price) || 0;
+      let current = live > 0 ? live : aiCurrent;
+      let entry = Number(pick.entry_price) || 0;
+      let target = Number(pick.price_target) || 0;
+      let stop = Number(pick.stop_loss) || 0;
+      // If we have a live price and AI quoted a different current, scale levels proportionally
+      if (live > 0 && aiCurrent > 0 && Math.abs(live - aiCurrent) / aiCurrent > 0.02) {
+        const r = live / aiCurrent;
+        entry = +(entry * r).toFixed(2);
+        target = +(target * r).toFixed(2);
+        stop = +(stop * r).toFixed(2);
+        current = live;
+      }
+      // Safety: enforce stop < entry <= current < target
+      if (!(entry > 0 && entry <= current)) entry = +(current * 0.95).toFixed(2);
+      if (!(target > current)) target = +(current * 1.15).toFixed(2);
+      if (!(stop > 0 && stop < entry)) stop = +(entry * 0.93).toFixed(2);
+      const rr = ((target - entry) / Math.max(0.01, entry - stop)).toFixed(2);
+      return {
+        ticker: pick.ticker,
+        headline: pick.headline,
+        summary: JSON.stringify({
+          rank: index + 1,
+          earnings_date: pick.earnings_date,
+          consensus_eps: pick.consensus_eps,
+          expected_eps: pick.expected_eps,
+          beat_confidence: pick.beat_confidence,
+          current_price: current,
+          entry_price: entry,
+          price_target: target,
+          stop_loss: stop,
+          risk_reward_ratio: `1:${rr}`,
+          thesis: pick.thesis,
+          catalysts: pick.catalysts,
+          risks: pick.risks,
+          next_quarter_growth: pick.next_quarter_growth,
+        }),
+        is_fda_related: false,
+        published_at: new Date().toISOString(),
+      };
+    });
+
 
     const { error: insertError } = await supabase.from('stock_news').insert(inserts);
 
