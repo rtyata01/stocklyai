@@ -127,12 +127,17 @@ Deno.serve(async (req) => {
 
     tickers = tickers.slice(0, 8);
 
-    // Fetch live prices for accurate anchoring
-    const prices = await Promise.all(tickers.map(t => fetchYahooPrice(t)));
+    // Fetch live prices + 2y weekly history in parallel
+    const [prices, histories] = await Promise.all([
+      Promise.all(tickers.map(t => fetchYahooPrice(t))),
+      Promise.all(tickers.map(t => fetchYahooHistory(t))),
+    ]);
     const priceMap: Record<string, number> = {};
-    tickers.forEach((t, i) => { priceMap[t] = prices[i]; });
+    const historyMap: Record<string, { date: string; close: number }[]> = {};
+    tickers.forEach((t, i) => { priceMap[t] = prices[i]; historyMap[t] = histories[i]; });
 
     const priceList = tickers.map(t => `${t}: $${priceMap[t] > 0 ? priceMap[t].toFixed(2) : 'N/A'}`).join('\n');
+
 
     const compareTool = {
       type: 'function',
