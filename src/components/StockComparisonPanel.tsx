@@ -83,6 +83,32 @@ export default function StockComparisonPanel() {
   const [loading, setLoading] = useState(false);
   const [marketLoading, setMarketLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [rangeKey, setRangeKey] = useState<string>("1Y");
+
+  const chartData = useMemo(() => {
+    if (!result?.history?.length) return { data: [] as any[], tickers: [] as string[] };
+    const range = RANGES.find(r => r.key === rangeKey) ?? RANGES[2];
+    const cutoffMs = Date.now() - range.days * 24 * 60 * 60 * 1000;
+    const tickers = result.history.map(h => h.ticker);
+    // Build normalized % change series from first in-range point
+    const dateSet = new Set<string>();
+    const baseMap: Record<string, number> = {};
+    const seriesByDate: Record<string, Record<string, number>> = {};
+    for (const h of result.history) {
+      const inRange = h.points.filter(p => Date.parse(p.date) >= cutoffMs);
+      if (inRange.length === 0) continue;
+      baseMap[h.ticker] = inRange[0].close;
+      for (const p of inRange) {
+        dateSet.add(p.date);
+        if (!seriesByDate[p.date]) seriesByDate[p.date] = {};
+        seriesByDate[p.date][h.ticker] = +(((p.close - baseMap[h.ticker]) / baseMap[h.ticker]) * 100).toFixed(2);
+      }
+    }
+    const sortedDates = Array.from(dateSet).sort();
+    const data = sortedDates.map(date => ({ date, ...seriesByDate[date] }));
+    return { data, tickers };
+  }, [result, rangeKey]);
+
 
   const universe = useMemo(
     () => Array.from(new Set([...baseUniverse, ...extraTickers])).sort(),
