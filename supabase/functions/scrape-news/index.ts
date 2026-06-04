@@ -45,8 +45,9 @@ Deno.serve(async (req) => {
     }
 
     const today = new Date().toISOString().split('T')[0];
+    const nowMs = Date.now();
+    const horizonMs = nowMs + 21 * 24 * 60 * 60 * 1000; // 21 days
 
-    // Fetch real current prices so picks anchor to live market data, not stale AI estimates
     async function fetchYahooPrice(ticker: string): Promise<number> {
       try {
         const map: Record<string, string> = { ETH: 'ETH-USD', SOL: 'SOL-USD', XRP: 'XRP-USD' };
@@ -58,12 +59,46 @@ Deno.serve(async (req) => {
         return typeof p === 'number' && p > 0 ? p : 0;
       } catch { return 0; }
     }
+
+    async function fetchEarningsDate(ticker: string): Promise<string | null> {
+      try {
+        const url = `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(ticker)}?modules=calendarEvents`;
+        const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+        if (!r.ok) return null;
+        const d = await r.json();
+        const dates: any[] = d?.quoteSummary?.result?.[0]?.calendarEvents?.earnings?.earningsDate || [];
+        for (const e of dates) {
+          const raw = typeof e === 'object' && e ? (e.raw ?? e) : e;
+          const ms = typeof raw === 'number' ? raw * 1000 : Date.parse(String(raw));
+          if (Number.isFinite(ms) && ms >= nowMs - 24*3600*1000 && ms <= horizonMs) {
+            return new Date(ms).toISOString().split('T')[0];
+          }
+        }
+        return null;
+      } catch { return null; }
+    }
+
+    const [priceResults, earningsResults] = await Promise.all([
+      Promise.all(tickers.map(t => fetchYahooPrice(t))),
+      Promise.all(tickers.map(t => fetchEarningsDate(t))),
+    ]);
     const livePrices: Record<string, number> = {};
-    const priceResults = await Promise.all(tickers.map(t => fetchYahooPrice(t)));
-    tickers.forEach((t, i) => { livePrices[t] = priceResults[i]; });
-    const priceList = tickers
-      .filter(t => livePrices[t] > 0)
-      .map(t => `${t}: $${livePrices[t].toFixed(2)}`)
+    const earningsMap: Record<string, string> = {};
+    tickers.forEach((t, i) => {
+      livePrices[t] = priceResults[i];
+      if (earningsResults[i]) earningsMap[t] = earningsResults[i] as string;
+    });
+
+    const shortlist = tickers.filter(t => earningsMap[t] && livePrices[t] > 0);
+    if (shortlist.length === 0) {
+      await supabase.from('stock_news').delete().gte('created_at', sevenDaysAgo);
+      return new Response(JSON.stringify({ success: true, count: 0, tickers: [], reason: 'No tickers have confirmed earnings in next 3 weeks' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const priceList = shortlist
+      .map(t => `${t}: $${livePrices[t].toFixed(2)} | earnings ${earningsMap[t]}`)
       .join('\n');
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -77,30 +112,26 @@ Deno.serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are an expert earnings momentum trader and analyst. Your job is to identify the TOP stocks (up to 5, but ONLY those that truly qualify) for earnings momentum trades from the given ticker list.
+            content: `You are an expert earnings momentum trader. Today is ${today}.
 
-STRICT Criteria — a stock MUST meet ALL of these to be included:
-1. Earnings date is within the NEXT 2-3 weeks from today (${today})
-2. Strong expectation to BEAT analyst EPS estimates (whisper numbers, recent guidance raises, sector tailwinds)
-3. Forecast for strong revenue/earnings growth in the following quarter
-4. Risk-to-reward ratio of AT LEAST 1:2 (limited downside, 2x+ upside potential)
-5. Good for a short-term earnings momentum trade (buy before earnings, ride the beat)
+You receive a SHORTLIST of tickers with CONFIRMED earnings dates in the next 2-3 weeks (verified via Yahoo Finance). Use the EXACT earnings_date from the shortlist — never invent dates.
 
-PRICE LEVELS — MUST be anchored to the REAL CURRENT MARKET PRICES PROVIDED BELOW. Do NOT invent or use stale prices:
-- "current_price": MUST match the provided live price for the ticker exactly.
-- "entry_price" (BUY zone): 2-8% BELOW current_price. Must be <= current_price.
-- "price_target" (SELL zone): 10-30% ABOVE current_price, aligned with analyst consensus.
-- "stop_loss": Below entry_price; (price_target - entry_price) / (entry_price - stop_loss) MUST be >= 2.0.
+Include ONLY tickers that meet ALL:
+1. Strong expectation to BEAT analyst EPS (whisper numbers, guidance raises, tailwinds)
+2. Strong next-quarter growth forecast
+3. Risk:Reward >= 1:2
 
-IMPORTANT RULES:
-- Return ONLY stocks that genuinely have earnings in the next 2-3 weeks
-- If only 1-2 stocks meet all criteria, return only those. Do NOT pad to 5.
-- Maximum 5 picks. Minimum 1.
-- Rank by confidence (highest first)`
+PRICE LEVELS — anchor to provided live prices:
+- current_price = provided live price exactly.
+- entry_price: 2-8% below current_price.
+- price_target: 10-30% above current_price.
+- stop_loss: below entry; (target-entry)/(entry-stop) >= 2.
+
+Return 1-5 picks. Use ONLY tickers from the shortlist. Do not pad.`
           },
           {
             role: 'user',
-            content: `Today is ${today}. Use these REAL live prices to anchor all price levels:\n${priceList}\n\nFrom these tickers, identify the best earnings momentum trades for the next 2-3 weeks: ${tickers.join(', ')}. Return ONLY those that truly qualify (1-5 picks).`
+            content: `Shortlist (live price | confirmed earnings date):\n${priceList}\n\nReturn best earnings momentum picks using the exact dates listed.`
           }
         ],
 
