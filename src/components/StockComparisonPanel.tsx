@@ -120,7 +120,7 @@ export default function StockComparisonPanel() {
     mode === "market" ? setMarketLoading(true) : setLoading(true);
     setError(null);
     const tickers = [...selected].sort();
-    const key = `stock-comparison:${mode}:${tickers.join(",")}`;
+    const key = `stock-comparison:${CACHE_VERSION}:${mode}:${tickers.join(",")}`;
     try {
       if (mode === "compare") {
         const cached = await loadFromCache<ComparisonResult>(key, CACHE_TTL);
