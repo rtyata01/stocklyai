@@ -38,6 +38,7 @@ interface ComparisonResult {
 
 
 const CACHE_TTL = 6 * 60 * 60 * 1000;
+const CACHE_VERSION = "v2"; // bump to invalidate caches missing history
 const TICKER_RE = /^[A-Z0-9.\-]{1,10}$/;
 
 const ROWS: { key: keyof ComparisonRow; label: string }[] = [
@@ -48,6 +49,25 @@ const ROWS: { key: keyof ComparisonRow; label: string }[] = [
   { key: "aiPositioning", label: "AI Positioning" },
   { key: "moat", label: "Moat" },
 ];
+
+const RANGES: { key: string; label: string; days: number }[] = [
+  { key: "3M", label: "3M", days: 90 },
+  { key: "6M", label: "6M", days: 180 },
+  { key: "1Y", label: "1Y", days: 365 },
+  { key: "2Y", label: "2Y", days: 730 },
+];
+
+const SERIES_COLORS = [
+  "hsl(var(--primary))",
+  "hsl(var(--destructive))",
+  "hsl(142 70% 45%)",
+  "hsl(38 92% 50%)",
+  "hsl(280 70% 60%)",
+  "hsl(200 80% 55%)",
+  "hsl(20 80% 55%)",
+  "hsl(160 60% 45%)",
+];
+
 
 export default function StockComparisonPanel() {
   const { data: quotes } = useStockData();
