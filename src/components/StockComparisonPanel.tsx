@@ -331,6 +331,85 @@ export default function StockComparisonPanel() {
             </table>
           </div>
 
+          {chartData.tickers.length > 0 && chartData.data.length > 1 && (
+            <div className="border border-border rounded-sm p-4 bg-secondary/10">
+              <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                <div>
+                  <h4 className="font-serif text-sm text-foreground">Price Performance</h4>
+                  <p className="text-[11px] text-muted-foreground font-mono">% change normalized to range start</p>
+                </div>
+                <div className="flex items-center gap-1">
+                  {RANGES.map(r => (
+                    <button
+                      key={r.key}
+                      onClick={() => setRangeKey(r.key)}
+                      className={`px-2 py-1 rounded-sm text-[11px] font-mono border transition-colors ${
+                        rangeKey === r.key
+                          ? "border-primary bg-primary/20 text-primary"
+                          : "border-border bg-secondary/30 text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {r.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="h-72 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData.data} margin={{ top: 5, right: 12, left: -8, bottom: 0 }}>
+                    <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                      tickFormatter={(d: string) => {
+                        const dt = new Date(d);
+                        return `${dt.toLocaleString("en", { month: "short" })} ${String(dt.getFullYear()).slice(2)}`;
+                      }}
+                      minTickGap={40}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                      tickFormatter={(v: number) => `${v >= 0 ? "+" : ""}${v.toFixed(0)}%`}
+                      width={48}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        background: "hsl(var(--background))",
+                        border: "1px solid hsl(var(--border))",
+                        fontSize: 12,
+                      }}
+                      formatter={(v: any, name: string) => [`${Number(v) >= 0 ? "+" : ""}${Number(v).toFixed(2)}%`, name]}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                    {chartData.tickers.map((t, i) => (
+                      <Line
+                        key={t}
+                        type="monotone"
+                        dataKey={t}
+                        stroke={SERIES_COLORS[i % SERIES_COLORS.length]}
+                        strokeWidth={2}
+                        dot={false}
+                        connectNulls
+                      />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-3 font-mono text-[11px] text-muted-foreground">
+                {chartData.tickers.map(t => {
+                  const cur = result?.prices?.[t] ?? priceFor(t);
+                  return cur > 0 ? (
+                    <span key={t}>
+                      <span className="text-foreground">{t}</span>: {formatCurrency(cur)}
+                    </span>
+                  ) : null;
+                })}
+              </div>
+            </div>
+          )}
+
+
+
           {result.verdict && (
             <div className="border border-primary/40 bg-primary/5 rounded-sm p-4">
               <div className="text-[10px] font-mono uppercase tracking-widest text-primary mb-1">AI Verdict</div>
