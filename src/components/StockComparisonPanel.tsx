@@ -9,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sparkles, Loader2, Globe2, Plus, X } from "lucide-react";
 import { formatCurrency } from "@/data/stocks";
 import { toast } from "@/hooks/use-toast";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from "recharts";
 
 interface ComparisonRow {
   ticker: string;
@@ -23,12 +24,18 @@ interface ComparisonRow {
   riskPct: number;
 }
 
+interface HistoryPoint { date: string; close: number }
+interface HistorySeries { ticker: string; points: HistoryPoint[] }
+
 interface ComparisonResult {
   comparisons: ComparisonRow[];
   verdict: string;
   tickers?: string[];
   mode?: "compare" | "market";
+  history?: HistorySeries[];
+  prices?: Record<string, number>;
 }
+
 
 const CACHE_TTL = 6 * 60 * 60 * 1000;
 const TICKER_RE = /^[A-Z0-9.\-]{1,10}$/;
