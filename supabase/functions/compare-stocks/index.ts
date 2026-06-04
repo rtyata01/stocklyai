@@ -200,7 +200,9 @@ Use REAL, current fundamentals — no stale estimates. Anchor every price to the
       return { ...c, bullPrice: bull, bearPrice: bear };
     });
 
-    const result = { comparisons, verdict: parsed.verdict, tickers, mode };
+    const history = tickers.map(t => ({ ticker: t, points: historyMap[t] || [] }));
+    const result = { comparisons, verdict: parsed.verdict, tickers, mode, history, prices: priceMap };
+
 
     const key = `stock-comparison:${mode}:${tickers.slice().sort().join(',')}`;
     await writeAppCache(key, result, 6 * 60 * 60 * 1000);
