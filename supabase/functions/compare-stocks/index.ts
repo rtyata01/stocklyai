@@ -20,6 +20,30 @@ async function fetchYahooPrice(ticker: string): Promise<number> {
   }
 }
 
+async function fetchYahooHistory(ticker: string): Promise<{ date: string; close: number }[]> {
+  try {
+    const map: Record<string, string> = { ETH: 'ETH-USD', SOL: 'SOL-USD', XRP: 'XRP-USD' };
+    const symbol = map[ticker] || ticker;
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1wk&range=2y`;
+    const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+    const data = await res.json();
+    const r = data?.chart?.result?.[0];
+    const ts: number[] = r?.timestamp || [];
+    const closes: number[] = r?.indicators?.quote?.[0]?.close || [];
+    const out: { date: string; close: number }[] = [];
+    for (let i = 0; i < ts.length; i++) {
+      const c = closes[i];
+      if (typeof c === 'number' && c > 0) {
+        out.push({ date: new Date(ts[i] * 1000).toISOString().split('T')[0], close: +c.toFixed(2) });
+      }
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
+
 async function callAI(messages: any[], tool: any, toolName: string) {
   const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
   if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
@@ -103,12 +127,17 @@ Deno.serve(async (req) => {
 
     tickers = tickers.slice(0, 8);
 
-    // Fetch live prices for accurate anchoring
-    const prices = await Promise.all(tickers.map(t => fetchYahooPrice(t)));
+    // Fetch live prices + 2y weekly history in parallel
+    const [prices, histories] = await Promise.all([
+      Promise.all(tickers.map(t => fetchYahooPrice(t))),
+      Promise.all(tickers.map(t => fetchYahooHistory(t))),
+    ]);
     const priceMap: Record<string, number> = {};
-    tickers.forEach((t, i) => { priceMap[t] = prices[i]; });
+    const historyMap: Record<string, { date: string; close: number }[]> = {};
+    tickers.forEach((t, i) => { priceMap[t] = prices[i]; historyMap[t] = histories[i]; });
 
     const priceList = tickers.map(t => `${t}: $${priceMap[t] > 0 ? priceMap[t].toFixed(2) : 'N/A'}`).join('\n');
+
 
     const compareTool = {
       type: 'function',
@@ -171,7 +200,9 @@ Use REAL, current fundamentals — no stale estimates. Anchor every price to the
       return { ...c, bullPrice: bull, bearPrice: bear };
     });
 
-    const result = { comparisons, verdict: parsed.verdict, tickers, mode };
+    const history = tickers.map(t => ({ ticker: t, points: historyMap[t] || [] }));
+    const result = { comparisons, verdict: parsed.verdict, tickers, mode, history, prices: priceMap };
+
 
     const key = `stock-comparison:${mode}:${tickers.slice().sort().join(',')}`;
     await writeAppCache(key, result, 6 * 60 * 60 * 1000);

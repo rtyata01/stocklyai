@@ -9,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sparkles, Loader2, Globe2, Plus, X } from "lucide-react";
 import { formatCurrency } from "@/data/stocks";
 import { toast } from "@/hooks/use-toast";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from "recharts";
 
 interface ComparisonRow {
   ticker: string;
@@ -23,14 +24,21 @@ interface ComparisonRow {
   riskPct: number;
 }
 
+interface HistoryPoint { date: string; close: number }
+interface HistorySeries { ticker: string; points: HistoryPoint[] }
+
 interface ComparisonResult {
   comparisons: ComparisonRow[];
   verdict: string;
   tickers?: string[];
   mode?: "compare" | "market";
+  history?: HistorySeries[];
+  prices?: Record<string, number>;
 }
 
+
 const CACHE_TTL = 6 * 60 * 60 * 1000;
+const CACHE_VERSION = "v2"; // bump to invalidate caches missing history
 const TICKER_RE = /^[A-Z0-9.\-]{1,10}$/;
 
 const ROWS: { key: keyof ComparisonRow; label: string }[] = [
@@ -41,6 +49,25 @@ const ROWS: { key: keyof ComparisonRow; label: string }[] = [
   { key: "aiPositioning", label: "AI Positioning" },
   { key: "moat", label: "Moat" },
 ];
+
+const RANGES: { key: string; label: string; days: number }[] = [
+  { key: "3M", label: "3M", days: 90 },
+  { key: "6M", label: "6M", days: 180 },
+  { key: "1Y", label: "1Y", days: 365 },
+  { key: "2Y", label: "2Y", days: 730 },
+];
+
+const SERIES_COLORS = [
+  "hsl(var(--primary))",
+  "hsl(var(--destructive))",
+  "hsl(142 70% 45%)",
+  "hsl(38 92% 50%)",
+  "hsl(280 70% 60%)",
+  "hsl(200 80% 55%)",
+  "hsl(20 80% 55%)",
+  "hsl(160 60% 45%)",
+];
+
 
 export default function StockComparisonPanel() {
   const { data: quotes } = useStockData();
@@ -56,6 +83,32 @@ export default function StockComparisonPanel() {
   const [loading, setLoading] = useState(false);
   const [marketLoading, setMarketLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [rangeKey, setRangeKey] = useState<string>("1Y");
+
+  const chartData = useMemo(() => {
+    if (!result?.history?.length) return { data: [] as any[], tickers: [] as string[] };
+    const range = RANGES.find(r => r.key === rangeKey) ?? RANGES[2];
+    const cutoffMs = Date.now() - range.days * 24 * 60 * 60 * 1000;
+    const tickers = result.history.map(h => h.ticker);
+    // Build normalized % change series from first in-range point
+    const dateSet = new Set<string>();
+    const baseMap: Record<string, number> = {};
+    const seriesByDate: Record<string, Record<string, number>> = {};
+    for (const h of result.history) {
+      const inRange = h.points.filter(p => Date.parse(p.date) >= cutoffMs);
+      if (inRange.length === 0) continue;
+      baseMap[h.ticker] = inRange[0].close;
+      for (const p of inRange) {
+        dateSet.add(p.date);
+        if (!seriesByDate[p.date]) seriesByDate[p.date] = {};
+        seriesByDate[p.date][h.ticker] = +(((p.close - baseMap[h.ticker]) / baseMap[h.ticker]) * 100).toFixed(2);
+      }
+    }
+    const sortedDates = Array.from(dateSet).sort();
+    const data = sortedDates.map(date => ({ date, ...seriesByDate[date] }));
+    return { data, tickers };
+  }, [result, rangeKey]);
+
 
   const universe = useMemo(
     () => Array.from(new Set([...baseUniverse, ...extraTickers])).sort(),
@@ -93,7 +146,7 @@ export default function StockComparisonPanel() {
     mode === "market" ? setMarketLoading(true) : setLoading(true);
     setError(null);
     const tickers = [...selected].sort();
-    const key = `stock-comparison:${mode}:${tickers.join(",")}`;
+    const key = `stock-comparison:${CACHE_VERSION}:${mode}:${tickers.join(",")}`;
     try {
       if (mode === "compare") {
         const cached = await loadFromCache<ComparisonResult>(key, CACHE_TTL);
@@ -277,6 +330,85 @@ export default function StockComparisonPanel() {
               </tbody>
             </table>
           </div>
+
+          {chartData.tickers.length > 0 && chartData.data.length > 1 && (
+            <div className="border border-border rounded-sm p-4 bg-secondary/10">
+              <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                <div>
+                  <h4 className="font-serif text-sm text-foreground">Price Performance</h4>
+                  <p className="text-[11px] text-muted-foreground font-mono">% change normalized to range start</p>
+                </div>
+                <div className="flex items-center gap-1">
+                  {RANGES.map(r => (
+                    <button
+                      key={r.key}
+                      onClick={() => setRangeKey(r.key)}
+                      className={`px-2 py-1 rounded-sm text-[11px] font-mono border transition-colors ${
+                        rangeKey === r.key
+                          ? "border-primary bg-primary/20 text-primary"
+                          : "border-border bg-secondary/30 text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {r.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="h-72 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData.data} margin={{ top: 5, right: 12, left: -8, bottom: 0 }}>
+                    <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                      tickFormatter={(d: string) => {
+                        const dt = new Date(d);
+                        return `${dt.toLocaleString("en", { month: "short" })} ${String(dt.getFullYear()).slice(2)}`;
+                      }}
+                      minTickGap={40}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                      tickFormatter={(v: number) => `${v >= 0 ? "+" : ""}${v.toFixed(0)}%`}
+                      width={48}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        background: "hsl(var(--background))",
+                        border: "1px solid hsl(var(--border))",
+                        fontSize: 12,
+                      }}
+                      formatter={(v: any, name: string) => [`${Number(v) >= 0 ? "+" : ""}${Number(v).toFixed(2)}%`, name]}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                    {chartData.tickers.map((t, i) => (
+                      <Line
+                        key={t}
+                        type="monotone"
+                        dataKey={t}
+                        stroke={SERIES_COLORS[i % SERIES_COLORS.length]}
+                        strokeWidth={2}
+                        dot={false}
+                        connectNulls
+                      />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-3 font-mono text-[11px] text-muted-foreground">
+                {chartData.tickers.map(t => {
+                  const cur = result?.prices?.[t] ?? priceFor(t);
+                  return cur > 0 ? (
+                    <span key={t}>
+                      <span className="text-foreground">{t}</span>: {formatCurrency(cur)}
+                    </span>
+                  ) : null;
+                })}
+              </div>
+            </div>
+          )}
+
+
 
           {result.verdict && (
             <div className="border border-primary/40 bg-primary/5 rounded-sm p-4">
