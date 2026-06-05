@@ -37,6 +37,8 @@ const AnnouncementsPanel = () => {
   const [note, setNote] = useState("");
   const [type, setType] = useState<Announcement["type"]>("alert");
 
+  const [generating, setGenerating] = useState(false);
+
   useEffect(() => { setItems(load()); }, []);
 
   const add = () => {
@@ -47,6 +49,28 @@ const AnnouncementsPanel = () => {
     ];
     setItems(next); save(next);
     setTicker(""); setTitle(""); setNote(""); setType("alert");
+  };
+
+  const generateAlert = async () => {
+    setGenerating(true);
+    try {
+      const tickers = getWatchlistSectors().flatMap((s) => s.tickers);
+      if (!tickers.length) { toast.error("No tickers in watchlist"); return; }
+      const pick = tickers[Math.floor(Math.random() * tickers.length)];
+      const { data, error } = await supabase.functions.invoke("breaking-alert", { body: { ticker: pick } });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const next = [
+        { id: crypto.randomUUID(), ticker: String(data.ticker || pick).toUpperCase(), title: String(data.title || "").slice(0, 200), note: String(data.note || ""), type: (data.type as Announcement["type"]) || "alert", createdAt: new Date().toISOString() },
+        ...items,
+      ];
+      setItems(next); save(next);
+      toast.success(`Alert added for ${data.ticker || pick}`);
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to generate alert");
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const remove = (id: string) => {
