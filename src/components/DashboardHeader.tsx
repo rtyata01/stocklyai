@@ -15,7 +15,7 @@ const DashboardHeader = ({ totalStocks, onManageStocks }: DashboardHeaderProps) 
     <header className="relative z-10 px-6 md:px-10 pt-8 md:pt-10 pb-6 md:pb-8 border-b border-border flex flex-col md:flex-row justify-between md:items-end gap-4 bg-gradient-to-b from-secondary/30 to-transparent">
       <div>
         <h1 className="font-serif text-2xl md:text-3xl font-medium tracking-tight text-foreground">
-          STOCKLY.AI
+          STOCKLY.AI — AI-Powered Stock Portfolio &amp; Analytics
         </h1>
         <div className="font-mono text-xs text-muted-foreground mt-1">
           {totalStocks} Tracked Assets · Active Monitoring

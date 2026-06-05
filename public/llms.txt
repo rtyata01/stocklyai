@@ -1,0 +1,12 @@
+# Stockly.ai
+
+> Stock tracking and AI-driven analysis. Curated watchlist with buy/hold/sell zones, earnings momentum picks, and side-by-side AI stock comparisons.
+
+Stockly.ai monitors a curated list of US-listed equities, ETFs, and major crypto tickers across sectors like Big Tech, Semiconductors, AI & Data, Fintech, Quantum Computing, eVTOL, Biotech, Nuclear Energy, and Crypto Assets. Each tracked asset has an AI-evaluated buy/hold/sell price zone, market-dominance indicators, bull/bear/risk targets, and an upcoming-catalysts feed.
+
+## Pages
+
+- [Dashboard](/): Portfolio watchlist with live prices, buy/hold/sell zones, and AI compare.
+- [SPY detail](/stock/SPY): Per-ticker analysis page (price, 52-week range, earnings, catalysts, bull/bear/risk).
+- [NVDA detail](/stock/NVDA): Example single-stock deep-dive page.
+- [AAPL detail](/stock/AAPL): Example single-stock deep-dive page.
