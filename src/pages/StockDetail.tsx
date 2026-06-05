@@ -7,6 +7,7 @@ import { formatCurrency } from "@/data/stocks";
 import { ArrowLeft, TrendingUp, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Helmet } from "react-helmet-async";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LabelList,
   ResponsiveContainer, ReferenceLine, Cell,
@@ -47,6 +48,21 @@ const StockDetail = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>{`${ticker} Stock Analysis & Buy/Hold/Sell Zones — Stockly.ai`}</title>
+        <meta name="description" content={`${ticker} stock analysis with AI-driven buy, hold, and sell price zones, earnings, catalysts, and bull/bear/risk targets on Stockly.ai.`} />
+        <link rel="canonical" href={`https://stocklyai.lovable.app/stock/${ticker}`} />
+        <meta property="og:title" content={`${ticker} Stock Analysis — Stockly.ai`} />
+        <meta property="og:description" content={`${ticker} AI-driven buy/hold/sell zones, earnings, catalysts, and bull/bear/risk targets.`} />
+        <meta property="og:url" content={`https://stocklyai.lovable.app/stock/${ticker}`} />
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebPage",
+          name: `${ticker} Stock Analysis`,
+          url: `https://stocklyai.lovable.app/stock/${ticker}`,
+          about: { "@type": "Thing", name: `${ticker} stock` },
+        })}</script>
+      </Helmet>
       <div className="max-w-[1400px] mx-auto bg-card border-x border-border min-h-screen">
         {/* Header */}
         <header className="px-6 md:px-10 pt-6 pb-4 border-b border-border bg-gradient-to-b from-secondary/30 to-transparent">
@@ -56,7 +72,7 @@ const StockDetail = () => {
           <div className="flex items-end justify-between gap-4">
             <div>
               <h1 className="font-serif text-2xl md:text-3xl font-medium tracking-tight text-foreground">
-                {ticker}
+                {ticker} Stock Performance &amp; Analysis
               </h1>
               {quote && (
                 <div className="flex items-center gap-3 mt-1">

@@ -21,6 +21,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, Crown, HelpCircle, RefreshCw, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Helmet } from "react-helmet-async";
 
 const BUY_HELP = "BUY zone — aggregated entry price computed from: (1) analyst consensus & 52-week support, (2) intrinsic value from forward EPS × peer P/E, (3) PEG ratio < 1 signal, (4) margin-of-safety guardrail (typically 15–30% below fair value). Median of valid methods.";
 const HOLD_HELP = "HOLD / fair value — center estimate close to current price using analyst consensus 12-month target, forward intrinsic value, and PEG ≈ 1 signal. Holding here implies risk/reward is balanced.";
@@ -82,6 +83,14 @@ const Index = () => {
 
   return (
     <TooltipProvider delayDuration={150}>
+    <Helmet>
+      <title>Stockly.ai — AI-Powered Stock Portfolio &amp; Analytics</title>
+      <meta name="description" content="Track a curated stock watchlist with AI-driven buy/hold/sell zones, earnings momentum picks, and side-by-side AI stock comparisons." />
+      <link rel="canonical" href="https://stocklyai.lovable.app/" />
+      <meta property="og:title" content="Stockly.ai — AI-Powered Stock Portfolio &amp; Analytics" />
+      <meta property="og:description" content="AI-driven buy/hold/sell zones, earnings momentum picks, and stock comparisons for a curated watchlist." />
+      <meta property="og:url" content="https://stocklyai.lovable.app/" />
+    </Helmet>
     <div className="min-h-screen bg-background">
       <div className="max-w-[1400px] mx-auto bg-card border-x border-border shadow-2xl min-h-screen">
         <DashboardHeader
@@ -159,7 +168,7 @@ const Index = () => {
                                     Volume
                                     <Tooltip>
                                       <TooltipTrigger asChild>
-                                        <button type="button" className="text-muted-foreground/60 hover:text-foreground"><HelpCircle className="h-3 w-3" /></button>
+                                        <button type="button" aria-label="About Volume column" className="text-muted-foreground/60 hover:text-foreground"><HelpCircle className="h-3 w-3" /></button>
                                       </TooltipTrigger>
                                       <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">{VOLUME_HELP}</TooltipContent>
                                     </Tooltip>
@@ -170,7 +179,7 @@ const Index = () => {
                                     Buy
                                     <Tooltip>
                                       <TooltipTrigger asChild>
-                                        <button type="button" className="text-primary/60 hover:text-primary"><HelpCircle className="h-3 w-3" /></button>
+                                        <button type="button" aria-label="About Buy zone" className="text-primary/60 hover:text-primary"><HelpCircle className="h-3 w-3" /></button>
                                       </TooltipTrigger>
                                       <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">{BUY_HELP}</TooltipContent>
                                     </Tooltip>
@@ -181,7 +190,7 @@ const Index = () => {
                                     Hold
                                     <Tooltip>
                                       <TooltipTrigger asChild>
-                                        <button type="button" className="text-muted-foreground/60 hover:text-foreground"><HelpCircle className="h-3 w-3" /></button>
+                                        <button type="button" aria-label="About Hold zone" className="text-muted-foreground/60 hover:text-foreground"><HelpCircle className="h-3 w-3" /></button>
                                       </TooltipTrigger>
                                       <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">{HOLD_HELP}</TooltipContent>
                                     </Tooltip>
@@ -192,7 +201,7 @@ const Index = () => {
                                     Sell
                                     <Tooltip>
                                       <TooltipTrigger asChild>
-                                        <button type="button" className="text-destructive/60 hover:text-destructive"><HelpCircle className="h-3 w-3" /></button>
+                                        <button type="button" aria-label="About Sell zone" className="text-destructive/60 hover:text-destructive"><HelpCircle className="h-3 w-3" /></button>
                                       </TooltipTrigger>
                                       <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">{SELL_HELP}</TooltipContent>
                                     </Tooltip>
