@@ -80,9 +80,15 @@ const AnnouncementsPanel = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <Megaphone className="h-4 w-4 text-primary" />
-        <h3 className="font-serif text-sm text-muted-foreground">Daily Trade Highlights & Quick Alerts</h3>
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
+          <Megaphone className="h-4 w-4 text-primary" />
+          <h3 className="font-serif text-sm text-muted-foreground">Daily Trade Highlights & Quick Alerts</h3>
+        </div>
+        <Button onClick={generateAlert} disabled={generating} size="sm" variant="outline" className="gap-1.5">
+          {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+          {generating ? "Generating…" : "AI Breaking Alert"}
+        </Button>
       </div>
 
       <div className="border border-border rounded-sm bg-card p-4 space-y-3">
