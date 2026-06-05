@@ -3,7 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Megaphone } from "lucide-react";
+import { Plus, Trash2, Megaphone, Sparkles, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { getWatchlistSectors } from "@/components/ManageWatchlistDialog";
+import { toast } from "sonner";
 
 interface Announcement {
   id: string;
@@ -34,6 +37,8 @@ const AnnouncementsPanel = () => {
   const [note, setNote] = useState("");
   const [type, setType] = useState<Announcement["type"]>("alert");
 
+  const [generating, setGenerating] = useState(false);
+
   useEffect(() => { setItems(load()); }, []);
 
   const add = () => {
@@ -46,6 +51,28 @@ const AnnouncementsPanel = () => {
     setTicker(""); setTitle(""); setNote(""); setType("alert");
   };
 
+  const generateAlert = async () => {
+    setGenerating(true);
+    try {
+      const tickers = getWatchlistSectors().flatMap((s) => s.tickers);
+      if (!tickers.length) { toast.error("No tickers in watchlist"); return; }
+      const pick = tickers[Math.floor(Math.random() * tickers.length)];
+      const { data, error } = await supabase.functions.invoke("breaking-alert", { body: { ticker: pick } });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const next = [
+        { id: crypto.randomUUID(), ticker: String(data.ticker || pick).toUpperCase(), title: String(data.title || "").slice(0, 200), note: String(data.note || ""), type: (data.type as Announcement["type"]) || "alert", createdAt: new Date().toISOString() },
+        ...items,
+      ];
+      setItems(next); save(next);
+      toast.success(`Alert added for ${data.ticker || pick}`);
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to generate alert");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const remove = (id: string) => {
     const next = items.filter((i) => i.id !== id);
     setItems(next); save(next);
@@ -53,9 +80,15 @@ const AnnouncementsPanel = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <Megaphone className="h-4 w-4 text-primary" />
-        <h3 className="font-serif text-sm text-muted-foreground">Daily Trade Highlights & Quick Alerts</h3>
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
+          <Megaphone className="h-4 w-4 text-primary" />
+          <h3 className="font-serif text-sm text-muted-foreground">Daily Trade Highlights & Quick Alerts</h3>
+        </div>
+        <Button onClick={generateAlert} disabled={generating} size="sm" variant="outline" className="gap-1.5">
+          {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+          {generating ? "Generating…" : "AI Breaking Alert"}
+        </Button>
       </div>
 
       <div className="border border-border rounded-sm bg-card p-4 space-y-3">
