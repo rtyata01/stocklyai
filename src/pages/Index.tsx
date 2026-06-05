@@ -159,7 +159,7 @@ const Index = () => {
                                     Volume
                                     <Tooltip>
                                       <TooltipTrigger asChild>
-                                        <button type="button" className="text-muted-foreground/60 hover:text-foreground"><HelpCircle className="h-3 w-3" /></button>
+                                        <button type="button" aria-label="About Volume column" className="text-muted-foreground/60 hover:text-foreground"><HelpCircle className="h-3 w-3" /></button>
                                       </TooltipTrigger>
                                       <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">{VOLUME_HELP}</TooltipContent>
                                     </Tooltip>
@@ -170,7 +170,7 @@ const Index = () => {
                                     Buy
                                     <Tooltip>
                                       <TooltipTrigger asChild>
-                                        <button type="button" className="text-primary/60 hover:text-primary"><HelpCircle className="h-3 w-3" /></button>
+                                        <button type="button" aria-label="About Buy zone" className="text-primary/60 hover:text-primary"><HelpCircle className="h-3 w-3" /></button>
                                       </TooltipTrigger>
                                       <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">{BUY_HELP}</TooltipContent>
                                     </Tooltip>
@@ -181,7 +181,7 @@ const Index = () => {
                                     Hold
                                     <Tooltip>
                                       <TooltipTrigger asChild>
-                                        <button type="button" className="text-muted-foreground/60 hover:text-foreground"><HelpCircle className="h-3 w-3" /></button>
+                                        <button type="button" aria-label="About Hold zone" className="text-muted-foreground/60 hover:text-foreground"><HelpCircle className="h-3 w-3" /></button>
                                       </TooltipTrigger>
                                       <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">{HOLD_HELP}</TooltipContent>
                                     </Tooltip>
@@ -192,7 +192,7 @@ const Index = () => {
                                     Sell
                                     <Tooltip>
                                       <TooltipTrigger asChild>
-                                        <button type="button" className="text-destructive/60 hover:text-destructive"><HelpCircle className="h-3 w-3" /></button>
+                                        <button type="button" aria-label="About Sell zone" className="text-destructive/60 hover:text-destructive"><HelpCircle className="h-3 w-3" /></button>
                                       </TooltipTrigger>
                                       <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">{SELL_HELP}</TooltipContent>
                                     </Tooltip>
