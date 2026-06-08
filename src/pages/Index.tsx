@@ -386,7 +386,7 @@ const Index = () => {
               </div>
             </TabsContent>
           </Tabs>
-        </div>
+        </main>
       </div>
     </div>
     </TooltipProvider>
