@@ -10,6 +10,7 @@ import SwingTradingPanel from "@/components/SwingTradingPanel";
 import AnnouncementsPanel from "@/components/AnnouncementsPanel";
 import InvestingBasicsPanel from "@/components/InvestingBasicsPanel";
 import StockComparisonPanel from "@/components/StockComparisonPanel";
+import CycleTradingPanel from "@/components/CycleTradingPanel";
 import ManageWatchlistDialog, { getWatchlistSectors } from "@/components/ManageWatchlistDialog";
 import { SectorGroup, StockQuote } from "@/data/stocks";
 import {
@@ -112,6 +113,7 @@ const Index = () => {
               <TabsTrigger value="compare" className="text-xs font-mono">AI Compare</TabsTrigger>
               <TabsTrigger value="earnings" className="text-xs font-mono">Earnings Momentum</TabsTrigger>
               <TabsTrigger value="swing" className="text-xs font-mono">Swing Trading</TabsTrigger>
+              <TabsTrigger value="cycle" className="text-xs font-mono">Cycle Trading</TabsTrigger>
               <TabsTrigger value="announcements" className="text-xs font-mono">Announcements</TabsTrigger>
               <TabsTrigger value="basics" className="text-xs font-mono">Investing 101</TabsTrigger>
             </TabsList>
@@ -363,6 +365,12 @@ const Index = () => {
             <TabsContent value="swing">
               <div className="pb-8">
                 <SwingTradingPanel />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="cycle">
+              <div className="pb-8">
+                <CycleTradingPanel />
               </div>
             </TabsContent>
 
