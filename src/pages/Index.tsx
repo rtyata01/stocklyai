@@ -106,7 +106,7 @@ const Index = () => {
           />
         )}
 
-        <div className="px-4 md:px-8 pt-4">
+        <main className="px-4 md:px-8 pt-4">
           <Tabs defaultValue="portfolio">
             <TabsList className="mb-4 flex-wrap h-auto gap-1">
               <TabsTrigger value="portfolio" className="text-xs font-mono">Portfolio</TabsTrigger>
