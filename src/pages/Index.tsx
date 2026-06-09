@@ -176,7 +176,7 @@ const Index = () => {
                                     </Tooltip>
                                   </span>
                                 </TableHead>
-                                <TableHead className="font-mono text-[10px] uppercase tracking-widest text-primary text-right h-8 w-[14%]">
+                                <TableHead className="hidden md:table-cell font-mono text-[10px] uppercase tracking-widest text-primary text-right h-8 w-[14%]">
                                   <span className="inline-flex items-center justify-end gap-1">
                                     Buy
                                     <Tooltip>
@@ -187,7 +187,7 @@ const Index = () => {
                                     </Tooltip>
                                   </span>
                                 </TableHead>
-                                <TableHead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground text-right h-8 w-[14%]">
+                                <TableHead className="hidden md:table-cell font-mono text-[10px] uppercase tracking-widest text-muted-foreground text-right h-8 w-[14%]">
                                   <span className="inline-flex items-center justify-end gap-1">
                                     Hold
                                     <Tooltip>
@@ -198,7 +198,7 @@ const Index = () => {
                                     </Tooltip>
                                   </span>
                                 </TableHead>
-                                <TableHead className="font-mono text-[10px] uppercase tracking-widest text-destructive text-right h-8 w-[14%]">
+                                <TableHead className="hidden md:table-cell font-mono text-[10px] uppercase tracking-widest text-destructive text-right h-8 w-[14%]">
                                   <span className="inline-flex items-center justify-end gap-1">
                                     Sell
                                     <Tooltip>
@@ -264,7 +264,7 @@ const Index = () => {
                                         )}
                                       </div>
                                     </TableCell>
-                                    <TableCell className="py-2 px-4 text-right">
+                                    <TableCell className="hidden md:table-cell py-2 px-4 text-right">
                                       {ev?.reasoning ? (
                                         <Tooltip>
                                           <TooltipTrigger asChild>
@@ -283,7 +283,7 @@ const Index = () => {
                                         </span>
                                       )}
                                     </TableCell>
-                                    <TableCell className="py-2 px-4 text-right">
+                                    <TableCell className="hidden md:table-cell py-2 px-4 text-right">
                                       {ev?.reasoning ? (
                                         <Tooltip>
                                           <TooltipTrigger asChild>
@@ -302,7 +302,7 @@ const Index = () => {
                                         </span>
                                       )}
                                     </TableCell>
-                                    <TableCell className="py-2 px-4 text-right">
+                                    <TableCell className="hidden md:table-cell py-2 px-4 text-right">
                                       {ev?.reasoning ? (
                                         <Tooltip>
                                           <TooltipTrigger asChild>
