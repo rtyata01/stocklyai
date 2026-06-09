@@ -176,7 +176,7 @@ const Index = () => {
                                     </Tooltip>
                                   </span>
                                 </TableHead>
-                                <TableHead className="font-mono text-[10px] uppercase tracking-widest text-primary text-right h-8 w-[14%]">
+                                <TableHead className="hidden md:table-cell font-mono text-[10px] uppercase tracking-widest text-primary text-right h-8 w-[14%]">
                                   <span className="inline-flex items-center justify-end gap-1">
                                     Buy
                                     <Tooltip>
