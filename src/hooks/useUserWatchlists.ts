@@ -73,7 +73,7 @@ export function useUserWatchlists() {
   };
 
   const update = async (id: string, patch: Partial<Pick<UserWatchlist, "name" | "tickers">>) => {
-    const body: Record<string, unknown> = {};
+    const body: { name?: string; tickers?: string[] } = {};
     if (patch.name !== undefined) body.name = patch.name.trim();
     if (patch.tickers !== undefined) body.tickers = patch.tickers.map((t) => t.toUpperCase());
     const { data, error } = await supabase
