@@ -16,12 +16,15 @@ function getActiveTickers(): string[] {
 
 const TTL = 15 * 60 * 1000;
 
-export function useStockData(refreshNonce = 0) {
-  const tickers = getActiveTickers();
+export function useStockData(refreshNonce = 0, tickersOverride?: string[]) {
+  const tickers = tickersOverride && tickersOverride.length > 0
+    ? Array.from(new Set(tickersOverride.map((t) => t.toUpperCase())))
+    : getActiveTickers();
   const cacheKey = `stock-quotes:v2:${[...tickers].sort().join(",")}`;
   return useQuery({
     queryKey: ["stock-quotes", cacheKey, refreshNonce],
     queryFn: async (): Promise<StockQuote[]> => {
+      if (tickers.length === 0) return [];
       if (refreshNonce === 0) {
         const cached = await loadFromCache<{ quotes: StockQuote[] } | StockQuote[]>(cacheKey, TTL);
         if (cached) {
@@ -36,7 +39,9 @@ export function useStockData(refreshNonce = 0) {
       saveLocalCache(cacheKey, { quotes: data.quotes }, TTL);
       return data.quotes;
     },
+    enabled: tickers.length > 0,
     refetchInterval: 15 * 60 * 1000,
     staleTime: 5 * 60 * 1000,
   });
 }
+
