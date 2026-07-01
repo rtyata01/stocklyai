@@ -1,6 +1,7 @@
 import { Settings, Eye, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
+import AuthMenu from "@/components/AuthMenu";
 import { useVisitStats } from "@/hooks/useVisitStats";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -31,26 +32,30 @@ const DashboardHeader = ({ totalStocks, onManageStocks }: DashboardHeaderProps) 
           )}
           <ThemeSwitcher />
         </div>
-        <div className="font-mono text-[11px] text-muted-foreground flex items-center gap-3">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="inline-flex items-center gap-1 cursor-help">
-                <Users className="h-3 w-3" />
-                {stats ? stats.unique.toLocaleString() : "—"} unique
-              </span>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="text-xs">Distinct visitors to date</TooltipContent>
-          </Tooltip>
+        <div className="flex items-center gap-3">
+          <div className="font-mono text-[11px] text-muted-foreground flex items-center gap-3">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex items-center gap-1 cursor-help">
+                  <Users className="h-3 w-3" />
+                  {stats ? stats.unique.toLocaleString() : "—"} unique
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">Distinct visitors to date</TooltipContent>
+            </Tooltip>
+            <span className="text-border">·</span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex items-center gap-1 cursor-help">
+                  <Eye className="h-3 w-3" />
+                  {stats ? stats.total.toLocaleString() : "—"} total
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">Total visits to date</TooltipContent>
+            </Tooltip>
+          </div>
           <span className="text-border">·</span>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="inline-flex items-center gap-1 cursor-help">
-                <Eye className="h-3 w-3" />
-                {stats ? stats.total.toLocaleString() : "—"} total
-              </span>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="text-xs">Total visits to date</TooltipContent>
-          </Tooltip>
+          <AuthMenu />
         </div>
       </div>
     </header>
@@ -58,3 +63,4 @@ const DashboardHeader = ({ totalStocks, onManageStocks }: DashboardHeaderProps) 
 };
 
 export default DashboardHeader;
+
