@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import DashboardHeader from "@/components/DashboardHeader";
 import NewsPanel from "@/components/NewsPanel";
 import SwingTradingPanel from "@/components/SwingTradingPanel";
@@ -21,6 +22,24 @@ const SHOW_WATCHLIST = import.meta.env.DEV;
 
 const Index = () => {
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const VALID_TABS = ["mylists", "portfolio", "compare", "earnings", "swing", "cycle", "announcements", "basics"];
+  const initialTab = (() => {
+    const t = searchParams.get("tab");
+    return t && VALID_TABS.includes(t) ? t : "portfolio";
+  })();
+  const [tab, setTab] = useState<string>(initialTab);
+  useEffect(() => {
+    const t = searchParams.get("tab");
+    if (t && VALID_TABS.includes(t) && t !== tab) setTab(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+  const handleTabChange = (v: string) => {
+    setTab(v);
+    const next = new URLSearchParams(searchParams);
+    if (v === "portfolio") next.delete("tab"); else next.set("tab", v);
+    setSearchParams(next, { replace: true });
+  };
   const [watchlistOpen, setWatchlistOpen] = useState(false);
   const [activeSectors, setActiveSectors] = useState<SectorGroup[]>(() => getWatchlistSectors());
 
@@ -53,7 +72,7 @@ const Index = () => {
           )}
 
           <main className="px-4 md:px-8 pt-4">
-            <Tabs defaultValue="portfolio">
+            <Tabs value={tab} onValueChange={handleTabChange}>
               <TabsList className="mb-4 flex-wrap h-auto gap-1">
                 <TabsTrigger value="mylists" className="text-xs font-mono">My Watchlist</TabsTrigger>
                 <TabsTrigger value="portfolio" className="text-xs font-mono">Portfolio</TabsTrigger>
