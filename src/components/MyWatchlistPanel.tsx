@@ -87,59 +87,59 @@ export default function MyWatchlistPanel() {
       </div>
 
       {active && (
-        <>
-          <div className="flex justify-end gap-2 mb-3">
-            <ManageTickersDialog
-              open={manageOpen}
-              onOpenChange={setManageOpen}
-              watchlist={active}
-              onSave={async (tickers) => {
-                try {
-                  await update(active.id, { tickers });
-                  toast.success("Watchlist updated");
-                  setManageOpen(false);
-                } catch (e: unknown) {
-                  toast.error(e instanceof Error ? e.message : "Update failed");
-                }
-              }}
-            />
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-1.5 text-xs text-destructive hover:text-destructive">
-                  <Trash2 className="h-3.5 w-3.5" /> Delete
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete "{active.name}"?</AlertDialogTitle>
-                  <AlertDialogDescription>This can't be undone.</AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={async () => {
-                      try {
-                        await remove(active.id);
-                        setActiveId(null);
-                        toast.success("Watchlist deleted");
-                      } catch (e: unknown) {
-                        toast.error(e instanceof Error ? e.message : "Delete failed");
-                      }
-                    }}
-                  >
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-
-          <PortfolioTable
-            key={active.id}
-            sectors={[{ name: active.name, tickers: active.tickers } as SectorGroup]}
-            emptyMessage="This watchlist has no stocks yet. Click 'Manage Stocks' to add some."
-          />
-        </>
+        <PortfolioTable
+          key={active.id}
+          sectors={[{ name: active.name, tickers: active.tickers } as SectorGroup]}
+          emptyMessage="This watchlist has no stocks yet. Click 'Manage Stocks' to add some."
+          viewFrom="mylists"
+          toolbarExtras={
+            <>
+              <ManageTickersDialog
+                open={manageOpen}
+                onOpenChange={setManageOpen}
+                watchlist={active}
+                onSave={async (tickers) => {
+                  try {
+                    await update(active.id, { tickers });
+                    toast.success("Watchlist updated");
+                    setManageOpen(false);
+                  } catch (e: unknown) {
+                    toast.error(e instanceof Error ? e.message : "Update failed");
+                  }
+                }}
+              />
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-1.5 text-xs text-destructive hover:text-destructive">
+                    <Trash2 className="h-3.5 w-3.5" /> Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete "{active.name}"?</AlertDialogTitle>
+                    <AlertDialogDescription>This can't be undone.</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={async () => {
+                        try {
+                          await remove(active.id);
+                          setActiveId(null);
+                          toast.success("Watchlist deleted");
+                        } catch (e: unknown) {
+                          toast.error(e instanceof Error ? e.message : "Delete failed");
+                        }
+                      }}
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </>
+          }
+        />
       )}
     </div>
   );
