@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import DashboardHeader from "@/components/DashboardHeader";
 import NewsPanel from "@/components/NewsPanel";
 import SwingTradingPanel from "@/components/SwingTradingPanel";
