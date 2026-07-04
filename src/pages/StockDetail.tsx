@@ -70,8 +70,8 @@ const StockDetail = () => {
       <div className="max-w-[1400px] mx-auto bg-card border-x border-border min-h-screen">
         {/* Header */}
         <header className="px-6 md:px-10 pt-6 pb-4 border-b border-border bg-gradient-to-b from-secondary/30 to-transparent">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="gap-1.5 text-xs mb-4 -ml-2">
-            <ArrowLeft className="h-3.5 w-3.5" /> Back to Dashboard
+          <Button variant="ghost" size="sm" onClick={() => navigate(backTo)} className="gap-1.5 text-xs mb-4 -ml-2">
+            <ArrowLeft className="h-3.5 w-3.5" /> {backLabel}
           </Button>
           <div className="flex items-end justify-between gap-4">
             <div>
