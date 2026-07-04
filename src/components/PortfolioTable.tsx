@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { formatCurrency, formatVolume, SectorGroup } from "@/data/stocks";
 import { useStockData } from "@/hooks/useStockData";
@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/table";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ChevronDown, Crown, HelpCircle, RefreshCw } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronDown, Crown, HelpCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -18,14 +18,25 @@ const HOLD_HELP = "HOLD / fair value — center estimate close to current price 
 const SELL_HELP = "SELL zone — aggregated upside exit computed from: (1) analyst price targets, (2) intrinsic value ceiling, (3) PEG > 1.5 / overvalued flag, (4) sentiment-adjusted stretch above last week's average.";
 const VOLUME_HELP = "Today's traded share volume. High volume confirms breakouts; low volume on a move suggests weak conviction.";
 
+type SortKey = "symbol" | "price" | "volume" | "buy" | "hold" | "sell";
+type SortDir = "asc" | "desc";
+
 interface Props {
   sectors: SectorGroup[];
   showRefresh?: boolean;
   toolbarExtras?: React.ReactNode;
   emptyMessage?: string;
+  /** Encodes which tab to return to from the stock detail page. */
+  viewFrom?: "portfolio" | "mylists";
 }
 
-export default function PortfolioTable({ sectors, showRefresh = true, toolbarExtras, emptyMessage }: Props) {
+export default function PortfolioTable({
+  sectors,
+  showRefresh = true,
+  toolbarExtras,
+  emptyMessage,
+  viewFrom = "portfolio",
+}: Props) {
   const queryClient = useQueryClient();
   const [refreshNonce, setRefreshNonce] = useState(0);
   const allTickers = sectors.flatMap((s) => s.tickers);
@@ -33,6 +44,7 @@ export default function PortfolioTable({ sectors, showRefresh = true, toolbarExt
   const { data: evaluations, isLoading: evalLoading } = usePriceEvaluations(quotes, refreshNonce);
   const { data: insights } = useStockInsights(quotes, refreshNonce);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [sort, setSort] = useState<{ key: SortKey; dir: SortDir } | null>(null);
 
   const quoteMap = new Map(quotes?.map((q) => [q.ticker, q]) ?? []);
   const evalMap = new Map(evaluations?.map((e) => [e.ticker, e]) ?? []);
@@ -57,12 +69,59 @@ export default function PortfolioTable({ sectors, showRefresh = true, toolbarExt
     return next;
   });
 
+  const toggleSort = (key: SortKey) => {
+    setSort((prev) => {
+      if (!prev || prev.key !== key) return { key, dir: "asc" };
+      if (prev.dir === "asc") return { key, dir: "desc" };
+      return null;
+    });
+  };
+
+  const getSortValue = (ticker: string, key: SortKey): number | string => {
+    const q = quoteMap.get(ticker);
+    const ev = evalMap.get(ticker);
+    switch (key) {
+      case "symbol": return ticker;
+      case "price": return q?.price ?? -Infinity;
+      case "volume": return q?.volume ?? -Infinity;
+      case "buy": return ev?.buyPrice ?? -Infinity;
+      case "hold": return ev?.holdPrice ?? -Infinity;
+      case "sell": return ev?.salePrice ?? -Infinity;
+    }
+  };
+
+  const sortedSectors = useMemo(() => {
+    if (!sort) return sectors;
+    return sectors.map((s) => {
+      const tickers = [...s.tickers].sort((a, b) => {
+        const av = getSortValue(a, sort.key);
+        const bv = getSortValue(b, sort.key);
+        let cmp: number;
+        if (typeof av === "string" || typeof bv === "string") {
+          cmp = String(av).localeCompare(String(bv));
+        } else {
+          cmp = (av as number) - (bv as number);
+        }
+        return sort.dir === "asc" ? cmp : -cmp;
+      });
+      return { ...s, tickers };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sectors, sort, quotes, evaluations]);
+
   const hasAny = allTickers.length > 0;
+
+  const SortIcon = ({ col }: { col: SortKey }) => {
+    if (sort?.key !== col) return <ArrowUpDown className="h-3 w-3 opacity-40" />;
+    return sort.dir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />;
+  };
+
+  const headerBtnCls = "inline-flex items-center gap-1 hover:text-foreground transition-colors";
 
   return (
     <div>
       {(showRefresh || toolbarExtras) && (
-        <div className="flex justify-end gap-2 mb-3">
+        <div className="flex flex-wrap justify-end items-center gap-2 mb-3">
           {toolbarExtras}
           {showRefresh && (
             <Button variant="outline" size="sm" onClick={handleRefresh} disabled={!hasAny || evalLoading || isLoading} className="gap-1.5 text-xs">
@@ -87,7 +146,7 @@ export default function PortfolioTable({ sectors, showRefresh = true, toolbarExt
           <div className="text-center text-destructive py-20 font-mono text-sm">Failed to load data. Retrying…</div>
         )}
 
-        {hasAny && !isLoading && !error && sectors.map((sector) => {
+        {hasAny && !isLoading && !error && sortedSectors.map((sector) => {
           const isOpen = !collapsed.has(sector.name);
           return (
             <Collapsible key={sector.name} open={isOpen} onOpenChange={() => toggle(sector.name)}>
@@ -106,11 +165,21 @@ export default function PortfolioTable({ sectors, showRefresh = true, toolbarExt
                   <Table className="table-fixed w-full">
                     <TableHeader>
                       <TableRow className="bg-secondary/50 hover:bg-secondary/50">
-                        <TableHead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground h-8 w-[16%]">Symbol</TableHead>
-                        <TableHead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground text-right h-8 w-[14%]">Price</TableHead>
+                        <TableHead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground h-8 w-[16%]">
+                          <button type="button" onClick={() => toggleSort("symbol")} className={headerBtnCls}>
+                            Symbol <SortIcon col="symbol" />
+                          </button>
+                        </TableHead>
+                        <TableHead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground text-right h-8 w-[14%]">
+                          <button type="button" onClick={() => toggleSort("price")} className={`${headerBtnCls} w-full justify-end`}>
+                            Price <SortIcon col="price" />
+                          </button>
+                        </TableHead>
                         <TableHead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground text-right h-8 w-[16%]">
                           <span className="inline-flex items-center justify-end gap-1">
-                            Volume
+                            <button type="button" onClick={() => toggleSort("volume")} className={headerBtnCls}>
+                              Volume <SortIcon col="volume" />
+                            </button>
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <button type="button" aria-label="About Volume column" className="text-muted-foreground/60 hover:text-foreground"><HelpCircle className="h-3 w-3" /></button>
@@ -121,7 +190,9 @@ export default function PortfolioTable({ sectors, showRefresh = true, toolbarExt
                         </TableHead>
                         <TableHead className="hidden md:table-cell font-mono text-[10px] uppercase tracking-widest text-primary text-right h-8 w-[14%]">
                           <span className="inline-flex items-center justify-end gap-1">
-                            Buy
+                            <button type="button" onClick={() => toggleSort("buy")} className={`${headerBtnCls} text-primary`}>
+                              Buy <SortIcon col="buy" />
+                            </button>
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <button type="button" aria-label="About Buy zone" className="text-primary/60 hover:text-primary"><HelpCircle className="h-3 w-3" /></button>
@@ -132,7 +203,9 @@ export default function PortfolioTable({ sectors, showRefresh = true, toolbarExt
                         </TableHead>
                         <TableHead className="hidden md:table-cell font-mono text-[10px] uppercase tracking-widest text-muted-foreground text-right h-8 w-[14%]">
                           <span className="inline-flex items-center justify-end gap-1">
-                            Hold
+                            <button type="button" onClick={() => toggleSort("hold")} className={headerBtnCls}>
+                              Hold <SortIcon col="hold" />
+                            </button>
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <button type="button" aria-label="About Hold zone" className="text-muted-foreground/60 hover:text-foreground"><HelpCircle className="h-3 w-3" /></button>
@@ -143,7 +216,9 @@ export default function PortfolioTable({ sectors, showRefresh = true, toolbarExt
                         </TableHead>
                         <TableHead className="hidden md:table-cell font-mono text-[10px] uppercase tracking-widest text-destructive text-right h-8 w-[14%]">
                           <span className="inline-flex items-center justify-end gap-1">
-                            Sell
+                            <button type="button" onClick={() => toggleSort("sell")} className={`${headerBtnCls} text-destructive`}>
+                              Sell <SortIcon col="sell" />
+                            </button>
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <button type="button" aria-label="About Sell zone" className="text-destructive/60 hover:text-destructive"><HelpCircle className="h-3 w-3" /></button>
@@ -265,7 +340,7 @@ export default function PortfolioTable({ sectors, showRefresh = true, toolbarExt
                             </TableCell>
                             <TableCell className="py-2 px-4 text-center">
                               <Link
-                                to={`/stock/${ticker}`}
+                                to={`/stock/${ticker}?from=${viewFrom}`}
                                 className="text-[11px] font-mono text-primary hover:text-primary/80 underline underline-offset-2"
                               >
                                 View
