@@ -27,9 +27,11 @@ Deno.serve(async (req) => {
     await supabase.from('stock_news').delete().lt('published_at', sevenDaysAgo);
 
     let rawTickers: string[] = [];
+    let horizon: 'short' | 'mid' = 'short';
     try {
       const body = await req.json();
       rawTickers = body.tickers || [];
+      if (body.horizon === 'mid') horizon = 'mid';
     } catch {
       rawTickers = [];
     }
@@ -46,7 +48,11 @@ Deno.serve(async (req) => {
 
     const today = new Date().toISOString().split('T')[0];
     const nowMs = Date.now();
-    const horizonMs = nowMs + 21 * 24 * 60 * 60 * 1000; // 21 days
+    const windowStartDays = horizon === 'mid' ? 21 : 0;
+    const windowEndDays = horizon === 'mid' ? 60 : 21;
+    const windowStartMs = nowMs + windowStartDays * 24 * 60 * 60 * 1000;
+    const horizonMs = nowMs + windowEndDays * 24 * 60 * 60 * 1000;
+    const horizonLabel = horizon === 'mid' ? 'Next 1-2 Months' : 'Next 2-3 Weeks';
 
     async function fetchYahooPrice(ticker: string): Promise<number> {
       try {
