@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
         for (const e of dates) {
           const raw = typeof e === 'object' && e ? (e.raw ?? e) : e;
           const ms = typeof raw === 'number' ? raw * 1000 : Date.parse(String(raw));
-          if (Number.isFinite(ms) && ms >= nowMs - 24*3600*1000 && ms <= horizonMs) {
+          if (Number.isFinite(ms) && ms >= windowStartMs - 24*3600*1000 && ms <= horizonMs) {
             return new Date(ms).toISOString().split('T')[0];
           }
         }
