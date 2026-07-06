@@ -30,6 +30,7 @@ interface ParsedPick {
   ticker: string;
   headline: string;
   pick: EarningsPick;
+  horizon: "short" | "mid";
 }
 
 const confidenceColor = (c: string) => {
