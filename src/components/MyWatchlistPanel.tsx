@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Plus, Trash2, X, Bookmark } from "lucide-react";
+import { Plus, Trash2, X, Bookmark, Newspaper, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -11,10 +11,26 @@ import { useUserWatchlists, UserWatchlist } from "@/hooks/useUserWatchlists";
 import { useAuth } from "@/hooks/useAuth";
 import { SectorGroup } from "@/data/stocks";
 import PortfolioTable from "@/components/PortfolioTable";
+import { supabase } from "@/integrations/supabase/client";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+
+interface BreakingItem {
+  ticker: string;
+  title: string;
+  note: string;
+  type: "alert" | "buy" | "sell" | "watch";
+  price?: number;
+}
+
+const TYPE_COLORS: Record<BreakingItem["type"], string> = {
+  alert: "bg-yellow-500/10 text-yellow-500 border-yellow-500/30",
+  buy: "bg-pine/10 text-pine border-pine/30",
+  sell: "bg-destructive/10 text-destructive border-destructive/30",
+  watch: "bg-primary/10 text-primary border-primary/30",
+};
 
 const TICKER_RE = /^[A-Z][A-Z0-9.\-]{0,7}$/;
 
@@ -39,6 +55,43 @@ export default function MyWatchlistPanel() {
 
   const [createOpen, setCreateOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
+  const [breakingLoading, setBreakingLoading] = useState(false);
+  const [breakingItems, setBreakingItems] = useState<BreakingItem[]>([]);
+  const [breakingFor, setBreakingFor] = useState<string | null>(null);
+
+  const findBreakingNews = async () => {
+    if (!active || active.tickers.length === 0) {
+      toast.error("This watchlist has no stocks");
+      return;
+    }
+    setBreakingLoading(true);
+    setBreakingItems([]);
+    setBreakingFor(active.id);
+    const tickers = active.tickers.slice(0, 10); // cap to keep AI usage reasonable
+    try {
+      const results = await Promise.all(
+        tickers.map(async (t) => {
+          const { data, error } = await supabase.functions.invoke("breaking-alert", { body: { ticker: t } });
+          if (error || !data || data.error) return null;
+          return {
+            ticker: String(data.ticker || t).toUpperCase(),
+            title: String(data.title || "").slice(0, 200),
+            note: String(data.note || ""),
+            type: (data.type as BreakingItem["type"]) || "alert",
+            price: typeof data.price === "number" ? data.price : undefined,
+          } as BreakingItem;
+        }),
+      );
+      const items = results.filter((x): x is BreakingItem => !!x);
+      setBreakingItems(items);
+      if (items.length === 0) toast.error("No breaking news found");
+      else toast.success(`Found ${items.length} breaking update${items.length === 1 ? "" : "s"}`);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to fetch breaking news");
+    } finally {
+      setBreakingLoading(false);
+    }
+  };
 
   return (
     <div className="pb-8">
@@ -108,6 +161,16 @@ export default function MyWatchlistPanel() {
                   }
                 }}
               />
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-xs"
+                disabled={!active || active.tickers.length === 0 || breakingLoading}
+                onClick={findBreakingNews}
+              >
+                {breakingLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Newspaper className="h-3.5 w-3.5" />}
+                {breakingLoading ? "Searching…" : "Find Breaking News"}
+              </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="outline" size="sm" className="gap-1.5 text-xs text-destructive hover:text-destructive">
@@ -140,6 +203,33 @@ export default function MyWatchlistPanel() {
             </>
           }
         />
+      )}
+
+      {active && breakingFor === active.id && (breakingLoading || breakingItems.length > 0) && (
+        <div className="mt-6 space-y-2">
+          <div className="flex items-center gap-2 mb-2">
+            <Newspaper className="h-4 w-4 text-primary" />
+            <h4 className="font-serif text-sm text-muted-foreground">
+              Breaking News — {active.name}
+            </h4>
+          </div>
+          {breakingLoading && breakingItems.length === 0 && (
+            <div className="text-center text-muted-foreground py-8 font-mono text-xs">Scanning {active.tickers.slice(0, 10).length} stocks…</div>
+          )}
+          {breakingItems.map((a, i) => (
+            <div key={`${a.ticker}-${i}`} className="border border-border rounded-sm bg-card p-3">
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <Badge variant="outline" className={`text-[10px] font-mono uppercase ${TYPE_COLORS[a.type]}`}>{a.type}</Badge>
+                <Badge className="bg-primary text-primary-foreground font-mono text-[10px] px-2">{a.ticker}</Badge>
+                {typeof a.price === "number" && a.price > 0 && (
+                  <span className="text-[10px] font-mono text-muted-foreground">${a.price.toFixed(2)}</span>
+                )}
+                <span className="font-serif text-sm text-foreground">{a.title}</span>
+              </div>
+              {a.note && <p className="text-xs text-muted-foreground leading-relaxed">{a.note}</p>}
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

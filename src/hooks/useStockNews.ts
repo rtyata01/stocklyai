@@ -31,10 +31,12 @@ export function useStockNews() {
 
 export function useRefreshNews() {
   const refresh = async () => {
-    const { error } = await supabase.functions.invoke("scrape-news", {
-      body: {},
-    });
-    if (error) throw error;
+    // Run both horizons in parallel so we get short (2-3 weeks) AND mid (1-2 months) picks.
+    const [shortRes, midRes] = await Promise.all([
+      supabase.functions.invoke("scrape-news", { body: { horizon: "short" } }),
+      supabase.functions.invoke("scrape-news", { body: { horizon: "mid" } }),
+    ]);
+    if (shortRes.error && midRes.error) throw shortRes.error;
   };
   return refresh;
 }

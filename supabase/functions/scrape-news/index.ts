@@ -27,9 +27,11 @@ Deno.serve(async (req) => {
     await supabase.from('stock_news').delete().lt('published_at', sevenDaysAgo);
 
     let rawTickers: string[] = [];
+    let horizon: 'short' | 'mid' = 'short';
     try {
       const body = await req.json();
       rawTickers = body.tickers || [];
+      if (body.horizon === 'mid') horizon = 'mid';
     } catch {
       rawTickers = [];
     }
@@ -46,7 +48,11 @@ Deno.serve(async (req) => {
 
     const today = new Date().toISOString().split('T')[0];
     const nowMs = Date.now();
-    const horizonMs = nowMs + 21 * 24 * 60 * 60 * 1000; // 21 days
+    const windowStartDays = horizon === 'mid' ? 21 : 0;
+    const windowEndDays = horizon === 'mid' ? 60 : 21;
+    const windowStartMs = nowMs + windowStartDays * 24 * 60 * 60 * 1000;
+    const horizonMs = nowMs + windowEndDays * 24 * 60 * 60 * 1000;
+    const horizonLabel = horizon === 'mid' ? 'Next 1-2 Months' : 'Next 2-3 Weeks';
 
     async function fetchYahooPrice(ticker: string): Promise<number> {
       try {
@@ -70,7 +76,7 @@ Deno.serve(async (req) => {
         for (const e of dates) {
           const raw = typeof e === 'object' && e ? (e.raw ?? e) : e;
           const ms = typeof raw === 'number' ? raw * 1000 : Date.parse(String(raw));
-          if (Number.isFinite(ms) && ms >= nowMs - 24*3600*1000 && ms <= horizonMs) {
+          if (Number.isFinite(ms) && ms >= windowStartMs - 24*3600*1000 && ms <= horizonMs) {
             return new Date(ms).toISOString().split('T')[0];
           }
         }
@@ -89,10 +95,13 @@ Deno.serve(async (req) => {
       if (earningsResults[i]) earningsMap[t] = earningsResults[i] as string;
     });
 
+    const horizonMarker = `"horizon":"${horizon}"`;
+    // Clear existing picks for THIS horizon only
+    await supabase.from('stock_news').delete().like('summary', `%${horizonMarker}%`);
+
     const shortlist = tickers.filter(t => earningsMap[t] && livePrices[t] > 0);
     if (shortlist.length === 0) {
-      await supabase.from('stock_news').delete().gte('created_at', sevenDaysAgo);
-      return new Response(JSON.stringify({ success: true, count: 0, tickers: [], reason: 'No tickers have confirmed earnings in next 3 weeks' }), {
+      return new Response(JSON.stringify({ success: true, count: 0, tickers: [], horizon, reason: `No tickers have confirmed earnings in ${horizonLabel.toLowerCase()}` }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -114,7 +123,7 @@ Deno.serve(async (req) => {
             role: 'system',
             content: `You are an expert earnings momentum trader. Today is ${today}.
 
-You receive a SHORTLIST of tickers with CONFIRMED earnings dates in the next 2-3 weeks (verified via Yahoo Finance). Use the EXACT earnings_date from the shortlist — never invent dates.
+You receive a SHORTLIST of tickers with CONFIRMED earnings dates in the ${horizonLabel} window (verified via Yahoo Finance). Use the EXACT earnings_date from the shortlist — never invent dates.
 
 Include ONLY tickers that meet ALL:
 1. Strong expectation to BEAT analyst EPS (whisper numbers, guidance raises, tailwinds)
@@ -197,13 +206,10 @@ Return 1-5 picks. Use ONLY tickers from the shortlist. Do not pad.`
       throw new Error('No qualifying picks found');
     }
 
-    // Clear existing picks
-    await supabase.from('stock_news').delete().gte('created_at', sevenDaysAgo);
-
     // Insert all picks — override current_price with live Yahoo price, earnings_date with verified date
     const validPicks = picks.filter((p: any) => earningsMap[String(p.ticker || '').toUpperCase()]);
     if (validPicks.length === 0) {
-      return new Response(JSON.stringify({ success: true, count: 0, tickers: [], reason: 'AI returned no tickers from verified shortlist' }), {
+      return new Response(JSON.stringify({ success: true, count: 0, tickers: [], horizon, reason: 'AI returned no tickers from verified shortlist' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -240,6 +246,7 @@ Return 1-5 picks. Use ONLY tickers from the shortlist. Do not pad.`
           price_target: target,
           stop_loss: stop,
           risk_reward_ratio: `1:${rr}`,
+          horizon,
           thesis: pick.thesis,
           catalysts: pick.catalysts,
           risks: pick.risks,
@@ -259,7 +266,7 @@ Return 1-5 picks. Use ONLY tickers from the shortlist. Do not pad.`
       throw insertError;
     }
 
-    return new Response(JSON.stringify({ success: true, count: picks.length, tickers: picks.map((p: any) => p.ticker) }), {
+    return new Response(JSON.stringify({ success: true, count: picks.length, horizon, tickers: picks.map((p: any) => p.ticker) }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
