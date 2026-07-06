@@ -55,6 +55,43 @@ export default function MyWatchlistPanel() {
 
   const [createOpen, setCreateOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
+  const [breakingLoading, setBreakingLoading] = useState(false);
+  const [breakingItems, setBreakingItems] = useState<BreakingItem[]>([]);
+  const [breakingFor, setBreakingFor] = useState<string | null>(null);
+
+  const findBreakingNews = async () => {
+    if (!active || active.tickers.length === 0) {
+      toast.error("This watchlist has no stocks");
+      return;
+    }
+    setBreakingLoading(true);
+    setBreakingItems([]);
+    setBreakingFor(active.id);
+    const tickers = active.tickers.slice(0, 10); // cap to keep AI usage reasonable
+    try {
+      const results = await Promise.all(
+        tickers.map(async (t) => {
+          const { data, error } = await supabase.functions.invoke("breaking-alert", { body: { ticker: t } });
+          if (error || !data || data.error) return null;
+          return {
+            ticker: String(data.ticker || t).toUpperCase(),
+            title: String(data.title || "").slice(0, 200),
+            note: String(data.note || ""),
+            type: (data.type as BreakingItem["type"]) || "alert",
+            price: typeof data.price === "number" ? data.price : undefined,
+          } as BreakingItem;
+        }),
+      );
+      const items = results.filter((x): x is BreakingItem => !!x);
+      setBreakingItems(items);
+      if (items.length === 0) toast.error("No breaking news found");
+      else toast.success(`Found ${items.length} breaking update${items.length === 1 ? "" : "s"}`);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to fetch breaking news");
+    } finally {
+      setBreakingLoading(false);
+    }
+  };
 
   return (
     <div className="pb-8">
