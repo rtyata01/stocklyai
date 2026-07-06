@@ -266,7 +266,7 @@ Return 1-5 picks. Use ONLY tickers from the shortlist. Do not pad.`
       throw insertError;
     }
 
-    return new Response(JSON.stringify({ success: true, count: picks.length, tickers: picks.map((p: any) => p.ticker) }), {
+    return new Response(JSON.stringify({ success: true, count: picks.length, horizon, tickers: picks.map((p: any) => p.ticker) }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
