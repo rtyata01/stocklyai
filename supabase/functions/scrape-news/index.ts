@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
             role: 'system',
             content: `You are an expert earnings momentum trader. Today is ${today}.
 
-You receive a SHORTLIST of tickers with CONFIRMED earnings dates in the next 2-3 weeks (verified via Yahoo Finance). Use the EXACT earnings_date from the shortlist — never invent dates.
+You receive a SHORTLIST of tickers with CONFIRMED earnings dates in the ${horizonLabel} window (verified via Yahoo Finance). Use the EXACT earnings_date from the shortlist — never invent dates.
 
 Include ONLY tickers that meet ALL:
 1. Strong expectation to BEAT analyst EPS (whisper numbers, guidance raises, tailwinds)
