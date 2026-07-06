@@ -95,10 +95,13 @@ Deno.serve(async (req) => {
       if (earningsResults[i]) earningsMap[t] = earningsResults[i] as string;
     });
 
+    const horizonMarker = `"horizon":"${horizon}"`;
+    // Clear existing picks for THIS horizon only
+    await supabase.from('stock_news').delete().like('summary', `%${horizonMarker}%`);
+
     const shortlist = tickers.filter(t => earningsMap[t] && livePrices[t] > 0);
     if (shortlist.length === 0) {
-      await supabase.from('stock_news').delete().gte('created_at', sevenDaysAgo);
-      return new Response(JSON.stringify({ success: true, count: 0, tickers: [], reason: 'No tickers have confirmed earnings in next 3 weeks' }), {
+      return new Response(JSON.stringify({ success: true, count: 0, tickers: [], horizon, reason: `No tickers have confirmed earnings in ${horizonLabel.toLowerCase()}` }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
