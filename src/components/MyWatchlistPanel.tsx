@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Plus, Trash2, X, Bookmark } from "lucide-react";
+import { Plus, Trash2, X, Bookmark, Newspaper, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -11,10 +11,26 @@ import { useUserWatchlists, UserWatchlist } from "@/hooks/useUserWatchlists";
 import { useAuth } from "@/hooks/useAuth";
 import { SectorGroup } from "@/data/stocks";
 import PortfolioTable from "@/components/PortfolioTable";
+import { supabase } from "@/integrations/supabase/client";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+
+interface BreakingItem {
+  ticker: string;
+  title: string;
+  note: string;
+  type: "alert" | "buy" | "sell" | "watch";
+  price?: number;
+}
+
+const TYPE_COLORS: Record<BreakingItem["type"], string> = {
+  alert: "bg-yellow-500/10 text-yellow-500 border-yellow-500/30",
+  buy: "bg-pine/10 text-pine border-pine/30",
+  sell: "bg-destructive/10 text-destructive border-destructive/30",
+  watch: "bg-primary/10 text-primary border-primary/30",
+};
 
 const TICKER_RE = /^[A-Z][A-Z0-9.\-]{0,7}$/;
 
