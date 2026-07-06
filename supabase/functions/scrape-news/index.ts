@@ -246,6 +246,7 @@ Return 1-5 picks. Use ONLY tickers from the shortlist. Do not pad.`
           price_target: target,
           stop_loss: stop,
           risk_reward_ratio: `1:${rr}`,
+          horizon,
           thesis: pick.thesis,
           catalysts: pick.catalysts,
           risks: pick.risks,
