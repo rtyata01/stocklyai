@@ -161,6 +161,16 @@ export default function MyWatchlistPanel() {
                   }
                 }}
               />
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-xs"
+                disabled={!active || active.tickers.length === 0 || breakingLoading}
+                onClick={findBreakingNews}
+              >
+                {breakingLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Newspaper className="h-3.5 w-3.5" />}
+                {breakingLoading ? "Searching…" : "Find Breaking News"}
+              </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="outline" size="sm" className="gap-1.5 text-xs text-destructive hover:text-destructive">
@@ -193,6 +203,33 @@ export default function MyWatchlistPanel() {
             </>
           }
         />
+      )}
+
+      {active && breakingFor === active.id && (breakingLoading || breakingItems.length > 0) && (
+        <div className="mt-6 space-y-2">
+          <div className="flex items-center gap-2 mb-2">
+            <Newspaper className="h-4 w-4 text-primary" />
+            <h4 className="font-serif text-sm text-muted-foreground">
+              Breaking News — {active.name}
+            </h4>
+          </div>
+          {breakingLoading && breakingItems.length === 0 && (
+            <div className="text-center text-muted-foreground py-8 font-mono text-xs">Scanning {active.tickers.slice(0, 10).length} stocks…</div>
+          )}
+          {breakingItems.map((a, i) => (
+            <div key={`${a.ticker}-${i}`} className="border border-border rounded-sm bg-card p-3">
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <Badge variant="outline" className={`text-[10px] font-mono uppercase ${TYPE_COLORS[a.type]}`}>{a.type}</Badge>
+                <Badge className="bg-primary text-primary-foreground font-mono text-[10px] px-2">{a.ticker}</Badge>
+                {typeof a.price === "number" && a.price > 0 && (
+                  <span className="text-[10px] font-mono text-muted-foreground">${a.price.toFixed(2)}</span>
+                )}
+                <span className="font-serif text-sm text-foreground">{a.title}</span>
+              </div>
+              {a.note && <p className="text-xs text-muted-foreground leading-relaxed">{a.note}</p>}
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
