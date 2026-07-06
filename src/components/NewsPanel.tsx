@@ -216,17 +216,15 @@ const NewsPanel = () => {
   const allPicks: ParsedPick[] = (news ?? []).map(item => {
     try {
       const parsed = JSON.parse(item.summary ?? "");
-      return { ticker: item.ticker, headline: item.headline, pick: parsed };
+      const horizon: "short" | "mid" = parsed?.horizon === "mid" ? "mid" : "short";
+      return { ticker: item.ticker, headline: item.headline, pick: parsed, horizon };
     } catch {
       return null;
     }
   }).filter(Boolean) as ParsedPick[];
 
-  // Filter out stale picks: earnings_date must be between today and ~24 days ahead,
-  // and Risk:Reward must be at least 1:2.
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-  const maxDate = today + 24 * 24 * 60 * 60 * 1000;
   const parseRR = (s: string): number => {
     if (!s) return 0;
     const m = s.match(/([\d.]+)\s*:\s*([\d.]+)/);
@@ -234,49 +232,38 @@ const NewsPanel = () => {
     const n = parseFloat(s);
     return isNaN(n) ? 0 : n;
   };
-  const picks = allPicks.filter(p => {
-    const d = new Date(p.pick.earnings_date).getTime();
-    if (isNaN(d) || d < today || d > maxDate) return false;
-    return parseRR(p.pick.risk_reward_ratio) >= 2;
-  });
+  const filterPicks = (h: "short" | "mid") => {
+    const maxDays = h === "mid" ? 62 : 24;
+    const maxDate = today + maxDays * 24 * 60 * 60 * 1000;
+    const list = allPicks.filter(p => {
+      if (p.horizon !== h) return false;
+      const d = new Date(p.pick.earnings_date).getTime();
+      if (isNaN(d) || d < today || d > maxDate) return false;
+      return parseRR(p.pick.risk_reward_ratio) >= 2;
+    });
+    list.sort((a, b) => (a.pick.rank ?? 99) - (b.pick.rank ?? 99));
+    return list;
+  };
+  const shortPicks = filterPicks("short");
+  const midPicks = filterPicks("mid");
 
-  // Sort by rank
-  picks.sort((a, b) => (a.pick.rank ?? 99) - (b.pick.rank ?? 99));
-
-  return (
-    <TooltipProvider delayDuration={150}>
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="font-serif text-sm text-muted-foreground inline-flex items-center gap-1.5">
-          Top Earnings Momentum Picks — Next 2-3 Weeks (Risk:Reward ≥ 1:2)
-          <HelpTip text="AI scans the watchlist for stocks reporting earnings in 2–3 weeks with: (1) high probability of beating EPS estimates, (2) strong next-quarter growth outlook, and (3) a Risk:Reward of at least 1:2. Entry/Target/Stop levels are anchored to today's market price and follow the BUY / HOLD / SELL framework." />
-        </h3>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-          className="gap-1.5 text-xs"
-        >
-          <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
-          {isRefreshing ? "Analyzing…" : "Find Best Picks"}
-        </Button>
-      </div>
-
+  const renderSection = (title: string, tip: string, picks: ParsedPick[]) => (
+    <div className="space-y-3">
+      <h3 className="font-serif text-sm text-muted-foreground inline-flex items-center gap-1.5">
+        {title}
+        <HelpTip text={tip} />
+      </h3>
       {isLoading && (
-        <div className="text-center text-muted-foreground py-20 font-mono text-sm">Loading…</div>
+        <div className="text-center text-muted-foreground py-10 font-mono text-sm">Loading…</div>
       )}
-
       {!isLoading && picks.length === 0 && (
-        <div className="text-center text-muted-foreground py-20 font-mono text-sm">
-          No picks available. Click "Find Best Picks" to run AI analysis.
+        <div className="text-center text-muted-foreground py-10 font-mono text-sm border border-dashed border-border rounded-sm">
+          No picks yet. Click "Find Best Picks" to run AI analysis.
         </div>
       )}
-
       {!isLoading && picks.length === 1 && (
         <PickCard {...picks[0]} livePrice={quoteMap.get(picks[0].ticker)?.price} ev={evalMap.get(picks[0].ticker)} />
       )}
-
       {!isLoading && picks.length > 1 && (
         <Tabs defaultValue={picks[0].ticker}>
           <TabsList className="mb-4 flex-wrap h-auto gap-1">
@@ -293,6 +280,36 @@ const NewsPanel = () => {
             </TabsContent>
           ))}
         </Tabs>
+      )}
+    </div>
+  );
+
+  return (
+    <TooltipProvider delayDuration={150}>
+    <div className="space-y-8">
+      <div className="flex items-center justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          className="gap-1.5 text-xs"
+        >
+          <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
+          {isRefreshing ? "Analyzing…" : "Find Best Picks"}
+        </Button>
+      </div>
+
+      {renderSection(
+        "Top Earnings Momentum Picks — Next 2-3 Weeks (Risk:Reward ≥ 1:2)",
+        "AI scans the watchlist for stocks reporting earnings in 2–3 weeks with: (1) high probability of beating EPS estimates, (2) strong next-quarter growth outlook, and (3) a Risk:Reward of at least 1:2. Entry/Target/Stop levels are anchored to today's market price and follow the BUY / HOLD / SELL framework.",
+        shortPicks,
+      )}
+
+      {renderSection(
+        "Top Earnings Momentum Picks — Next 1-2 Months (Risk:Reward ≥ 1:2)",
+        "Same AI screen but extended to earnings reports 3–8 weeks out. Useful for planning positions further in advance with the same Risk:Reward ≥ 1:2 discipline.",
+        midPicks,
       )}
     </div>
     </TooltipProvider>
