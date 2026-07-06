@@ -206,13 +206,10 @@ Return 1-5 picks. Use ONLY tickers from the shortlist. Do not pad.`
       throw new Error('No qualifying picks found');
     }
 
-    // Clear existing picks
-    await supabase.from('stock_news').delete().gte('created_at', sevenDaysAgo);
-
     // Insert all picks — override current_price with live Yahoo price, earnings_date with verified date
     const validPicks = picks.filter((p: any) => earningsMap[String(p.ticker || '').toUpperCase()]);
     if (validPicks.length === 0) {
-      return new Response(JSON.stringify({ success: true, count: 0, tickers: [], reason: 'AI returned no tickers from verified shortlist' }), {
+      return new Response(JSON.stringify({ success: true, count: 0, tickers: [], horizon, reason: 'AI returned no tickers from verified shortlist' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
