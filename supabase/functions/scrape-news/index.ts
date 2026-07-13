@@ -99,16 +99,16 @@ Deno.serve(async (req) => {
     }
 
 
-    const [priceResults, earningsResults] = await Promise.all([
+    const [priceResults, earningsMap] = await Promise.all([
       Promise.all(tickers.map(t => fetchYahooPrice(t))),
-      Promise.all(tickers.map(t => fetchEarningsDate(t))),
+      fetchEarningsMap(),
     ]);
     const livePrices: Record<string, number> = {};
-    const earningsMap: Record<string, string> = {};
-    tickers.forEach((t, i) => {
-      livePrices[t] = priceResults[i];
-      if (earningsResults[i]) earningsMap[t] = earningsResults[i] as string;
-    });
+    tickers.forEach((t, i) => { livePrices[t] = priceResults[i]; });
+    // Keep only earnings entries for tickers in our sanitized list
+    for (const k of Object.keys(earningsMap)) {
+      if (!tickers.includes(k)) delete earningsMap[k];
+    }
 
     const horizonMarker = `"horizon":"${horizon}"`;
     // Clear existing picks for THIS horizon only
