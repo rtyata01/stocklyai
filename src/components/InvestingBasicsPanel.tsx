@@ -1,4 +1,6 @@
-import { BookOpen, Wallet, Repeat, ShieldCheck, Clock } from "lucide-react";
+import { useMemo, useState } from "react";
+import { BookOpen, Wallet, Repeat, ShieldCheck, Clock, Crown, TrendingUp, Scale, Sparkles, Shuffle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const PRINCIPLES = [
   { icon: Repeat, title: "Invest incrementally, not all at once", text: "Use dollar-cost averaging — split your investment across weeks or months. This averages out volatility and removes the stress of timing the perfect entry." },
@@ -6,6 +8,9 @@ const PRINCIPLES = [
   { icon: Wallet, title: "Keep a cash buffer", text: "Just like an emergency fund, keep 10–25% of your investing capital in cash. This lets you buy aggressively during corrections instead of being fully invested at the top." },
   { icon: ShieldCheck, title: "Use Buy / Hold / Sell zones", text: "Set fair-value bands before you buy. Buy below fair value with a margin of safety (15–30%). Sell when price stretches well above intrinsic value." },
   { icon: BookOpen, title: "Position size = conviction × risk", text: "Higher conviction + lower risk = larger position. Speculative trades (biotech, small caps) should be small slices, never your core portfolio." },
+  { icon: Crown, title: "Own the category kings", text: "Invest in companies that dominate their market — GOOGL owns search, AAPL owns premium mobile, NVDA owns AI chips, MSFT owns enterprise SaaS. Category leaders compound for decades because their moats widen with scale." },
+  { icon: TrendingUp, title: "Follow where the smart money flows", text: "Track 13F filings, insider buys, and where mega-caps deploy capex. When Berkshire, Blackrock, or hyperscalers pour billions into a theme (AI infra, nuclear, GLP-1s), the flow itself creates the tailwind. Front-run the herd, don't chase it." },
+  { icon: Scale, title: "Rebalance every 1–2 years", text: "Winners grow into oversized positions and quietly raise your risk. Once a year (or every 2), trim what's overweight, add to what's lagging but still fundamentally strong, and reset back to your target allocation. Forces you to sell high and buy low mechanically." },
 ];
 
 const METRICS = [
@@ -62,19 +67,93 @@ const METRICS = [
   },
 ];
 
+// Deterministic day-of-year seed so highlights are stable per calendar day.
+function dayOfYear(d = new Date()) {
+  const start = new Date(d.getFullYear(), 0, 0);
+  const diff = (d.getTime() - start.getTime()) + ((start.getTimezoneOffset() - d.getTimezoneOffset()) * 60 * 1000);
+  return Math.floor(diff / 86400000);
+}
+
+const ALL_METRICS = METRICS.flatMap((c) => c.items.map((m) => ({ ...m, category: c.category, color: c.color })));
+
 const InvestingBasicsPanel = () => {
+  const [shuffleSeed, setShuffleSeed] = useState(0);
+  const [reorder, setReorder] = useState(false);
+
+  const seed = dayOfYear() + shuffleSeed;
+  const highlightedPrinciple = PRINCIPLES[seed % PRINCIPLES.length];
+  const highlightedMetric = ALL_METRICS[seed % ALL_METRICS.length];
+
+  const orderedPrinciples = useMemo(() => {
+    if (!reorder) return PRINCIPLES;
+    const arr = [...PRINCIPLES];
+    // Fisher–Yates with a simple LCG seeded by shuffleSeed for stable-per-click ordering
+    let s = shuffleSeed * 9301 + 49297;
+    for (let i = arr.length - 1; i > 0; i--) {
+      s = (s * 9301 + 49297) % 233280;
+      const j = Math.floor((s / 233280) * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }, [reorder, shuffleSeed]);
+
+  const HPIcon = highlightedPrinciple.icon;
+
   return (
     <div className="space-y-6">
+      {/* Tip of the Day */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="border border-primary/40 rounded-sm bg-primary/5 p-4 relative overflow-hidden">
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Principle of the Day</span>
+          </div>
+          <div className="flex items-center gap-2 mb-1">
+            <HPIcon className="h-4 w-4 text-foreground" />
+            <h4 className="font-serif text-sm text-foreground">{highlightedPrinciple.title}</h4>
+          </div>
+          <p className="text-xs text-muted-foreground leading-relaxed">{highlightedPrinciple.text}</p>
+        </div>
+        <div className="border border-pine/40 rounded-sm bg-pine/5 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles className="h-4 w-4 text-pine" />
+            <span className="font-mono text-[10px] uppercase tracking-widest text-pine">Metric of the Day</span>
+          </div>
+          <div className="flex items-baseline justify-between gap-3 flex-wrap mb-1">
+            <h4 className="font-serif text-sm text-foreground">{highlightedMetric.name}</h4>
+            <code className="text-[11px] font-mono text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">{highlightedMetric.formula}</code>
+          </div>
+          <p className="text-xs text-muted-foreground leading-relaxed">{highlightedMetric.text}</p>
+          <div className={`inline-block mt-2 px-2 py-0.5 rounded font-mono text-[10px] uppercase tracking-widest border ${highlightedMetric.color}`}>
+            {highlightedMetric.category}
+          </div>
+        </div>
+      </div>
+
       <div>
-        <div className="flex items-center gap-2 mb-3">
-          <BookOpen className="h-4 w-4 text-primary" />
-          <h3 className="font-serif text-sm text-muted-foreground">Trading Principles</h3>
+        <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
+            <BookOpen className="h-4 w-4 text-primary" />
+            <h3 className="font-serif text-sm text-muted-foreground">Trading Principles</h3>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs h-7" onClick={() => { setShuffleSeed((n) => n + 1); setReorder(true); }}>
+              <Shuffle className="h-3 w-3" />
+              Shuffle
+            </Button>
+            {reorder && (
+              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => { setReorder(false); setShuffleSeed(0); }}>
+                Reset
+              </Button>
+            )}
+          </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {PRINCIPLES.map((p, i) => {
+          {orderedPrinciples.map((p, i) => {
             const Icon = p.icon;
+            const isHighlight = p.title === highlightedPrinciple.title;
             return (
-              <div key={i} className="border border-border rounded-sm bg-card p-4">
+              <div key={i} className={`border rounded-sm bg-card p-4 ${isHighlight ? "border-primary/50 ring-1 ring-primary/20" : "border-border"}`}>
                 <div className="flex items-center gap-2 mb-2">
                   <Icon className="h-4 w-4 text-primary" />
                   <h4 className="font-serif text-sm text-foreground">{p.title}</h4>
@@ -95,15 +174,21 @@ const InvestingBasicsPanel = () => {
                 {cat.category}
               </div>
               <div className="divide-y divide-border">
-                {cat.items.map((m) => (
-                  <div key={m.name} className="p-4">
-                    <div className="flex items-baseline justify-between gap-3 flex-wrap mb-1">
-                      <h4 className="font-serif text-sm text-foreground">{m.name}</h4>
-                      <code className="text-[11px] font-mono text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">{m.formula}</code>
+                {cat.items.map((m) => {
+                  const isHighlight = m.name === highlightedMetric.name;
+                  return (
+                    <div key={m.name} className={`p-4 ${isHighlight ? "bg-pine/5" : ""}`}>
+                      <div className="flex items-baseline justify-between gap-3 flex-wrap mb-1">
+                        <h4 className="font-serif text-sm text-foreground flex items-center gap-2">
+                          {m.name}
+                          {isHighlight && <Sparkles className="h-3 w-3 text-pine" />}
+                        </h4>
+                        <code className="text-[11px] font-mono text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">{m.formula}</code>
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{m.text}</p>
                     </div>
-                    <p className="text-xs text-muted-foreground leading-relaxed">{m.text}</p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ))}
