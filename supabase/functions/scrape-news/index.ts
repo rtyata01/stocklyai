@@ -66,23 +66,38 @@ Deno.serve(async (req) => {
       } catch { return 0; }
     }
 
-    async function fetchEarningsDate(ticker: string): Promise<string | null> {
+    // Fetch upcoming earnings calendar once via Alpha Vantage (covers ~3 months).
+    // Yahoo's quoteSummary endpoint now requires a crumb and returns 401, so we
+    // switched sources. CSV columns: symbol,name,reportDate,fiscalDateEnding,estimate,currency,timeOfTheDay
+    const ALPHA_KEY = Deno.env.get('ALPHA_VANTAGE_API_KEY') || '';
+    async function fetchEarningsMap(): Promise<Record<string, string>> {
+      const map: Record<string, string> = {};
+      if (!ALPHA_KEY) return map;
       try {
-        const url = `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(ticker)}?modules=calendarEvents`;
-        const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-        if (!r.ok) return null;
-        const d = await r.json();
-        const dates: any[] = d?.quoteSummary?.result?.[0]?.calendarEvents?.earnings?.earningsDate || [];
-        for (const e of dates) {
-          const raw = typeof e === 'object' && e ? (e.raw ?? e) : e;
-          const ms = typeof raw === 'number' ? raw * 1000 : Date.parse(String(raw));
-          if (Number.isFinite(ms) && ms >= windowStartMs - 24*3600*1000 && ms <= horizonMs) {
-            return new Date(ms).toISOString().split('T')[0];
+        const url = `https://www.alphavantage.co/query?function=EARNINGS_CALENDAR&horizon=3month&apikey=${ALPHA_KEY}`;
+        const r = await fetch(url);
+        if (!r.ok) return map;
+        const csv = await r.text();
+        const lines = csv.split(/\r?\n/).slice(1); // drop header
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          const cols = line.split(',');
+          const sym = (cols[0] || '').trim().toUpperCase();
+          const date = (cols[2] || '').trim();
+          if (!sym || !date) continue;
+          const ms = Date.parse(date);
+          if (!Number.isFinite(ms)) continue;
+          if (ms >= windowStartMs - 24 * 3600 * 1000 && ms <= horizonMs) {
+            // keep earliest date per symbol
+            if (!map[sym]) map[sym] = date;
           }
         }
-        return null;
-      } catch { return null; }
+      } catch (e) {
+        console.error('Alpha Vantage earnings fetch failed', e);
+      }
+      return map;
     }
+
 
     const [priceResults, earningsResults] = await Promise.all([
       Promise.all(tickers.map(t => fetchYahooPrice(t))),
