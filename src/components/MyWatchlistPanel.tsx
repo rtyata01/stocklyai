@@ -145,6 +145,7 @@ export default function MyWatchlistPanel() {
           sectors={[{ name: active.name, tickers: active.tickers } as SectorGroup]}
           emptyMessage="This watchlist has no stocks yet. Click 'Manage Stocks' to add some."
           viewFrom="mylists"
+          onExtraRefresh={findBreakingNews}
           toolbarExtras={
             <>
               <ManageTickersDialog
@@ -161,16 +162,6 @@ export default function MyWatchlistPanel() {
                   }
                 }}
               />
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5 text-xs"
-                disabled={!active || active.tickers.length === 0 || breakingLoading}
-                onClick={findBreakingNews}
-              >
-                {breakingLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Newspaper className="h-3.5 w-3.5" />}
-                {breakingLoading ? "Searching…" : "Find Breaking News"}
-              </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="outline" size="sm" className="gap-1.5 text-xs text-destructive hover:text-destructive">
