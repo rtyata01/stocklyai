@@ -1,3 +1,5 @@
+import { isValidTicker } from "../_shared/validation.ts";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -10,9 +12,15 @@ Deno.serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) throw new Error('Missing LOVABLE_API_KEY');
 
-    const { ticker } = await req.json();
-    const sym = String(ticker || '').toUpperCase().slice(0, 6);
-    if (!sym) throw new Error('Missing ticker');
+    const body = await req.json().catch(() => ({}));
+    const rawTicker = typeof body?.ticker === 'string' ? body.ticker.trim().toUpperCase() : '';
+    if (!isValidTicker(rawTicker)) {
+      return new Response(JSON.stringify({ error: 'Invalid ticker' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const sym = rawTicker;
 
     // Get live price for context
     let price = 0;
@@ -70,7 +78,7 @@ Deno.serve(async (req) => {
     });
   } catch (e) {
     console.error('breaking-alert error', e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : 'Unknown error' }), {
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
