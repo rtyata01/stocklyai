@@ -28,6 +28,8 @@ interface Props {
   emptyMessage?: string;
   /** Encodes which tab to return to from the stock detail page. */
   viewFrom?: "portfolio" | "mylists";
+  /** Extra async work triggered on Re-evaluate (e.g. breaking news scan). */
+  onExtraRefresh?: () => void | Promise<void>;
 }
 
 export default function PortfolioTable({
@@ -36,6 +38,7 @@ export default function PortfolioTable({
   toolbarExtras,
   emptyMessage,
   viewFrom = "portfolio",
+  onExtraRefresh,
 }: Props) {
   const queryClient = useQueryClient();
   const [refreshNonce, setRefreshNonce] = useState(0);
@@ -61,6 +64,7 @@ export default function PortfolioTable({
     queryClient.invalidateQueries({ queryKey: ["stock-quotes"] });
     queryClient.invalidateQueries({ queryKey: ["price-evaluations"] });
     queryClient.invalidateQueries({ queryKey: ["stock-insights"] });
+    if (onExtraRefresh) { void onExtraRefresh(); }
   };
 
   const toggle = (name: string) => setCollapsed((prev) => {
