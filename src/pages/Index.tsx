@@ -61,7 +61,7 @@ const Index = () => {
       </Helmet>
       <div className="min-h-screen bg-background">
         <div className="max-w-[1400px] mx-auto bg-card border-x border-border shadow-2xl min-h-screen">
-          <DashboardHeader totalStocks={activeSectors.flatMap((s) => s.tickers).length} />
+          <DashboardHeader />
 
           {SHOW_WATCHLIST && (
             <ManageWatchlistDialog

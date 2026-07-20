@@ -6,11 +6,10 @@ import { useVisitStats } from "@/hooks/useVisitStats";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface DashboardHeaderProps {
-  totalStocks: number;
   onManageStocks?: () => void;
 }
 
-const DashboardHeader = ({ totalStocks, onManageStocks }: DashboardHeaderProps) => {
+const DashboardHeader = ({ onManageStocks }: DashboardHeaderProps) => {
   const stats = useVisitStats();
   return (
     <header className="relative z-10 px-6 md:px-10 pt-8 md:pt-10 pb-6 md:pb-8 border-b border-border flex flex-col md:flex-row justify-between md:items-end gap-4 bg-gradient-to-b from-secondary/30 to-transparent">
@@ -19,7 +18,7 @@ const DashboardHeader = ({ totalStocks, onManageStocks }: DashboardHeaderProps) 
           STOCKLY.AI — AI-Powered Stock Portfolio &amp; Analytics
         </h1>
         <div className="font-mono text-xs text-muted-foreground mt-1">
-          {totalStocks} Tracked Assets · Active Monitoring
+          Active Monitoring
         </div>
       </div>
       <div className="flex flex-col items-end gap-2">
