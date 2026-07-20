@@ -17,11 +17,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Helmet } from "react-helmet-async";
-
-const SHOW_WATCHLIST = import.meta.env.DEV;
+import { useAuth } from "@/hooks/useAuth";
 
 const Index = () => {
   const queryClient = useQueryClient();
+  const { ownerKey, isAuthed } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const VALID_TABS = ["mylists", "portfolio", "compare", "earnings", "swing", "cycle", "announcements", "basics"];
   const initialTab = (() => {
@@ -41,7 +41,14 @@ const Index = () => {
     setSearchParams(next, { replace: true });
   };
   const [watchlistOpen, setWatchlistOpen] = useState(false);
-  const [activeSectors, setActiveSectors] = useState<SectorGroup[]>(() => getWatchlistSectors());
+  const [activeSectors, setActiveSectors] = useState<SectorGroup[]>(() => getWatchlistSectors(ownerKey));
+
+  // Reload portfolio when the owner identity changes (sign in/out).
+  useEffect(() => {
+    setActiveSectors(getWatchlistSectors(ownerKey));
+    queryClient.invalidateQueries({ queryKey: ["stock-quotes"] });
+    queryClient.invalidateQueries({ queryKey: ["price-evaluations"] });
+  }, [ownerKey, queryClient]);
 
   const handleWatchlistSave = (newSectors: SectorGroup[]) => {
     setActiveSectors(newSectors);
