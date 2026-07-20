@@ -64,11 +64,16 @@ interface Props {
   ownerKey?: string;
 }
 
-const ManageWatchlistDialog = ({ open, onOpenChange, onSave }: Props) => {
-  const [editSectors, setEditSectors] = useState<SectorGroup[]>(() => getWatchlistSectors());
+const ManageWatchlistDialog = ({ open, onOpenChange, onSave, ownerKey }: Props) => {
+  const [editSectors, setEditSectors] = useState<SectorGroup[]>(() => getWatchlistSectors(ownerKey));
   const [newTicker, setNewTicker] = useState("");
   const [selectedSector, setSelectedSector] = useState(0);
   const [newSectorName, setNewSectorName] = useState("");
+
+  // Refresh from storage when identity changes or dialog reopens
+  useEffect(() => {
+    if (open) setEditSectors(getWatchlistSectors(ownerKey));
+  }, [open, ownerKey]);
 
   const handleAddTicker = () => {
     const t = newTicker.trim().toUpperCase();
@@ -103,7 +108,7 @@ const ManageWatchlistDialog = ({ open, onOpenChange, onSave }: Props) => {
 
   const handleSave = () => {
     const cleaned = editSectors.filter(s => s.tickers.length > 0);
-    saveWatchlistSectors(cleaned);
+    saveWatchlistSectors(cleaned, ownerKey);
     onSave(cleaned);
     onOpenChange(false);
   };
@@ -112,7 +117,7 @@ const ManageWatchlistDialog = ({ open, onOpenChange, onSave }: Props) => {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-serif">Manage Watchlist</DialogTitle>
+          <DialogTitle className="font-serif">Manage Portfolio</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
