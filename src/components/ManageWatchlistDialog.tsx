@@ -194,7 +194,7 @@ const ManageWatchlistDialog = ({ open, onOpenChange, onSave, ownerKey }: Props) 
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSave}>Save Watchlist</Button>
+          <Button onClick={handleSave}>Save Portfolio</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
