@@ -52,11 +52,11 @@ const Index = () => {
   return (
     <TooltipProvider delayDuration={150}>
       <Helmet>
-        <title>Stockly.ai — AI-Powered Stock Portfolio &amp; Analytics</title>
-        <meta name="description" content="Track a curated stock watchlist with AI-driven buy/hold/sell zones, earnings momentum picks, and side-by-side AI stock comparisons." />
+        <title>STOCKLYAI — Active Monitoring, AI-Powered Stock Portfolio &amp; Analytics</title>
+        <meta name="description" content="Active monitoring and AI-powered stock portfolio analytics with buy/hold/sell zones, earnings momentum picks, and side-by-side AI stock comparisons." />
         <link rel="canonical" href="https://stocklyai.lovable.app/" />
-        <meta property="og:title" content="Stockly.ai — AI-Powered Stock Portfolio &amp; Analytics" />
-        <meta property="og:description" content="AI-driven buy/hold/sell zones, earnings momentum picks, and stock comparisons for a curated watchlist." />
+        <meta property="og:title" content="STOCKLYAI — Active Monitoring, AI-Powered Stock Portfolio &amp; Analytics" />
+        <meta property="og:description" content="Active monitoring and AI-powered stock portfolio analytics with buy/hold/sell zones, earnings momentum picks, and side-by-side AI stock comparisons." />
         <meta property="og:url" content="https://stocklyai.lovable.app/" />
       </Helmet>
       <div className="min-h-screen bg-background">
