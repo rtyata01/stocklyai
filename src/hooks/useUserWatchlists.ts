@@ -22,11 +22,16 @@ function writeCache(ownerKey: string, lists: UserWatchlist[]) {
 }
 
 export function useUserWatchlists() {
-  const { ownerKey, user } = useAuth();
+  const { ownerKey, user, isAuthed } = useAuth();
   const [lists, setLists] = useState<UserWatchlist[]>(() => readCache(ownerKey) ?? []);
   const [loading, setLoading] = useState(false);
 
   const reload = useCallback(async () => {
+    if (!isAuthed) {
+      // Guests: DB is auth-only; use localStorage as the source of truth.
+      setLists(readCache(ownerKey) ?? []);
+      return;
+    }
     setLoading(true);
     const { data, error } = await supabase
       .from("user_watchlists")
@@ -38,7 +43,7 @@ export function useUserWatchlists() {
     const next = (data ?? []) as UserWatchlist[];
     setLists(next);
     writeCache(ownerKey, next);
-  }, [ownerKey]);
+  }, [ownerKey, isAuthed]);
 
   useEffect(() => {
     setLists(readCache(ownerKey) ?? []);
@@ -48,11 +53,28 @@ export function useUserWatchlists() {
   const create = async (name: string, tickers: string[] = []) => {
     const clean = name.trim();
     if (!clean) throw new Error("Name required");
+    const cleanTickers = tickers.map((t) => t.toUpperCase());
+
+    if (!isAuthed) {
+      if (lists.some((l) => l.name.toLowerCase() === clean.toLowerCase())) {
+        throw new Error("A watchlist with that name already exists");
+      }
+      const local: UserWatchlist = {
+        id: (crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`),
+        name: clean,
+        tickers: cleanTickers,
+        updated_at: new Date().toISOString(),
+      };
+      const next = [...lists, local];
+      setLists(next); writeCache(ownerKey, next);
+      return local;
+    }
+
     const row = {
       owner_key: ownerKey,
       user_id: user?.id ?? null,
       name: clean,
-      tickers: tickers.map((t) => t.toUpperCase()),
+      tickers: cleanTickers,
     };
     const { data, error } = await supabase
       .from("user_watchlists")
@@ -66,8 +88,10 @@ export function useUserWatchlists() {
   };
 
   const remove = async (id: string) => {
-    const { error } = await supabase.from("user_watchlists").delete().eq("id", id);
-    if (error) throw error;
+    if (isAuthed) {
+      const { error } = await supabase.from("user_watchlists").delete().eq("id", id);
+      if (error) throw error;
+    }
     const next = lists.filter((l) => l.id !== id);
     setLists(next); writeCache(ownerKey, next);
   };
@@ -76,6 +100,21 @@ export function useUserWatchlists() {
     const body: { name?: string; tickers?: string[] } = {};
     if (patch.name !== undefined) body.name = patch.name.trim();
     if (patch.tickers !== undefined) body.tickers = patch.tickers.map((t) => t.toUpperCase());
+
+    if (!isAuthed) {
+      const existing = lists.find((l) => l.id === id);
+      if (!existing) throw new Error("Watchlist not found");
+      const updated: UserWatchlist = {
+        ...existing,
+        ...(body.name !== undefined ? { name: body.name } : {}),
+        ...(body.tickers !== undefined ? { tickers: body.tickers } : {}),
+        updated_at: new Date().toISOString(),
+      };
+      const next = lists.map((l) => (l.id === id ? updated : l));
+      setLists(next); writeCache(ownerKey, next);
+      return updated;
+    }
+
     const { data, error } = await supabase
       .from("user_watchlists")
       .update(body)
