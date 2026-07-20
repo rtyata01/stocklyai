@@ -70,13 +70,12 @@ const Index = () => {
         <div className="max-w-[1400px] mx-auto bg-card border-x border-border shadow-2xl min-h-screen">
           <DashboardHeader />
 
-          {SHOW_WATCHLIST && (
-            <ManageWatchlistDialog
-              open={watchlistOpen}
-              onOpenChange={setWatchlistOpen}
-              onSave={handleWatchlistSave}
-            />
-          )}
+          <ManageWatchlistDialog
+            open={watchlistOpen}
+            onOpenChange={setWatchlistOpen}
+            onSave={handleWatchlistSave}
+            ownerKey={ownerKey}
+          />
 
           <main className="px-4 md:px-8 pt-4">
             <Tabs value={tab} onValueChange={handleTabChange}>
@@ -96,18 +95,23 @@ const Index = () => {
               </TabsContent>
 
               <TabsContent value="portfolio">
+                {!isAuthed && (
+                  <div className="mb-3 text-[11px] font-mono text-muted-foreground bg-secondary/40 border border-border rounded-sm px-3 py-2">
+                    Signed in as guest — portfolio is saved on this device. <a href="/auth" className="text-primary underline underline-offset-2">Sign in</a> to sync across devices.
+                  </div>
+                )}
                 <PortfolioTable
+                  key={ownerKey}
                   sectors={activeSectors}
                   toolbarExtras={
-                    SHOW_WATCHLIST ? (
-                      <Button variant="outline" size="sm" onClick={() => setWatchlistOpen(true)} className="gap-1.5 text-xs">
-                        <Settings className="h-3.5 w-3.5" />
-                        Manage Watchlist
-                      </Button>
-                    ) : null
+                    <Button variant="outline" size="sm" onClick={() => setWatchlistOpen(true)} className="gap-1.5 text-xs">
+                      <Settings className="h-3.5 w-3.5" />
+                      Manage Portfolio
+                    </Button>
                   }
                 />
               </TabsContent>
+
 
               <TabsContent value="compare">
                 <div className="pb-8"><StockComparisonPanel /></div>
