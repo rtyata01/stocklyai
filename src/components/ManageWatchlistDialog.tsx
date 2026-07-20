@@ -6,16 +6,26 @@ import { Badge } from "@/components/ui/badge";
 import { X, Plus } from "lucide-react";
 import { sectors, SectorGroup } from "@/data/stocks";
 
-const WATCHLIST_KEY = "stockly-watchlist";
+const LEGACY_KEY = "stockly-watchlist";
+const keyFor = (ownerKey?: string) =>
+  ownerKey ? `stockly-portfolio:${ownerKey}` : LEGACY_KEY;
 
 /**
- * Returns the user's saved watchlist merged with any new sectors/tickers added
- * to the default `sectors` list since they last saved. This keeps production
- * (and returning users) automatically in sync when defaults are updated.
+ * Returns the user's saved portfolio merged with any new sectors/tickers added
+ * to the default `sectors` list since they last saved. Scoped per owner
+ * (guest visitor id or signed-in user id) so each identity has its own portfolio.
  */
-export function getWatchlistSectors(): SectorGroup[] {
+export function getWatchlistSectors(ownerKey?: string): SectorGroup[] {
   try {
-    const raw = localStorage.getItem(WATCHLIST_KEY);
+    let raw = localStorage.getItem(keyFor(ownerKey));
+    // one-time migration from legacy shared key
+    if (!raw && ownerKey) {
+      const legacy = localStorage.getItem(LEGACY_KEY);
+      if (legacy) {
+        localStorage.setItem(keyFor(ownerKey), legacy);
+        raw = legacy;
+      }
+    }
     if (!raw) return sectors;
     const stored: SectorGroup[] = JSON.parse(raw);
     const byName = new Map(stored.map((s) => [s.name, { ...s, tickers: [...s.tickers] }]));
@@ -36,21 +46,22 @@ export function getWatchlistSectors(): SectorGroup[] {
     }
     const merged = Array.from(byName.values());
     if (changed) {
-      try { localStorage.setItem(WATCHLIST_KEY, JSON.stringify(merged)); } catch { /* ignore */ }
+      try { localStorage.setItem(keyFor(ownerKey), JSON.stringify(merged)); } catch { /* ignore */ }
     }
     return merged;
   } catch { /* fallback */ }
   return sectors;
 }
 
-export function saveWatchlistSectors(data: SectorGroup[]) {
-  localStorage.setItem(WATCHLIST_KEY, JSON.stringify(data));
+export function saveWatchlistSectors(data: SectorGroup[], ownerKey?: string) {
+  localStorage.setItem(keyFor(ownerKey), JSON.stringify(data));
 }
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (sectors: SectorGroup[]) => void;
+  ownerKey?: string;
 }
 
 const ManageWatchlistDialog = ({ open, onOpenChange, onSave }: Props) => {
