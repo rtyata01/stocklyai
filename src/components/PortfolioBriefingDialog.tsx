@@ -18,6 +18,7 @@ interface Briefing {
   drivers: Driver[];
   upcoming: { ticker: string; earningsDate: string | null; dividendDate: string | null; dividendYield: number | null }[];
   executiveSummary: string;
+  driverBullets?: string[];
   risks: string[];
   opportunities: string[];
 }
@@ -29,7 +30,7 @@ const toneCls = (v: number) => (v >= 0 ? "text-pine" : "text-destructive");
 export default function PortfolioBriefingDialog({
   open, onOpenChange, sectors,
 }: { open: boolean; onOpenChange: (v: boolean) => void; sectors: SectorGroup[] }) {
-  const [data, setData] = useState<(Briefing & { driverLines?: string[] }) | null>(null);
+  const [data, setData] = useState<Briefing | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,10 +64,7 @@ export default function PortfolioBriefingDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  const narrativeDrivers = (data as unknown as { drivers?: unknown })?.drivers;
-  const driverBullets: string[] = Array.isArray(narrativeDrivers) && typeof narrativeDrivers[0] === "string"
-    ? (narrativeDrivers as string[])
-    : [];
+  const driverBullets: string[] = Array.isArray(data?.driverBullets) ? data!.driverBullets! : [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -112,9 +110,7 @@ export default function PortfolioBriefingDialog({
                 </ul>
               )}
               <div className="border border-border rounded-sm divide-y divide-border">
-                {(data.drivers as unknown as Driver[])
-                  .filter((d) => typeof d === "object")
-                  .map((d) => (
+                {data.drivers.map((d) => (
                     <div key={d.ticker} className="px-3 py-2">
                       <div className="flex items-center gap-3 text-[11px] font-mono">
                         <span className="w-14">{d.ticker}</span>
@@ -131,7 +127,7 @@ export default function PortfolioBriefingDialog({
                         </span>
                       </div>
                     </div>
-                  ))}
+                ))}
               </div>
             </section>
 
