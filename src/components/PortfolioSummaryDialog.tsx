@@ -27,15 +27,15 @@ interface Analytics {
 }
 
 const TTL = 6 * 60 * 60 * 1000;
-const PIE_COLORS = ["hsl(var(--primary))", "hsl(var(--chart-2, var(--primary)))", "#22c55e", "#eab308", "#06b6d4", "#a855f7", "#f97316", "#ec4899", "#64748b"];
+const PIE_COLORS = ["hsl(var(--primary))", "hsl(var(--pine))", "hsl(var(--pine))", "hsl(var(--gold-leaf))", "hsl(var(--rust))", "#a855f7", "#f97316", "#ec4899", "#64748b"];
 
 const pct = (v: number) => `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`;
 const money = (v: number) => `$${Math.round(v).toLocaleString("en-US")}`;
-const toneCls = (v: number) => (v >= 0 ? "text-success" : "text-destructive");
+const toneCls = (v: number) => (v >= 0 ? "text-pine" : "text-destructive");
 
 function scoreTone(score: number) {
-  if (score >= 70) return { label: "Healthy", cls: "text-success", bar: "bg-success" };
-  if (score >= 45) return { label: "Balanced", cls: "text-warning", bar: "bg-warning" };
+  if (score >= 70) return { label: "Healthy", cls: "text-pine", bar: "bg-pine" };
+  if (score >= 45) return { label: "Balanced", cls: "text-gold-leaf", bar: "bg-gold-leaf" };
   return { label: "Fragile", cls: "text-destructive", bar: "bg-destructive" };
 }
 
@@ -156,8 +156,8 @@ export default function PortfolioSummaryDialog({
                       formatter={(v: number, n: string) => [money(v), n]}
                     />
                     <Line type="monotone" dataKey="portfolio" name="Portfolio" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
-                    <Line type="monotone" dataKey="SPY" name="SPY" stroke="#22c55e" strokeWidth={1.5} dot={false} strokeDasharray="4 3" />
-                    <Line type="monotone" dataKey="VOO" name="VOO" stroke="#eab308" strokeWidth={1.5} dot={false} strokeDasharray="2 3" />
+                    <Line type="monotone" dataKey="SPY" name="SPY" stroke="hsl(var(--pine))" strokeWidth={1.5} dot={false} strokeDasharray="4 3" />
+                    <Line type="monotone" dataKey="VOO" name="VOO" stroke="hsl(var(--gold-leaf))" strokeWidth={1.5} dot={false} strokeDasharray="2 3" />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -240,7 +240,7 @@ export default function PortfolioSummaryDialog({
                     />
                     <Bar dataKey="returnPct" radius={[2, 2, 0, 0]}>
                       {data.holdings.map((h) => (
-                        <Cell key={h.ticker} fill={h.returnPct >= 0 ? "#22c55e" : "#ef4444"} />
+                        <Cell key={h.ticker} fill={h.returnPct >= 0 ? "hsl(var(--pine))" : "hsl(var(--destructive))"} />
                       ))}
                     </Bar>
                   </BarChart>

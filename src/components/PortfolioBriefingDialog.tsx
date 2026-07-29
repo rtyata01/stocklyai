@@ -24,7 +24,7 @@ interface Briefing {
 
 const TTL = 6 * 60 * 60 * 1000;
 const pct = (v: number) => `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`;
-const toneCls = (v: number) => (v >= 0 ? "text-success" : "text-destructive");
+const toneCls = (v: number) => (v >= 0 ? "text-pine" : "text-destructive");
 
 export default function PortfolioBriefingDialog({
   open, onOpenChange, sectors,
@@ -122,7 +122,7 @@ export default function PortfolioBriefingDialog({
                         <span className="w-24 text-right text-muted-foreground">1M {pct(d.monthPct)}</span>
                         <span className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden ml-2">
                           <span
-                            className={`block h-full ${d.direction === "gain" ? "bg-success" : "bg-destructive"}`}
+                            className={`block h-full ${d.direction === "gain" ? "bg-pine" : "bg-destructive"}`}
                             style={{ width: `${Math.min(100, d.contributionPct)}%` }}
                           />
                         </span>
@@ -149,11 +149,11 @@ export default function PortfolioBriefingDialog({
 
               <section>
                 <h3 className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1.5">
-                  <Sparkles className="h-3.5 w-3.5 text-success" /> Opportunities ahead
+                  <Sparkles className="h-3.5 w-3.5 text-pine" /> Opportunities ahead
                 </h3>
                 <ul className="space-y-1.5 border border-border rounded-sm p-3">
                   {data.opportunities?.length ? data.opportunities.map((o, i) => (
-                    <li key={i} className="text-xs leading-relaxed flex gap-2"><span className="text-success">▸</span>{o}</li>
+                    <li key={i} className="text-xs leading-relaxed flex gap-2"><span className="text-pine">▸</span>{o}</li>
                   )) : <li className="text-xs text-muted-foreground">Nothing notable queued up.</li>}
                 </ul>
               </section>
