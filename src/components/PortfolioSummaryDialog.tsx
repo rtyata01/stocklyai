@@ -27,7 +27,17 @@ interface Analytics {
 }
 
 const TTL = 6 * 60 * 60 * 1000;
-const PIE_COLORS = ["hsl(var(--primary))", "hsl(var(--pine))", "hsl(var(--pine))", "hsl(var(--gold-leaf))", "hsl(var(--rust))", "#a855f7", "#f97316", "#ec4899", "#64748b"];
+const PIE_COLORS = [
+  "hsl(var(--primary))",
+  "hsl(var(--pine))",
+  "hsl(var(--gold-leaf))",
+  "hsl(var(--rust))",
+  "hsl(var(--espresso))",
+  "hsl(var(--gunmetal))",
+  "hsl(var(--muted-foreground))",
+  "hsl(var(--parchment-muted))",
+  "hsl(var(--leather-edge))",
+];
 
 const pct = (v: number) => `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`;
 const money = (v: number) => `$${Math.round(v).toLocaleString("en-US")}`;
