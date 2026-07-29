@@ -10,10 +10,40 @@ const LEGACY_KEY = "stockly-watchlist";
 const keyFor = (ownerKey?: string) =>
   ownerKey ? `stockly-portfolio:${ownerKey}` : LEGACY_KEY;
 
+interface StoredPortfolio {
+  v: 2;
+  sectors: SectorGroup[];
+  /** Snapshot of default entries known at save time, so removals stick and
+   *  only genuinely-new defaults get merged in later. */
+  seen: string[]; // "Sector" and "Sector|TICKER"
+}
+
+const defaultSeen = (): string[] => {
+  const out: string[] = [];
+  for (const s of sectors) {
+    out.push(s.name);
+    for (const t of s.tickers) out.push(`${s.name}|${t}`);
+  }
+  return out;
+};
+
+function parseStored(raw: string): StoredPortfolio {
+  const parsed = JSON.parse(raw);
+  if (Array.isArray(parsed)) {
+    // legacy v1: plain sector array — treat all current defaults as already seen
+    return { v: 2, sectors: parsed as SectorGroup[], seen: defaultSeen() };
+  }
+  return {
+    v: 2,
+    sectors: (parsed.sectors ?? []) as SectorGroup[],
+    seen: (parsed.seen ?? []) as string[],
+  };
+}
+
 /**
- * Returns the user's saved portfolio merged with any new sectors/tickers added
- * to the default `sectors` list since they last saved. Scoped per owner
- * (guest visitor id or signed-in user id) so each identity has its own portfolio.
+ * Returns the user's saved portfolio, merging in only defaults that did not
+ * exist the last time the user saved (so deletions are never resurrected).
+ * Scoped per owner (guest visitor id or signed-in user id).
  */
 export function getWatchlistSectors(ownerKey?: string): SectorGroup[] {
   try {
@@ -27,26 +57,37 @@ export function getWatchlistSectors(ownerKey?: string): SectorGroup[] {
       }
     }
     if (!raw) return sectors;
-    const stored: SectorGroup[] = JSON.parse(raw);
-    const byName = new Map(stored.map((s) => [s.name, { ...s, tickers: [...s.tickers] }]));
+    const stored = parseStored(raw);
+    const seen = new Set(stored.seen);
+    const byName = new Map(stored.sectors.map((s) => [s.name, { ...s, tickers: [...s.tickers] }]));
     let changed = false;
+
     for (const def of sectors) {
-      const existing = byName.get(def.name);
-      if (!existing) {
-        byName.set(def.name, { ...def, tickers: [...def.tickers] });
+      if (!seen.has(def.name)) {
+        // brand-new default sector
+        const existing = byName.get(def.name);
+        if (!existing) byName.set(def.name, { ...def, tickers: [...def.tickers] });
+        seen.add(def.name);
         changed = true;
-      } else {
-        for (const t of def.tickers) {
-          if (!existing.tickers.includes(t)) {
-            existing.tickers.push(t);
-            changed = true;
-          }
-        }
+      }
+      const existing = byName.get(def.name);
+      for (const t of def.tickers) {
+        const key = `${def.name}|${t}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        changed = true;
+        if (existing && !existing.tickers.includes(t)) existing.tickers.push(t);
       }
     }
+
     const merged = Array.from(byName.values());
     if (changed) {
-      try { localStorage.setItem(keyFor(ownerKey), JSON.stringify(merged)); } catch { /* ignore */ }
+      try {
+        localStorage.setItem(
+          keyFor(ownerKey),
+          JSON.stringify({ v: 2, sectors: merged, seen: Array.from(seen) } satisfies StoredPortfolio),
+        );
+      } catch { /* ignore */ }
     }
     return merged;
   } catch { /* fallback */ }
@@ -54,7 +95,8 @@ export function getWatchlistSectors(ownerKey?: string): SectorGroup[] {
 }
 
 export function saveWatchlistSectors(data: SectorGroup[], ownerKey?: string) {
-  localStorage.setItem(keyFor(ownerKey), JSON.stringify(data));
+  const payload: StoredPortfolio = { v: 2, sectors: data, seen: defaultSeen() };
+  localStorage.setItem(keyFor(ownerKey), JSON.stringify(payload));
 }
 
 interface Props {

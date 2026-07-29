@@ -27,7 +27,7 @@ const StockDetail = () => {
   const [searchParams] = useSearchParams();
   const from = searchParams.get("from");
   const backTo = from === "mylists" ? "/?tab=mylists" : "/";
-  const backLabel = from === "mylists" ? "Back to My Watchlist" : "Back to Dashboard";
+  const backLabel = from === "mylists" ? "Back to My Watchlist" : "Back to Portfolio";
   const { data: detail, isLoading, error } = useStockDetail(ticker);
   const { data: quotes } = useStockData();
   const { data: evaluations } = usePriceEvaluations(quotes);
