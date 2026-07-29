@@ -198,7 +198,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    const result = { generatedAt: new Date().toISOString(), ...facts, ...narrative };
+    const result = {
+      generatedAt: new Date().toISOString(),
+      ...facts,
+      ...narrative,
+      driverBullets: narrative.drivers,
+      drivers: facts.drivers,
+    };
     const cacheKey = `portfolio-briefing:${[...tickers].sort().join(',')}`;
     await writeAppCache(cacheKey, result, 6 * 60 * 60 * 1000);
 
