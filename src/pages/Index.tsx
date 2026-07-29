@@ -10,11 +10,13 @@ import CycleTradingPanel from "@/components/CycleTradingPanel";
 import ManageWatchlistDialog, { getWatchlistSectors } from "@/components/ManageWatchlistDialog";
 import PortfolioTable from "@/components/PortfolioTable";
 import MyWatchlistPanel from "@/components/MyWatchlistPanel";
+import PortfolioSummaryDialog from "@/components/PortfolioSummaryDialog";
+import PortfolioBriefingDialog from "@/components/PortfolioBriefingDialog";
 import { SectorGroup } from "@/data/stocks";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useQueryClient } from "@tanstack/react-query";
-import { Settings } from "lucide-react";
+import { Settings, Activity, Newspaper } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Helmet } from "react-helmet-async";
 import { useAuth } from "@/hooks/useAuth";
@@ -41,6 +43,8 @@ const Index = () => {
     setSearchParams(next, { replace: true });
   };
   const [watchlistOpen, setWatchlistOpen] = useState(false);
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [briefingOpen, setBriefingOpen] = useState(false);
   const [activeSectors, setActiveSectors] = useState<SectorGroup[]>(() => getWatchlistSectors(ownerKey));
 
   // Reload portfolio when the owner identity changes (sign in/out).
@@ -77,6 +81,9 @@ const Index = () => {
             ownerKey={ownerKey}
           />
 
+          <PortfolioSummaryDialog open={summaryOpen} onOpenChange={setSummaryOpen} sectors={activeSectors} />
+          <PortfolioBriefingDialog open={briefingOpen} onOpenChange={setBriefingOpen} sectors={activeSectors} />
+
           <main className="px-4 md:px-8 pt-4">
             <Tabs value={tab} onValueChange={handleTabChange}>
               <TabsList className="mb-4 flex-wrap h-auto gap-1">
@@ -104,10 +111,20 @@ const Index = () => {
                   key={ownerKey}
                   sectors={activeSectors}
                   toolbarExtras={
-                    <Button variant="outline" size="sm" onClick={() => setWatchlistOpen(true)} className="gap-1.5 text-xs">
-                      <Settings className="h-3.5 w-3.5" />
-                      Manage Portfolio
-                    </Button>
+                    <>
+                      <Button variant="default" size="sm" onClick={() => setSummaryOpen(true)} className="gap-1.5 text-xs">
+                        <Activity className="h-3.5 w-3.5" />
+                        Portfolio Pulse
+                      </Button>
+                      <Button variant="secondary" size="sm" onClick={() => setBriefingOpen(true)} className="gap-1.5 text-xs">
+                        <Newspaper className="h-3.5 w-3.5" />
+                        Weekly Debrief
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => setWatchlistOpen(true)} className="gap-1.5 text-xs">
+                        <Settings className="h-3.5 w-3.5" />
+                        Manage Portfolio
+                      </Button>
+                    </>
                   }
                 />
               </TabsContent>
