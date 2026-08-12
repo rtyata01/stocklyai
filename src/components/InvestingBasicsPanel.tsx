@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { BookOpen, Wallet, Repeat, ShieldCheck, Clock, Crown, TrendingUp, Scale, Sparkles, Shuffle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -79,6 +79,12 @@ const ALL_METRICS = METRICS.flatMap((c) => c.items.map((m) => ({ ...m, category:
 const InvestingBasicsPanel = () => {
   const [shuffleSeed, setShuffleSeed] = useState(0);
   const [reorder, setReorder] = useState(false);
+
+  // Auto-shuffle when the tab mounts
+  useEffect(() => {
+    setShuffleSeed(Math.floor(Math.random() * 1000) + 1);
+    setReorder(true);
+  }, []);
 
   const seed = dayOfYear() + shuffleSeed;
   const highlightedPrinciple = PRINCIPLES[seed % PRINCIPLES.length];
