@@ -89,13 +89,13 @@ const Index = () => {
               <TabsList className="mb-4 flex-wrap h-auto gap-1">
                 <TabsTrigger value="mylists" className="text-xs font-mono">My Watchlist</TabsTrigger>
                 <TabsTrigger value="portfolio" className="text-xs font-mono">Portfolio</TabsTrigger>
+                <TabsTrigger value="basics" className="text-xs font-mono">Trading 101</TabsTrigger>
                 <TabsTrigger value="compare" className="text-xs font-mono">AI Compare</TabsTrigger>
                 <TabsTrigger value="earnings" className="text-xs font-mono">Earnings Momentum</TabsTrigger>
                 <TabsTrigger value="swing" className="text-xs font-mono">Swing Trading</TabsTrigger>
                 <TabsTrigger value="cycle" className="text-xs font-mono">Cycle Trading</TabsTrigger>
                 <TabsTrigger value="announcements" className="text-xs font-mono">Announcements</TabsTrigger>
-                <TabsTrigger value="basics" className="text-xs font-mono">Investing 101</TabsTrigger>
-              </TabsList>
+                              </TabsList>
 
               <TabsContent value="mylists">
                 <MyWatchlistPanel />

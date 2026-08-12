@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -40,6 +40,14 @@ const AnnouncementsPanel = () => {
   const [generating, setGenerating] = useState(false);
 
   useEffect(() => { setItems(load()); }, []);
+
+  const autoRan = useRef(false);
+  useEffect(() => {
+    if (autoRan.current) return;
+    autoRan.current = true;
+    generateAlert();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const add = () => {
     if (!title.trim()) return;
