@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useStockNews, useRefreshNews } from "@/hooks/useStockNews";
 import { useStockData } from "@/hooks/useStockData";
 import { usePriceEvaluations } from "@/hooks/usePriceEvaluations";
@@ -211,6 +211,15 @@ const NewsPanel = () => {
       setIsRefreshing(false);
     }
   };
+
+  // Auto-run "Find Best Picks" when the tab mounts
+  const autoRan = useRef(false);
+  useEffect(() => {
+    if (autoRan.current) return;
+    autoRan.current = true;
+    handleRefresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Parse all picks
   const allPicks: ParsedPick[] = (news ?? []).map(item => {

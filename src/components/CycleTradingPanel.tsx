@@ -1,4 +1,4 @@
-import { useMemo, useState, KeyboardEvent } from "react";
+import { useMemo, useState, useEffect, useRef, KeyboardEvent } from "react";
 import { useStockData } from "@/hooks/useStockData";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -112,6 +112,15 @@ export default function CycleTradingPanel() {
       setError(e?.message || "Failed to find best picks");
     } finally { setBestLoading(false); }
   };
+
+  // Auto-run best picks on mount
+  const autoRan = useRef(false);
+  useEffect(() => {
+    if (autoRan.current) return;
+    autoRan.current = true;
+    runBestPicks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="space-y-6">
