@@ -95,7 +95,7 @@ const Index = () => {
                 <TabsTrigger value="swing" className="text-xs font-mono">Swing Trading</TabsTrigger>
                 <TabsTrigger value="cycle" className="text-xs font-mono">Cycle Trading</TabsTrigger>
                 <TabsTrigger value="announcements" className="text-xs font-mono">Announcements</TabsTrigger>
-                              </TabsList>
+              </TabsList>
 
               <TabsContent value="mylists">
                 <MyWatchlistPanel />
