@@ -40,7 +40,7 @@ export function useUserWatchlists() {
       .order("created_at", { ascending: true });
     setLoading(false);
     if (error) { console.warn("watchlist fetch failed", error.message); return; }
-    const next = (data ?? []) as UserWatchlist[];
+    const next = ((data ?? []) as UserWatchlist[]).filter((l) => l.name !== "__portfolio__");
     setLists(next);
     writeCache(ownerKey, next);
   }, [ownerKey, isAuthed]);

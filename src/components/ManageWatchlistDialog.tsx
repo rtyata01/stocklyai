@@ -7,8 +7,27 @@ import { X, Plus } from "lucide-react";
 import { sectors, SectorGroup } from "@/data/stocks";
 
 const LEGACY_KEY = "stockly-watchlist";
-const keyFor = (ownerKey?: string) =>
-  ownerKey ? `stockly-portfolio:${ownerKey}` : LEGACY_KEY;
+
+/** Owner used when callers don't pass one explicitly (set from usePortfolio). */
+let activeOwnerKey: string | undefined;
+export function setActiveOwnerKey(key?: string) {
+  activeOwnerKey = key;
+}
+
+const keyFor = (ownerKey?: string) => {
+  const k = ownerKey ?? activeOwnerKey;
+  return k ? `stockly-portfolio:${k}` : LEGACY_KEY;
+};
+
+/** True when this owner has an explicitly saved portfolio on this device. */
+export function hasStoredPortfolio(ownerKey?: string): boolean {
+  try {
+    return localStorage.getItem(keyFor(ownerKey)) !== null;
+  } catch {
+    return false;
+  }
+}
+
 
 interface StoredPortfolio {
   v: 2;
@@ -47,15 +66,17 @@ function parseStored(raw: string): StoredPortfolio {
  */
 export function getWatchlistSectors(ownerKey?: string): SectorGroup[] {
   try {
-    let raw = localStorage.getItem(keyFor(ownerKey));
+    const storeKey = keyFor(ownerKey);
+    let raw = localStorage.getItem(storeKey);
     // one-time migration from legacy shared key
-    if (!raw && ownerKey) {
+    if (!raw && storeKey !== LEGACY_KEY) {
       const legacy = localStorage.getItem(LEGACY_KEY);
       if (legacy) {
-        localStorage.setItem(keyFor(ownerKey), legacy);
+        localStorage.setItem(storeKey, legacy);
         raw = legacy;
       }
     }
+
     if (!raw) return sectors;
     const stored = parseStored(raw);
     const seen = new Set(stored.seen);

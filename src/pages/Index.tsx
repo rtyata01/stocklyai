@@ -7,7 +7,8 @@ import AnnouncementsPanel from "@/components/AnnouncementsPanel";
 import InvestingBasicsPanel from "@/components/InvestingBasicsPanel";
 import StockComparisonPanel from "@/components/StockComparisonPanel";
 import CycleTradingPanel from "@/components/CycleTradingPanel";
-import ManageWatchlistDialog, { getWatchlistSectors } from "@/components/ManageWatchlistDialog";
+import ManageWatchlistDialog from "@/components/ManageWatchlistDialog";
+import { usePortfolio } from "@/hooks/usePortfolio";
 import PortfolioTable from "@/components/PortfolioTable";
 import MyWatchlistPanel from "@/components/MyWatchlistPanel";
 import PortfolioSummaryDialog from "@/components/PortfolioSummaryDialog";
@@ -45,17 +46,16 @@ const Index = () => {
   const [watchlistOpen, setWatchlistOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [briefingOpen, setBriefingOpen] = useState(false);
-  const [activeSectors, setActiveSectors] = useState<SectorGroup[]>(() => getWatchlistSectors(ownerKey));
+  const { sectors: activeSectors, save: savePortfolio } = usePortfolio();
 
-  // Reload portfolio when the owner identity changes (sign in/out).
+  // Refresh market data when the owner identity changes (sign in/out).
   useEffect(() => {
-    setActiveSectors(getWatchlistSectors(ownerKey));
     queryClient.invalidateQueries({ queryKey: ["stock-quotes"] });
     queryClient.invalidateQueries({ queryKey: ["price-evaluations"] });
   }, [ownerKey, queryClient]);
 
   const handleWatchlistSave = (newSectors: SectorGroup[]) => {
-    setActiveSectors(newSectors);
+    void savePortfolio(newSectors);
     queryClient.invalidateQueries({ queryKey: ["stock-quotes"] });
     queryClient.invalidateQueries({ queryKey: ["price-evaluations"] });
   };
