@@ -66,15 +66,17 @@ function parseStored(raw: string): StoredPortfolio {
  */
 export function getWatchlistSectors(ownerKey?: string): SectorGroup[] {
   try {
-    let raw = localStorage.getItem(keyFor(ownerKey));
+    const storeKey = keyFor(ownerKey);
+    let raw = localStorage.getItem(storeKey);
     // one-time migration from legacy shared key
-    if (!raw && ownerKey) {
+    if (!raw && storeKey !== LEGACY_KEY) {
       const legacy = localStorage.getItem(LEGACY_KEY);
       if (legacy) {
-        localStorage.setItem(keyFor(ownerKey), legacy);
+        localStorage.setItem(storeKey, legacy);
         raw = legacy;
       }
     }
+
     if (!raw) return sectors;
     const stored = parseStored(raw);
     const seen = new Set(stored.seen);
