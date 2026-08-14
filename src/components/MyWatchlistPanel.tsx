@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Trash2, X, Bookmark, Newspaper, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -92,6 +92,16 @@ export default function MyWatchlistPanel() {
       setBreakingLoading(false);
     }
   };
+
+  // Auto-load breaking news when the tab mounts / the active watchlist changes.
+  const autoRan = useRef<string | null>(null);
+  useEffect(() => {
+    if (!active || active.tickers.length === 0) return;
+    if (autoRan.current === active.id) return;
+    autoRan.current = active.id;
+    void findBreakingNews();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active?.id, active?.tickers.length]);
 
   return (
     <div className="pb-8">
