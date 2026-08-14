@@ -21,6 +21,7 @@ import { Settings, Activity, Newspaper } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Helmet } from "react-helmet-async";
 import { useAuth } from "@/hooks/useAuth";
+import SiteFooter from "@/components/SiteFooter";
 
 const Index = () => {
   const queryClient = useQueryClient();
@@ -155,6 +156,8 @@ const Index = () => {
               </TabsContent>
             </Tabs>
           </main>
+
+          <SiteFooter />
         </div>
       </div>
     </TooltipProvider>
