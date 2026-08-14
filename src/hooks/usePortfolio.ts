@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, getVisitorId } from "@/hooks/useAuth";
 import { SectorGroup } from "@/data/stocks";
 import {
   getWatchlistSectors,
@@ -70,7 +70,7 @@ export function usePortfolio() {
 
     // No remote portfolio yet — seed it from this device (account-local first,
     // otherwise the guest portfolio saved before signing in).
-    const seed = hasStoredPortfolio(ownerKey) ? local : getWatchlistSectors();
+    const seed = hasStoredPortfolio(ownerKey) ? local : getWatchlistSectors(`v:${getVisitorId()}`);
     saveWatchlistSectors(seed, ownerKey);
     setSectors(seed);
     await persistRemote(seed, ownerKey, user.id, data?.id);
