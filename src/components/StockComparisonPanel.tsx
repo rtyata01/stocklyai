@@ -114,6 +114,9 @@ export default function StockComparisonPanel() {
   const [marketLoading, setMarketLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rangeKey, setRangeKey] = useState<string>("1Y");
+  const [alternatives, setAlternatives] = useState<AlternativesResult | null>(null);
+  const [altLoading, setAltLoading] = useState(false);
+  const [altError, setAltError] = useState<string | null>(null);
 
   const chartData = useMemo(() => {
     if (!result?.history?.length) return { data: [] as any[], tickers: [] as string[] };
