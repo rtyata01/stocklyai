@@ -111,6 +111,7 @@ const Index = () => {
                 <PortfolioTable
                   key={ownerKey}
                   sectors={activeSectors}
+                  onReorderSectors={(next) => { void savePortfolio(next); }}
                   toolbarExtras={
                     <>
                       <Button variant="default" size="sm" onClick={() => setSummaryOpen(true)} className="gap-1.5 text-xs">
