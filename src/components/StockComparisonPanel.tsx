@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Sparkles, Loader2, Globe2, Plus, X } from "lucide-react";
+import { Sparkles, Loader2, Globe2, Plus, X, Shuffle, Tag, TrendingUp, ShieldCheck, Swords } from "lucide-react";
 import { formatCurrency } from "@/data/stocks";
 import { toast } from "@/hooks/use-toast";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from "recharts";
