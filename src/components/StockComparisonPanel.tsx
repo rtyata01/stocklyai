@@ -570,9 +570,9 @@ export default function StockComparisonPanel() {
         </div>
       )}
 
-      {!result && !loading && !marketLoading && !error && (
+      {!result && !alternatives && !loading && !marketLoading && !altLoading && !error && (
         <div className="text-center text-muted-foreground py-10 font-mono text-xs">
-          Select 2+ stocks and hit Compare — or pick 1 and use Market Compare.
+          Select 2+ stocks and hit Compare — or pick 1 and use Market Compare / Market Alternatives.
         </div>
       )}
     </div>
