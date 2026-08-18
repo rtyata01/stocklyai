@@ -182,20 +182,65 @@ export default function PortfolioTable({
           <div className="text-center text-destructive py-20 font-mono text-sm">Failed to load data. Retrying…</div>
         )}
 
-        {hasAny && !isLoading && !error && sortedSectors.map((sector) => {
+        {hasAny && !isLoading && !error && sortedSectors.map((sector, sectorIdx) => {
           const isOpen = !collapsed.has(sector.name);
           return (
             <Collapsible key={sector.name} open={isOpen} onOpenChange={() => toggle(sector.name)}>
-              <CollapsibleTrigger className="w-full">
-                <h2 className="font-serif text-base text-foreground mb-2 flex items-center gap-3 cursor-pointer hover:text-primary transition-colors group">
-                  <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isOpen ? "" : "-rotate-90"}`} />
-                  {sector.name}
-                  <span className="flex-1 h-[1px] bg-border" />
-                  <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
-                    {sector.tickers.length} assets
+              <div
+                draggable={reorderable}
+                onDragStart={() => setDragName(sector.name)}
+                onDragEnd={() => { setDragName(null); setDropName(null); }}
+                onDragOver={(e) => { if (reorderable && dragName) { e.preventDefault(); setDropName(sector.name); } }}
+                onDragLeave={() => setDropName((n) => (n === sector.name ? null : n))}
+                onDrop={(e) => { e.preventDefault(); handleDrop(sector.name); }}
+                className={`flex items-center gap-2 mb-2 rounded-sm transition-colors ${
+                  dropName === sector.name && dragName !== sector.name ? "bg-primary/10 ring-1 ring-primary/40" : ""
+                } ${dragName === sector.name ? "opacity-50" : ""}`}
+              >
+                {reorderable && (
+                  <span className="flex items-center gap-0.5 shrink-0">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span
+                          className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
+                          aria-label={`Drag to reorder ${sector.name}`}
+                        >
+                          <GripVertical className="h-4 w-4" />
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="text-xs">Drag to reorder sectors</TooltipContent>
+                    </Tooltip>
+                    <button
+                      type="button"
+                      onClick={() => moveSector(sector.name, -1)}
+                      disabled={sectorIdx === 0}
+                      aria-label={`Move ${sector.name} up`}
+                      className="text-muted-foreground hover:text-foreground disabled:opacity-25"
+                    >
+                      <ArrowUp className="h-3 w-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => moveSector(sector.name, 1)}
+                      disabled={sectorIdx === sortedSectors.length - 1}
+                      aria-label={`Move ${sector.name} down`}
+                      className="text-muted-foreground hover:text-foreground disabled:opacity-25"
+                    >
+                      <ArrowDown className="h-3 w-3" />
+                    </button>
                   </span>
-                </h2>
-              </CollapsibleTrigger>
+                )}
+                <CollapsibleTrigger className="flex-1 min-w-0">
+                  <h2 className="font-serif text-base text-foreground flex items-center gap-3 cursor-pointer hover:text-primary transition-colors group">
+                    <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isOpen ? "" : "-rotate-90"}`} />
+                    {sector.name}
+                    <span className="flex-1 h-[1px] bg-border" />
+                    <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
+                      {sector.tickers.length} assets
+                    </span>
+                  </h2>
+                </CollapsibleTrigger>
+              </div>
               <CollapsibleContent>
                 <div className="border border-border rounded-sm overflow-hidden">
                   <Table className="table-fixed w-full">
