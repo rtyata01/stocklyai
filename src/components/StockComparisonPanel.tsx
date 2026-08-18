@@ -321,6 +321,91 @@ export default function StockComparisonPanel() {
         <div className="text-center text-destructive py-6 font-mono text-xs">{error}</div>
       )}
 
+      {altError && (
+        <div className="text-center text-destructive py-4 font-mono text-xs">{altError}</div>
+      )}
+
+      {alternatives && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <h4 className="font-serif text-sm text-foreground">
+              Market Alternatives to <span className="text-primary">{alternatives.base}</span>
+              {alternatives.basePrice > 0 && (
+                <span className="font-mono text-[11px] text-muted-foreground ml-2">
+                  {formatCurrency(alternatives.basePrice)}
+                </span>
+              )}
+            </h4>
+            <button
+              onClick={() => setAlternatives(null)}
+              className="text-[11px] font-mono text-muted-foreground hover:text-foreground underline underline-offset-2"
+            >
+              Dismiss
+            </button>
+          </div>
+
+          {alternatives.summary && (
+            <p className="text-xs text-foreground leading-relaxed border border-primary/40 bg-primary/5 rounded-sm p-3">
+              {alternatives.summary}
+            </p>
+          )}
+
+          <div className="grid gap-3 md:grid-cols-2">
+            {ALT_SECTIONS.map(({ key, label, Icon, tone }) => {
+              const items = alternatives[key] ?? [];
+              return (
+                <div key={key} className="border border-border rounded-sm bg-secondary/10 p-3">
+                  <div className={`flex items-center gap-1.5 mb-2 font-mono text-[10px] uppercase tracking-widest ${tone}`}>
+                    <Icon className="h-3.5 w-3.5" /> {label}
+                  </div>
+                  {items.length === 0 ? (
+                    <div className="text-[11px] font-mono text-muted-foreground">No matches found.</div>
+                  ) : (
+                    <ul className="space-y-2">
+                      {items.map(item => {
+                        const p = alternatives.prices?.[item.ticker] ?? 0;
+                        return (
+                          <li key={item.ticker} className="border-t border-border/60 pt-2 first:border-t-0 first:pt-0">
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                              <span className="flex items-center gap-2 min-w-0">
+                                <span className="font-serif text-sm text-foreground">{item.ticker}</span>
+                                <span className="text-[11px] text-muted-foreground truncate">{item.name}</span>
+                              </span>
+                              <span className="flex items-center gap-2 shrink-0">
+                                {p > 0 && (
+                                  <span className="font-mono text-xs text-foreground tabular-nums">{formatCurrency(p)}</span>
+                                )}
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-6 px-2 text-[10px] font-mono"
+                                  onClick={() => {
+                                    setExtraTickers(prev => prev.includes(item.ticker) ? prev : [...prev, item.ticker]);
+                                    setSelected(prev =>
+                                      prev.includes(item.ticker) || prev.length >= 8 ? prev : [...prev, item.ticker]
+                                    );
+                                  }}
+                                >
+                                  <Plus className="h-3 w-3 mr-0.5" /> Compare
+                                </Button>
+                              </span>
+                            </div>
+                            {item.metric && (
+                              <Badge variant="outline" className="mt-1 font-mono text-[10px]">{item.metric}</Badge>
+                            )}
+                            <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">{item.reason}</p>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {result && (
         <div className="space-y-4">
           {result.mode === "market" && (
