@@ -199,6 +199,28 @@ export default function StockComparisonPanel() {
     }
   };
 
+  const runAlternatives = async () => {
+    if (selected.length !== 1) return;
+    const base = selected[0];
+    setAltLoading(true);
+    setAltError(null);
+    const key = `market-alternatives:${base}`;
+    try {
+      const cached = await loadFromCache<AlternativesResult>(key, CACHE_TTL);
+      if (cached) { setAlternatives(cached); return; }
+      const { data, error } = await supabase.functions.invoke("market-alternatives", {
+        body: { ticker: base },
+      });
+      if (error) throw error;
+      saveLocalCache(key, data, CACHE_TTL);
+      setAlternatives(data as AlternativesResult);
+    } catch (e: any) {
+      setAltError(e?.message || "Failed to find alternatives");
+    } finally {
+      setAltLoading(false);
+    }
+  };
+
   const priceFor = (t: string) => quotes?.find(q => q.ticker === t)?.price ?? 0;
   const pct = (target: number, current: number) =>
     current > 0 ? ((target - current) / current) * 100 : 0;
