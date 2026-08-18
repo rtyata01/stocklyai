@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Sparkles, Loader2, Globe2, Plus, X } from "lucide-react";
+import { Sparkles, Loader2, Globe2, Plus, X, Shuffle, Tag, TrendingUp, ShieldCheck, Swords } from "lucide-react";
 import { formatCurrency } from "@/data/stocks";
 import { toast } from "@/hooks/use-toast";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from "recharts";
@@ -35,6 +35,36 @@ interface ComparisonResult {
   history?: HistorySeries[];
   prices?: Record<string, number>;
 }
+
+interface AlternativeItem {
+  ticker: string;
+  name: string;
+  reason: string;
+  metric: string;
+}
+
+interface AlternativesResult {
+  base: string;
+  basePrice: number;
+  prices: Record<string, number>;
+  summary: string;
+  cheaper: AlternativeItem[];
+  higherGrowth: AlternativeItem[];
+  lowerRisk: AlternativeItem[];
+  bestCompetitors: AlternativeItem[];
+}
+
+const ALT_SECTIONS: {
+  key: keyof Pick<AlternativesResult, "cheaper" | "higherGrowth" | "lowerRisk" | "bestCompetitors">;
+  label: string;
+  Icon: typeof Tag;
+  tone: string;
+}[] = [
+  { key: "cheaper", label: "Cheaper Alternatives", Icon: Tag, tone: "text-primary" },
+  { key: "higherGrowth", label: "Higher-Growth Alternatives", Icon: TrendingUp, tone: "text-pine" },
+  { key: "lowerRisk", label: "Lower-Risk Alternatives", Icon: ShieldCheck, tone: "text-muted-foreground" },
+  { key: "bestCompetitors", label: "Best Competitors", Icon: Swords, tone: "text-destructive" },
+];
 
 
 const CACHE_TTL = 6 * 60 * 60 * 1000;
@@ -84,6 +114,9 @@ export default function StockComparisonPanel() {
   const [marketLoading, setMarketLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rangeKey, setRangeKey] = useState<string>("1Y");
+  const [alternatives, setAlternatives] = useState<AlternativesResult | null>(null);
+  const [altLoading, setAltLoading] = useState(false);
+  const [altError, setAltError] = useState<string | null>(null);
 
   const chartData = useMemo(() => {
     if (!result?.history?.length) return { data: [] as any[], tickers: [] as string[] };
@@ -166,6 +199,28 @@ export default function StockComparisonPanel() {
     }
   };
 
+  const runAlternatives = async () => {
+    if (selected.length !== 1) return;
+    const base = selected[0];
+    setAltLoading(true);
+    setAltError(null);
+    const key = `market-alternatives:${base}`;
+    try {
+      const cached = await loadFromCache<AlternativesResult>(key, CACHE_TTL);
+      if (cached) { setAlternatives(cached); return; }
+      const { data, error } = await supabase.functions.invoke("market-alternatives", {
+        body: { ticker: base },
+      });
+      if (error) throw error;
+      saveLocalCache(key, data, CACHE_TTL);
+      setAlternatives(data as AlternativesResult);
+    } catch (e: any) {
+      setAltError(e?.message || "Failed to find alternatives");
+    } finally {
+      setAltLoading(false);
+    }
+  };
+
   const priceFor = (t: string) => quotes?.find(q => q.ticker === t)?.price ?? 0;
   const pct = (target: number, current: number) =>
     current > 0 ? ((target - current) / current) * 100 : 0;
@@ -179,10 +234,21 @@ export default function StockComparisonPanel() {
               <Sparkles className="h-4 w-4 text-primary" /> AI Stock Comparison
             </h3>
             <p className="text-xs text-muted-foreground mt-1">
-              Pick 2–8 stocks for a head-to-head AI breakdown. Add custom tickers, or select one and hit Market Compare to auto-find peers.
+              Pick 2–8 stocks for a head-to-head AI breakdown. Add custom tickers, or select exactly one for Market Compare and Market Alternatives.
             </p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+            <Button
+              onClick={runAlternatives}
+              disabled={selected.length !== 1 || altLoading}
+              size="sm"
+              variant="secondary"
+              className="gap-1.5 text-xs"
+              title={selected.length !== 1 ? "Select exactly one stock to find alternatives" : undefined}
+            >
+              {altLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Shuffle className="h-3.5 w-3.5" />}
+              Market Alternatives
+            </Button>
             {selected.length === 1 && (
               <Button onClick={() => runCompare("market")} disabled={marketLoading} size="sm" variant="outline" className="gap-1.5 text-xs">
                 {marketLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Globe2 className="h-3.5 w-3.5" />}
@@ -253,6 +319,91 @@ export default function StockComparisonPanel() {
 
       {error && (
         <div className="text-center text-destructive py-6 font-mono text-xs">{error}</div>
+      )}
+
+      {altError && (
+        <div className="text-center text-destructive py-4 font-mono text-xs">{altError}</div>
+      )}
+
+      {alternatives && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <h4 className="font-serif text-sm text-foreground">
+              Market Alternatives to <span className="text-primary">{alternatives.base}</span>
+              {alternatives.basePrice > 0 && (
+                <span className="font-mono text-[11px] text-muted-foreground ml-2">
+                  {formatCurrency(alternatives.basePrice)}
+                </span>
+              )}
+            </h4>
+            <button
+              onClick={() => setAlternatives(null)}
+              className="text-[11px] font-mono text-muted-foreground hover:text-foreground underline underline-offset-2"
+            >
+              Dismiss
+            </button>
+          </div>
+
+          {alternatives.summary && (
+            <p className="text-xs text-foreground leading-relaxed border border-primary/40 bg-primary/5 rounded-sm p-3">
+              {alternatives.summary}
+            </p>
+          )}
+
+          <div className="grid gap-3 md:grid-cols-2">
+            {ALT_SECTIONS.map(({ key, label, Icon, tone }) => {
+              const items = alternatives[key] ?? [];
+              return (
+                <div key={key} className="border border-border rounded-sm bg-secondary/10 p-3">
+                  <div className={`flex items-center gap-1.5 mb-2 font-mono text-[10px] uppercase tracking-widest ${tone}`}>
+                    <Icon className="h-3.5 w-3.5" /> {label}
+                  </div>
+                  {items.length === 0 ? (
+                    <div className="text-[11px] font-mono text-muted-foreground">No matches found.</div>
+                  ) : (
+                    <ul className="space-y-2">
+                      {items.map(item => {
+                        const p = alternatives.prices?.[item.ticker] ?? 0;
+                        return (
+                          <li key={item.ticker} className="border-t border-border/60 pt-2 first:border-t-0 first:pt-0">
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                              <span className="flex items-center gap-2 min-w-0">
+                                <span className="font-serif text-sm text-foreground">{item.ticker}</span>
+                                <span className="text-[11px] text-muted-foreground truncate">{item.name}</span>
+                              </span>
+                              <span className="flex items-center gap-2 shrink-0">
+                                {p > 0 && (
+                                  <span className="font-mono text-xs text-foreground tabular-nums">{formatCurrency(p)}</span>
+                                )}
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-6 px-2 text-[10px] font-mono"
+                                  onClick={() => {
+                                    setExtraTickers(prev => prev.includes(item.ticker) ? prev : [...prev, item.ticker]);
+                                    setSelected(prev =>
+                                      prev.includes(item.ticker) || prev.length >= 8 ? prev : [...prev, item.ticker]
+                                    );
+                                  }}
+                                >
+                                  <Plus className="h-3 w-3 mr-0.5" /> Compare
+                                </Button>
+                              </span>
+                            </div>
+                            {item.metric && (
+                              <Badge variant="outline" className="mt-1 font-mono text-[10px]">{item.metric}</Badge>
+                            )}
+                            <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">{item.reason}</p>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
 
       {result && (
@@ -419,9 +570,9 @@ export default function StockComparisonPanel() {
         </div>
       )}
 
-      {!result && !loading && !marketLoading && !error && (
+      {!result && !alternatives && !loading && !marketLoading && !altLoading && !error && (
         <div className="text-center text-muted-foreground py-10 font-mono text-xs">
-          Select 2+ stocks and hit Compare — or pick 1 and use Market Compare.
+          Select 2+ stocks and hit Compare — or pick 1 and use Market Compare / Market Alternatives.
         </div>
       )}
     </div>
