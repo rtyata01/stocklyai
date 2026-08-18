@@ -36,6 +36,36 @@ interface ComparisonResult {
   prices?: Record<string, number>;
 }
 
+interface AlternativeItem {
+  ticker: string;
+  name: string;
+  reason: string;
+  metric: string;
+}
+
+interface AlternativesResult {
+  base: string;
+  basePrice: number;
+  prices: Record<string, number>;
+  summary: string;
+  cheaper: AlternativeItem[];
+  higherGrowth: AlternativeItem[];
+  lowerRisk: AlternativeItem[];
+  bestCompetitors: AlternativeItem[];
+}
+
+const ALT_SECTIONS: {
+  key: keyof Pick<AlternativesResult, "cheaper" | "higherGrowth" | "lowerRisk" | "bestCompetitors">;
+  label: string;
+  Icon: typeof Tag;
+  tone: string;
+}[] = [
+  { key: "cheaper", label: "Cheaper Alternatives", Icon: Tag, tone: "text-primary" },
+  { key: "higherGrowth", label: "Higher-Growth Alternatives", Icon: TrendingUp, tone: "text-pine" },
+  { key: "lowerRisk", label: "Lower-Risk Alternatives", Icon: ShieldCheck, tone: "text-muted-foreground" },
+  { key: "bestCompetitors", label: "Best Competitors", Icon: Swords, tone: "text-destructive" },
+];
+
 
 const CACHE_TTL = 6 * 60 * 60 * 1000;
 const CACHE_VERSION = "v2"; // bump to invalidate caches missing history
