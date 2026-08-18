@@ -30,6 +30,8 @@ interface Props {
   viewFrom?: "portfolio" | "mylists";
   /** Extra async work triggered on Re-evaluate (e.g. breaking news scan). */
   onExtraRefresh?: () => void | Promise<void>;
+  /** When provided, sector headers become drag handles for reordering. */
+  onReorderSectors?: (sectors: SectorGroup[]) => void;
 }
 
 export default function PortfolioTable({
@@ -39,6 +41,7 @@ export default function PortfolioTable({
   emptyMessage,
   viewFrom = "portfolio",
   onExtraRefresh,
+  onReorderSectors,
 }: Props) {
   const queryClient = useQueryClient();
   const [refreshNonce, setRefreshNonce] = useState(0);
@@ -48,6 +51,35 @@ export default function PortfolioTable({
   const { data: insights } = useStockInsights(quotes, refreshNonce);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [sort, setSort] = useState<{ key: SortKey; dir: SortDir } | null>(null);
+  const [dragName, setDragName] = useState<string | null>(null);
+  const [dropName, setDropName] = useState<string | null>(null);
+
+  const reorderable = typeof onReorderSectors === "function";
+
+  const handleDrop = (targetName: string) => {
+    setDropName(null);
+    const source = dragName;
+    setDragName(null);
+    if (!reorderable || !source || source === targetName) return;
+    const next = [...sectors];
+    const from = next.findIndex((s) => s.name === source);
+    const to = next.findIndex((s) => s.name === targetName);
+    if (from === -1 || to === -1) return;
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    onReorderSectors!(next);
+  };
+
+  const moveSector = (name: string, delta: number) => {
+    if (!reorderable) return;
+    const next = [...sectors];
+    const from = next.findIndex((s) => s.name === name);
+    const to = from + delta;
+    if (from === -1 || to < 0 || to >= next.length) return;
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    onReorderSectors!(next);
+  };
 
   const quoteMap = new Map(quotes?.map((q) => [q.ticker, q]) ?? []);
   const evalMap = new Map(evaluations?.map((e) => [e.ticker, e]) ?? []);
