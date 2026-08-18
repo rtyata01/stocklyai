@@ -234,10 +234,21 @@ export default function StockComparisonPanel() {
               <Sparkles className="h-4 w-4 text-primary" /> AI Stock Comparison
             </h3>
             <p className="text-xs text-muted-foreground mt-1">
-              Pick 2–8 stocks for a head-to-head AI breakdown. Add custom tickers, or select one and hit Market Compare to auto-find peers.
+              Pick 2–8 stocks for a head-to-head AI breakdown. Add custom tickers, or select exactly one for Market Compare and Market Alternatives.
             </p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+            <Button
+              onClick={runAlternatives}
+              disabled={selected.length !== 1 || altLoading}
+              size="sm"
+              variant="secondary"
+              className="gap-1.5 text-xs"
+              title={selected.length !== 1 ? "Select exactly one stock to find alternatives" : undefined}
+            >
+              {altLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Shuffle className="h-3.5 w-3.5" />}
+              Market Alternatives
+            </Button>
             {selected.length === 1 && (
               <Button onClick={() => runCompare("market")} disabled={marketLoading} size="sm" variant="outline" className="gap-1.5 text-xs">
                 {marketLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Globe2 className="h-3.5 w-3.5" />}
