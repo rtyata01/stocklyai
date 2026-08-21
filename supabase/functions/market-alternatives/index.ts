@@ -1,24 +1,11 @@
 import { writeAppCache } from '../_shared/cache.ts';
 import { isValidTicker } from '../_shared/validation.ts';
+import { fetchCompanyProfile, fetchYahooPrice, fetchYahooRelated, profileBlock } from '../_shared/profile.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-async function fetchYahooPrice(ticker: string): Promise<number> {
-  try {
-    const map: Record<string, string> = { ETH: 'ETH-USD', SOL: 'SOL-USD', XRP: 'XRP-USD' };
-    const symbol = map[ticker] || ticker;
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`;
-    const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-    const data = await res.json();
-    const price = data?.chart?.result?.[0]?.meta?.regularMarketPrice;
-    return typeof price === 'number' && price > 0 ? price : 0;
-  } catch {
-    return 0;
-  }
-}
 
 const CATEGORY_KEYS = ['cheaper', 'higherGrowth', 'lowerRisk', 'bestCompetitors'] as const;
 
@@ -36,11 +23,12 @@ const itemSchema = {
 
 const categoryArray = (desc: string) => ({
   type: 'array',
-  minItems: 2,
-  maxItems: 4,
+  minItems: 3,
+  maxItems: 5,
   description: desc,
   items: itemSchema,
 });
+
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
