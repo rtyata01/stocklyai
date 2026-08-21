@@ -1,24 +1,11 @@
 import { writeAppCache } from '../_shared/cache.ts';
 import { isValidTicker } from '../_shared/validation.ts';
+import { fetchCompanyProfile, fetchYahooPrice, fetchYahooRelated, profileBlock } from '../_shared/profile.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-async function fetchYahooPrice(ticker: string): Promise<number> {
-  try {
-    const map: Record<string, string> = { ETH: 'ETH-USD', SOL: 'SOL-USD', XRP: 'XRP-USD' };
-    const symbol = map[ticker] || ticker;
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`;
-    const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-    const data = await res.json();
-    const price = data?.chart?.result?.[0]?.meta?.regularMarketPrice;
-    return typeof price === 'number' && price > 0 ? price : 0;
-  } catch {
-    return 0;
-  }
-}
 
 const CATEGORY_KEYS = ['cheaper', 'higherGrowth', 'lowerRisk', 'bestCompetitors'] as const;
 
@@ -36,11 +23,12 @@ const itemSchema = {
 
 const categoryArray = (desc: string) => ({
   type: 'array',
-  minItems: 2,
-  maxItems: 4,
+  minItems: 3,
+  maxItems: 5,
   description: desc,
   items: itemSchema,
 });
+
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -54,7 +42,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    const basePrice = await fetchYahooPrice(ticker);
+    const [basePrice, profile, related] = await Promise.all([
+      fetchYahooPrice(ticker),
+      fetchCompanyProfile(ticker),
+      fetchYahooRelated(ticker),
+    ]);
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
@@ -86,17 +78,24 @@ Deno.serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: 'You are a senior equity research analyst. Given one ticker, surface investable alternatives across four buckets: cheaper, higher-growth, lower-risk, and best competitors. Only return real, currently listed US tickers (or major ETFs). Never repeat the base ticker. Use real, recent fundamentals — no invented numbers.',
+            content: `You are a senior equity research analyst. Given one ticker, surface investable alternatives across four buckets: cheaper, higher-growth, lower-risk, and best competitors.
+Rules:
+- Anchor on the company's ACTUAL business model from the description provided, not the broad sector label. Example: a digital-asset treasury company (buys and holds crypto on the balance sheet) competes with other treasury companies such as MSTR, SBET, BMNR, DFDV — not with exchanges, miners or banks.
+- "Best competitors" must be direct rivals pursuing the same customers/strategy, including smaller or newer names, ordered closest-first.
+- Consider the "people also watch" candidates supplied below; include those that genuinely fit and ignore the rest.
+- Only real, currently listed US tickers (or major ETFs). Never invent symbols, never return the base ticker, never return delisted/acquired names.
+- Return 3-5 names per bucket so weak ones can be filtered out. Use real, recent fundamentals — no invented numbers.`,
           },
           {
             role: 'user',
-            content: `Base ticker: ${ticker}${basePrice > 0 ? ` (current price $${basePrice.toFixed(2)})` : ''}. Return alternatives for each bucket.`,
+            content: `Find alternatives for each bucket.\n\n${profileBlock(profile, ticker, related)}${basePrice > 0 ? `\nLive price: $${basePrice.toFixed(2)}` : ''}`,
           },
         ],
         tools: [tool],
         tool_choice: { type: 'function', function: { name: 'return_alternatives' } },
       }),
     });
+
 
     if (!res.ok) {
       const status = res.status;
@@ -111,12 +110,12 @@ Deno.serve(async (req) => {
     if (!tc) throw new Error('No tool call in response');
     const parsed = JSON.parse(tc.function.arguments);
 
-    // Sanitize and collect tickers for live pricing
-    const categories: Record<string, any[]> = {};
+    // Sanitize, then verify every suggested ticker actually trades before showing it
+    const rawCategories: Record<string, any[]> = {};
     const seen = new Set<string>();
     for (const key of CATEGORY_KEYS) {
       const items = Array.isArray(parsed[key]) ? parsed[key] : [];
-      categories[key] = items
+      rawCategories[key] = items
         .map((it: any) => ({
           ticker: String(it?.ticker || '').trim().toUpperCase(),
           name: String(it?.name || ''),
@@ -124,14 +123,21 @@ Deno.serve(async (req) => {
           metric: String(it?.metric || ''),
         }))
         .filter((it: any) => isValidTicker(it.ticker) && it.ticker !== ticker)
-        .slice(0, 4);
-      for (const it of categories[key]) seen.add(it.ticker);
+        .slice(0, 5);
+      for (const it of rawCategories[key]) seen.add(it.ticker);
     }
 
-    const altTickers = Array.from(seen).slice(0, 24);
+    const altTickers = Array.from(seen).slice(0, 30);
     const altPrices = await Promise.all(altTickers.map((t) => fetchYahooPrice(t)));
     const prices: Record<string, number> = { [ticker]: basePrice };
     altTickers.forEach((t, i) => { prices[t] = altPrices[i]; });
+
+    const categories: Record<string, any[]> = {};
+    for (const key of CATEGORY_KEYS) {
+      const tradable = rawCategories[key].filter((it) => (prices[it.ticker] || 0) > 0);
+      categories[key] = (tradable.length ? tradable : rawCategories[key]).slice(0, 4);
+    }
+
 
     const result = {
       base: ticker,

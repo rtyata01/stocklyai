@@ -1,5 +1,6 @@
 import { writeAppCache } from '../_shared/cache.ts';
 import { isValidTicker } from '../_shared/validation.ts';
+import { fetchCompanyProfile, fetchYahooRelated, filterTradableTickers, profileBlock } from '../_shared/profile.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -95,6 +96,10 @@ Deno.serve(async (req) => {
     // Market mode: ask AI for 4 peer tickers in same category, then continue
     if (mode === 'market') {
       const base = tickers[0];
+      const [profile, related] = await Promise.all([
+        fetchCompanyProfile(base),
+        fetchYahooRelated(base),
+      ]);
       const peerTool = {
         type: 'function',
         function: {
@@ -104,9 +109,17 @@ Deno.serve(async (req) => {
             properties: {
               peers: {
                 type: 'array',
-                items: { type: 'string' },
-                minItems: 3, maxItems: 4,
-                description: 'Publicly traded peer tickers in the same market/category as the base ticker. US-listed preferred.',
+                items: {
+                  type: 'object',
+                  properties: {
+                    ticker: { type: 'string', description: 'US-listed ticker symbol, uppercase' },
+                    why: { type: 'string', description: 'Why this is a direct peer, <= 15 words' },
+                  },
+                  required: ['ticker', 'why'],
+                  additionalProperties: false,
+                },
+                minItems: 4, maxItems: 8,
+                description: 'Closest publicly traded peers, ordered best-match first.',
               },
             },
             required: ['peers'], additionalProperties: false,
@@ -114,16 +127,28 @@ Deno.serve(async (req) => {
         },
       };
       const peerResult = await callAI([
-        { role: 'system', content: 'You identify the closest publicly traded market peers/competitors for a given ticker. Return 3-4 most relevant peer tickers (same industry, similar size or direct competitor). Return only valid US-listed ticker symbols (uppercase letters, optional . or -).' },
-        { role: 'user', content: `Find 3-4 closest market peers for ${base}.` },
+        {
+          role: 'system',
+          content: `You identify the closest publicly traded market peers for a given ticker.
+Rules:
+- Match the BUSINESS MODEL and strategy first, not just the broad sector. A crypto-treasury company's peers are other crypto-treasury companies (e.g. MSTR, SBET, BMNR, DFDV), not exchanges or miners. A GLP-1 maker's peers are other GLP-1 makers, not all of pharma.
+- Prefer companies of comparable size/stage, then larger bellwethers in the identical niche.
+- Only real, currently listed US tickers (uppercase, optional . or -). Never invent symbols, never return the base ticker, never return delisted or acquired names.
+- Order best match first and return 4-8 candidates so weaker ones can be dropped.`,
+        },
+        { role: 'user', content: `Find the closest market peers for ${base}.\n\n${profileBlock(profile, base, related)}` },
       ], peerTool, 'return_peers');
-      const peers = (peerResult.peers || [])
-        .map((p: any) => String(p || '').trim().toUpperCase())
-        .filter((p: string) => isValidTicker(p) && p !== base)
-        .slice(0, 4);
+      const candidates = (peerResult.peers || [])
+        .map((p: any) => String(p?.ticker ?? p ?? '').trim().toUpperCase())
+        .filter((p: string) => isValidTicker(p) && p !== base);
+      // Backfill with Yahoo's related list, then keep only tickers that actually trade.
+      const pool = Array.from(new Set([...candidates, ...related.filter((r) => isValidTicker(r) && r !== base)]));
+      const tradable = await filterTradableTickers(pool.slice(0, 12));
+      const peers = pool.filter((p) => tradable.has(p)).slice(0, 4);
       tickers = Array.from(new Set([base, ...peers]));
       if (tickers.length < 2) throw new Error('Could not find peers');
     }
+
 
     tickers = tickers.slice(0, 8);
 
