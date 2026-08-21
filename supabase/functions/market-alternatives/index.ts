@@ -110,12 +110,12 @@ Rules:
     if (!tc) throw new Error('No tool call in response');
     const parsed = JSON.parse(tc.function.arguments);
 
-    // Sanitize and collect tickers for live pricing
-    const categories: Record<string, any[]> = {};
+    // Sanitize, then verify every suggested ticker actually trades before showing it
+    const rawCategories: Record<string, any[]> = {};
     const seen = new Set<string>();
     for (const key of CATEGORY_KEYS) {
       const items = Array.isArray(parsed[key]) ? parsed[key] : [];
-      categories[key] = items
+      rawCategories[key] = items
         .map((it: any) => ({
           ticker: String(it?.ticker || '').trim().toUpperCase(),
           name: String(it?.name || ''),
@@ -123,14 +123,21 @@ Rules:
           metric: String(it?.metric || ''),
         }))
         .filter((it: any) => isValidTicker(it.ticker) && it.ticker !== ticker)
-        .slice(0, 4);
-      for (const it of categories[key]) seen.add(it.ticker);
+        .slice(0, 5);
+      for (const it of rawCategories[key]) seen.add(it.ticker);
     }
 
-    const altTickers = Array.from(seen).slice(0, 24);
+    const altTickers = Array.from(seen).slice(0, 30);
     const altPrices = await Promise.all(altTickers.map((t) => fetchYahooPrice(t)));
     const prices: Record<string, number> = { [ticker]: basePrice };
     altTickers.forEach((t, i) => { prices[t] = altPrices[i]; });
+
+    const categories: Record<string, any[]> = {};
+    for (const key of CATEGORY_KEYS) {
+      const tradable = rawCategories[key].filter((it) => (prices[it.ticker] || 0) > 0);
+      categories[key] = (tradable.length ? tradable : rawCategories[key]).slice(0, 4);
+    }
+
 
     const result = {
       base: ticker,
