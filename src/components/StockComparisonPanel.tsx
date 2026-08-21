@@ -249,12 +249,17 @@ export default function StockComparisonPanel() {
               {altLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Shuffle className="h-3.5 w-3.5" />}
               Market Alternatives
             </Button>
-            {selected.length === 1 && (
-              <Button onClick={() => runCompare("market")} disabled={marketLoading} size="sm" variant="outline" className="gap-1.5 text-xs">
-                {marketLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Globe2 className="h-3.5 w-3.5" />}
-                Market Compare
-              </Button>
-            )}
+            <Button
+              onClick={() => runCompare("market")}
+              disabled={selected.length !== 1 || marketLoading}
+              size="sm"
+              variant="outline"
+              className="gap-1.5 text-xs"
+              title={selected.length !== 1 ? "Select exactly one stock for Market Compare" : undefined}
+            >
+              {marketLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Globe2 className="h-3.5 w-3.5" />}
+              Market Compare
+            </Button>
             <Button onClick={() => runCompare("compare")} disabled={selected.length < 2 || loading} size="sm" className="gap-1.5 text-xs">
               {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
               Compare ({selected.length})
