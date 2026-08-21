@@ -78,17 +78,24 @@ Deno.serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: 'You are a senior equity research analyst. Given one ticker, surface investable alternatives across four buckets: cheaper, higher-growth, lower-risk, and best competitors. Only return real, currently listed US tickers (or major ETFs). Never repeat the base ticker. Use real, recent fundamentals — no invented numbers.',
+            content: `You are a senior equity research analyst. Given one ticker, surface investable alternatives across four buckets: cheaper, higher-growth, lower-risk, and best competitors.
+Rules:
+- Anchor on the company's ACTUAL business model from the description provided, not the broad sector label. Example: a digital-asset treasury company (buys and holds crypto on the balance sheet) competes with other treasury companies such as MSTR, SBET, BMNR, DFDV — not with exchanges, miners or banks.
+- "Best competitors" must be direct rivals pursuing the same customers/strategy, including smaller or newer names, ordered closest-first.
+- Consider the "people also watch" candidates supplied below; include those that genuinely fit and ignore the rest.
+- Only real, currently listed US tickers (or major ETFs). Never invent symbols, never return the base ticker, never return delisted/acquired names.
+- Return 3-5 names per bucket so weak ones can be filtered out. Use real, recent fundamentals — no invented numbers.`,
           },
           {
             role: 'user',
-            content: `Base ticker: ${ticker}${basePrice > 0 ? ` (current price $${basePrice.toFixed(2)})` : ''}. Return alternatives for each bucket.`,
+            content: `Find alternatives for each bucket.\n\n${profileBlock(profile, ticker, related)}${basePrice > 0 ? `\nLive price: $${basePrice.toFixed(2)}` : ''}`,
           },
         ],
         tools: [tool],
         tool_choice: { type: 'function', function: { name: 'return_alternatives' } },
       }),
     });
+
 
     if (!res.ok) {
       const status = res.status;
