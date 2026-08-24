@@ -1,6 +1,6 @@
 import { writeAppCache } from '../_shared/cache.ts';
 import { isValidTicker } from '../_shared/validation.ts';
-import { fetchCompanyProfile, fetchYahooPrice, fetchYahooRelated, profileBlock } from '../_shared/profile.ts';
+import { fetchCompanyProfile, fetchQuoteBasics, fetchYahooPrice, fetchYahooRelated, profileBlock } from '../_shared/profile.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -128,15 +128,19 @@ Rules:
     }
 
     const altTickers = Array.from(seen).slice(0, 30);
-    const altPrices = await Promise.all(altTickers.map((t) => fetchYahooPrice(t)));
+    const quotes = await Promise.all(altTickers.map((t) => fetchQuoteBasics(t)));
     const prices: Record<string, number> = { [ticker]: basePrice };
-    altTickers.forEach((t, i) => { prices[t] = altPrices[i]; });
+    const realNames: Record<string, string> = {};
+    altTickers.forEach((t, i) => { prices[t] = quotes[i].price; if (quotes[i].name) realNames[t] = quotes[i].name; });
 
     const categories: Record<string, any[]> = {};
     for (const key of CATEGORY_KEYS) {
       const tradable = rawCategories[key].filter((it) => (prices[it.ticker] || 0) > 0);
-      categories[key] = (tradable.length ? tradable : rawCategories[key]).slice(0, 4);
+      categories[key] = (tradable.length ? tradable : rawCategories[key])
+        .slice(0, 4)
+        .map((it) => ({ ...it, name: realNames[it.ticker] || it.name }));
     }
+
 
 
     const result = {

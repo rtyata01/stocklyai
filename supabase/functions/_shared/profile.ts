@@ -19,16 +19,26 @@ export interface CompanyProfile {
 }
 
 export async function fetchYahooPrice(ticker: string): Promise<number> {
+  return (await fetchQuoteBasics(ticker)).price;
+}
+
+/** Live price plus the real listed company name (prevents AI-hallucinated names). */
+export async function fetchQuoteBasics(ticker: string): Promise<{ price: number; name: string }> {
   try {
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol(ticker))}?interval=1d&range=1d`;
     const res = await fetch(url, { headers: UA });
     const data = await res.json();
-    const price = data?.chart?.result?.[0]?.meta?.regularMarketPrice;
-    return typeof price === 'number' && price > 0 ? price : 0;
+    const meta = data?.chart?.result?.[0]?.meta;
+    const price = meta?.regularMarketPrice;
+    return {
+      price: typeof price === 'number' && price > 0 ? price : 0,
+      name: String(meta?.longName || meta?.shortName || ''),
+    };
   } catch {
-    return 0;
+    return { price: 0, name: '' };
   }
 }
+
 
 /** Company description, sector/industry and market cap — the context the model needs. */
 export async function fetchCompanyProfile(ticker: string): Promise<CompanyProfile | null> {
