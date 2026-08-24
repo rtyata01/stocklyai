@@ -92,9 +92,10 @@ const Index = () => {
                 <TabsTrigger value="portfolio" className="text-xs font-mono">Portfolio</TabsTrigger>
                 <TabsTrigger value="basics" className="text-xs font-mono">Trading 101</TabsTrigger>
                 <TabsTrigger value="compare" className="text-xs font-mono">AI Compare</TabsTrigger>
-                <TabsTrigger value="earnings" className="text-xs font-mono">Earnings Momentum</TabsTrigger>
-                <TabsTrigger value="swing" className="text-xs font-mono">Swing Trading</TabsTrigger>
                 <TabsTrigger value="cycle" className="text-xs font-mono">Cycle Trading</TabsTrigger>
+                <TabsTrigger value="swing" className="text-xs font-mono">Swing Trading</TabsTrigger>
+                <TabsTrigger value="earnings" className="text-xs font-mono">Earnings Momentum</TabsTrigger>
+
                 <TabsTrigger value="announcements" className="text-xs font-mono">Announcements</TabsTrigger>
               </TabsList>
 
