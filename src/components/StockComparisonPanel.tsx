@@ -108,6 +108,8 @@ export default function StockComparisonPanel() {
 
   const [selected, setSelected] = useState<string[]>([]);
   const [extraTickers, setExtraTickers] = useState<string[]>([]);
+  const [removedTickers, setRemovedTickers] = useState<string[]>([]);
+
   const [newTicker, setNewTicker] = useState("");
   const [result, setResult] = useState<ComparisonResult | null>(null);
   const [loading, setLoading] = useState(false);
