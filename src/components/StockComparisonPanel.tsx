@@ -144,8 +144,10 @@ export default function StockComparisonPanel() {
 
 
   const universe = useMemo(
-    () => Array.from(new Set([...baseUniverse, ...extraTickers])).sort(),
-    [baseUniverse, extraTickers]
+    () => Array.from(new Set([...baseUniverse, ...extraTickers]))
+      .filter(t => !removedTickers.includes(t))
+      .sort(),
+    [baseUniverse, extraTickers, removedTickers]
   );
 
   const toggle = (t: string) => {
@@ -157,6 +159,13 @@ export default function StockComparisonPanel() {
   };
 
   const remove = (t: string) => setSelected(prev => prev.filter(x => x !== t));
+
+  const removeFromUniverse = (t: string) => {
+    setExtraTickers(prev => prev.filter(x => x !== t));
+    setRemovedTickers(prev => (prev.includes(t) ? prev : [...prev, t]));
+    setSelected(prev => prev.filter(x => x !== t));
+  };
+
 
   const addCustom = () => {
     const t = newTicker.trim().toUpperCase();
