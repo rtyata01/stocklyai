@@ -40,6 +40,7 @@ export default function CycleTradingPanel() {
 
   const [selected, setSelected] = useState<string[]>([]);
   const [extraTickers, setExtraTickers] = useState<string[]>([]);
+  const [removedTickers, setRemovedTickers] = useState<string[]>([]);
   const [newTicker, setNewTicker] = useState("");
   const [results, setResults] = useState<CycleResult[] | null>(null);
   const [mode, setMode] = useState<"evaluate" | "best" | null>(null);
@@ -48,8 +49,10 @@ export default function CycleTradingPanel() {
   const [error, setError] = useState<string | null>(null);
 
   const universe = useMemo(
-    () => Array.from(new Set([...baseUniverse, ...extraTickers])).sort(),
-    [baseUniverse, extraTickers]
+    () => Array.from(new Set([...baseUniverse, ...extraTickers]))
+      .filter(t => !removedTickers.includes(t))
+      .sort(),
+    [baseUniverse, extraTickers, removedTickers]
   );
 
   const toggle = (t: string) => {
@@ -58,6 +61,13 @@ export default function CycleTradingPanel() {
     );
   };
   const remove = (t: string) => setSelected(prev => prev.filter(x => x !== t));
+
+  const removeFromUniverse = (t: string) => {
+    setExtraTickers(prev => prev.filter(x => x !== t));
+    setRemovedTickers(prev => (prev.includes(t) ? prev : [...prev, t]));
+    setSelected(prev => prev.filter(x => x !== t));
+  };
+
 
   const addCustom = () => {
     const t = newTicker.trim().toUpperCase();
@@ -183,20 +193,27 @@ export default function CycleTradingPanel() {
             {universe.map(t => {
               const checked = selected.includes(t);
               return (
-                <button
+                <span
                   key={t}
-                  type="button"
-                  onClick={() => toggle(t)}
-                  className={`px-2 py-1 rounded-sm border text-xs font-mono transition-colors ${
+                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-sm border text-xs font-mono transition-colors ${
                     checked
                       ? "border-primary bg-primary/20 text-primary"
                       : "border-border bg-secondary/30 text-foreground hover:bg-secondary"
                   }`}
                 >
-                  {t}
-                </button>
+                  <button type="button" onClick={() => toggle(t)}>{t}</button>
+                  <button
+                    type="button"
+                    onClick={() => removeFromUniverse(t)}
+                    className="hover:text-destructive opacity-60 hover:opacity-100"
+                    aria-label={`Remove ${t} from list`}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
               );
             })}
+
           </div>
         </ScrollArea>
       </div>
