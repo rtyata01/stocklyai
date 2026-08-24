@@ -1,6 +1,6 @@
 import { writeAppCache } from '../_shared/cache.ts';
 import { isValidTicker } from '../_shared/validation.ts';
-import { fetchCompanyProfile, fetchYahooPrice, fetchYahooRelated, profileBlock } from '../_shared/profile.ts';
+import { fetchCompanyProfile, fetchQuoteBasics, fetchYahooPrice, fetchYahooRelated, profileBlock } from '../_shared/profile.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
