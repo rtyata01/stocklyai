@@ -380,8 +380,8 @@ const StockDetail = () => {
 
               {/* Earnings Charts */}
               {(() => {
-                const quarterly = sliceEarnings(detail.quarterlyEarnings);
-                const yearly = sliceEarnings(detail.yearlyEarnings);
+                const quarterly = sliceEarnings(detail.quarterlyEarnings, "quarter");
+                const yearly = sliceEarnings(detail.yearlyEarnings, "year");
                 const epsLabel = (v: number) => `$${v.toFixed(2)}`;
                 const revLabel = (v: number) => v >= 1000 ? `$${(v / 1000).toFixed(1)}B` : `$${v.toFixed(0)}M`;
                 return (
