@@ -55,6 +55,7 @@ export default function MyWatchlistPanel() {
   const [breakingLoading, setBreakingLoading] = useState(false);
   const [breakingItems, setBreakingItems] = useState<BreakingItem[]>([]);
   const [breakingFor, setBreakingFor] = useState<string | null>(null);
+  const [selected, setSelected] = useState<BreakingItem | null>(null);
 
   const findBreakingNews = async () => {
     if (!active || active.tickers.length === 0) {
@@ -74,6 +75,11 @@ export default function MyWatchlistPanel() {
             ticker: String(data.ticker || t).toUpperCase(),
             title: String(data.title || "").slice(0, 200),
             note: String(data.note || ""),
+            details: typeof data.details === "string" ? data.details : undefined,
+            keyPoints: Array.isArray(data.keyPoints) ? data.keyPoints.map(String) : undefined,
+            impact: data.impact as BreakingItem["impact"],
+            sources: Array.isArray(data.sources) ? data.sources : [],
+            createdAt: new Date().toISOString(),
             type: (data.type as BreakingItem["type"]) || "alert",
             price: typeof data.price === "number" ? data.price : undefined,
           } as BreakingItem;
