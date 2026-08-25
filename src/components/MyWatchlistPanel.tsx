@@ -17,13 +17,10 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-interface BreakingItem {
-  ticker: string;
-  title: string;
-  note: string;
-  type: "alert" | "buy" | "sell" | "watch";
-  price?: number;
-}
+import NewsDetailDialog, { NewsAlert } from "@/components/NewsDetailDialog";
+
+type BreakingItem = NewsAlert & { ticker: string };
+
 
 const TYPE_COLORS: Record<BreakingItem["type"], string> = {
   alert: "bg-yellow-500/10 text-yellow-500 border-yellow-500/30",
