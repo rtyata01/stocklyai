@@ -13,13 +13,67 @@ import {
   ResponsiveContainer, ReferenceLine, Cell,
 } from "recharts";
 
-const sliceEarnings = <T extends { isEstimate: boolean }>(arr: T[] | undefined): T[] => {
-  if (!arr || arr.length === 0) return [];
-  const historical = arr.filter(e => !e.isEstimate);
-  const estimates = arr.filter(e => e.isEstimate);
-  // last 3 past + current (first estimate) + next 3 estimates = 7
-  return [...historical.slice(-3), ...estimates.slice(0, 4)];
+/** Parse a period label into a sortable numeric key + a normalized display label. */
+const parsePeriod = (raw: string, kind: "quarter" | "year"): { key: number; label: string } | null => {
+  const s = String(raw ?? "").trim();
+  if (!s) return null;
+
+  // ISO / date-like: 2024-03-31 or 3/31/2024
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const us = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  let year: number | null = null;
+  let q: number | null = null;
+
+  if (iso) { year = +iso[1]; q = Math.floor((+iso[2] - 1) / 3) + 1; }
+  else if (us) { year = +us[3]; q = Math.floor((+us[1] - 1) / 3) + 1; }
+  else {
+    const y = s.match(/(19|20)\d{2}/);
+    if (y) year = +y[0];
+    const qm = s.match(/Q\s*([1-4])/i) || s.match(/([1-4])\s*Q/i);
+    if (qm) q = +qm[1];
+  }
+
+  if (year == null) return null;
+  if (kind === "year") return { key: year, label: String(year) };
+  if (q == null) return null;
+  return { key: year * 4 + (q - 1), label: `Q${q} ${year}` };
 };
+
+/**
+ * Return up to 7 chronologically-ordered periods: last 3 actuals, then current + next 3 estimates.
+ * Deduplicates overlapping periods and drops estimates that precede known actuals.
+ */
+const sliceEarnings = <T extends { isEstimate: boolean }>(
+  arr: T[] | undefined,
+  kind: "quarter" | "year",
+): T[] => {
+  if (!arr || arr.length === 0) return [];
+  const labelKey = kind === "quarter" ? "quarter" : "year";
+
+  const parsed = arr
+    .map((e) => {
+      const p = parsePeriod((e as unknown as Record<string, string>)[labelKey], kind);
+      return p ? { ...e, [labelKey]: p.label, __key: p.key } : null;
+    })
+    .filter(Boolean) as (T & { __key: number })[];
+
+  if (!parsed.length) return [];
+
+  // Dedupe by period: actuals win over estimates.
+  const byKey = new Map<number, T & { __key: number }>();
+  for (const e of parsed) {
+    const prev = byKey.get(e.__key);
+    if (!prev || (prev.isEstimate && !e.isEstimate)) byKey.set(e.__key, e);
+  }
+
+  const all = Array.from(byKey.values()).sort((a, b) => a.__key - b.__key);
+  const actuals = all.filter((e) => !e.isEstimate);
+  const lastActualKey = actuals.length ? actuals[actuals.length - 1].__key : -Infinity;
+  const estimates = all.filter((e) => e.isEstimate && e.__key > lastActualKey);
+
+  return [...actuals.slice(-3), ...estimates.slice(0, 4)].map(({ __key, ...rest }) => rest as unknown as T);
+};
+
 
 const StockDetail = () => {
   const { ticker } = useParams<{ ticker: string }>();
