@@ -17,13 +17,10 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-interface BreakingItem {
-  ticker: string;
-  title: string;
-  note: string;
-  type: "alert" | "buy" | "sell" | "watch";
-  price?: number;
-}
+import NewsDetailDialog, { NewsAlert } from "@/components/NewsDetailDialog";
+
+type BreakingItem = NewsAlert & { ticker: string };
+
 
 const TYPE_COLORS: Record<BreakingItem["type"], string> = {
   alert: "bg-yellow-500/10 text-yellow-500 border-yellow-500/30",
@@ -58,6 +55,7 @@ export default function MyWatchlistPanel() {
   const [breakingLoading, setBreakingLoading] = useState(false);
   const [breakingItems, setBreakingItems] = useState<BreakingItem[]>([]);
   const [breakingFor, setBreakingFor] = useState<string | null>(null);
+  const [selected, setSelected] = useState<BreakingItem | null>(null);
 
   const findBreakingNews = async () => {
     if (!active || active.tickers.length === 0) {
@@ -77,6 +75,11 @@ export default function MyWatchlistPanel() {
             ticker: String(data.ticker || t).toUpperCase(),
             title: String(data.title || "").slice(0, 200),
             note: String(data.note || ""),
+            details: typeof data.details === "string" ? data.details : undefined,
+            keyPoints: Array.isArray(data.keyPoints) ? data.keyPoints.map(String) : undefined,
+            impact: data.impact as BreakingItem["impact"],
+            sources: Array.isArray(data.sources) ? data.sources : [],
+            createdAt: new Date().toISOString(),
             type: (data.type as BreakingItem["type"]) || "alert",
             price: typeof data.price === "number" ? data.price : undefined,
           } as BreakingItem;
@@ -218,7 +221,12 @@ export default function MyWatchlistPanel() {
             <div className="text-center text-muted-foreground py-8 font-mono text-xs">Scanning {active.tickers.slice(0, 10).length} stocks…</div>
           )}
           {breakingItems.map((a, i) => (
-            <div key={`${a.ticker}-${i}`} className="border border-border rounded-sm bg-card p-3">
+            <button
+              key={`${a.ticker}-${i}`}
+              type="button"
+              onClick={() => setSelected(a)}
+              className="w-full text-left border border-border rounded-sm bg-card p-3 hover:bg-secondary/40 transition-colors"
+            >
               <div className="flex items-center gap-2 flex-wrap mb-1">
                 <Badge variant="outline" className={`text-[10px] font-mono uppercase ${TYPE_COLORS[a.type]}`}>{a.type}</Badge>
                 <Badge className="bg-primary text-primary-foreground font-mono text-[10px] px-2">{a.ticker}</Badge>
@@ -228,10 +236,14 @@ export default function MyWatchlistPanel() {
                 <span className="font-serif text-sm text-foreground">{a.title}</span>
               </div>
               {a.note && <p className="text-xs text-muted-foreground leading-relaxed">{a.note}</p>}
-            </div>
+              <span className="text-[10px] font-mono text-primary mt-1 inline-block">Read full context →</span>
+            </button>
           ))}
         </div>
       )}
+
+      <NewsDetailDialog alert={selected} open={!!selected} onOpenChange={(v) => { if (!v) setSelected(null); }} />
+
     </div>
   );
 }
