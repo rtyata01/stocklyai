@@ -7,15 +7,9 @@ import { Plus, Trash2, Megaphone, Sparkles, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getWatchlistSectors } from "@/components/ManageWatchlistDialog";
 import { toast } from "sonner";
+import NewsDetailDialog, { NewsAlert } from "@/components/NewsDetailDialog";
 
-interface Announcement {
-  id: string;
-  ticker: string;
-  title: string;
-  note: string;
-  type: "alert" | "buy" | "sell" | "watch";
-  createdAt: string;
-}
+type Announcement = NewsAlert & { id: string; ticker: string; note: string; createdAt: string };
 
 const STORAGE_KEY = "stockly-announcements-v1";
 const TYPE_COLORS = {
@@ -38,6 +32,7 @@ const AnnouncementsPanel = () => {
   const [type, setType] = useState<Announcement["type"]>("alert");
 
   const [generating, setGenerating] = useState(false);
+  const [selected, setSelected] = useState<Announcement | null>(null);
 
   useEffect(() => { setItems(load()); }, []);
 
@@ -69,7 +64,19 @@ const AnnouncementsPanel = () => {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       const next = [
-        { id: crypto.randomUUID(), ticker: String(data.ticker || pick).toUpperCase(), title: String(data.title || "").slice(0, 200), note: String(data.note || ""), type: (data.type as Announcement["type"]) || "alert", createdAt: new Date().toISOString() },
+        {
+          id: crypto.randomUUID(),
+          ticker: String(data.ticker || pick).toUpperCase(),
+          title: String(data.title || "").slice(0, 200),
+          note: String(data.note || ""),
+          details: typeof data.details === "string" ? data.details : undefined,
+          keyPoints: Array.isArray(data.keyPoints) ? data.keyPoints.map(String) : undefined,
+          impact: data.impact as Announcement["impact"],
+          sources: Array.isArray(data.sources) ? data.sources : [],
+          price: typeof data.price === "number" ? data.price : undefined,
+          type: (data.type as Announcement["type"]) || "alert",
+          createdAt: new Date().toISOString(),
+        },
         ...items,
       ];
       setItems(next); save(next);
@@ -120,7 +127,7 @@ const AnnouncementsPanel = () => {
         {items.length === 0 && <div className="text-center text-muted-foreground py-12 font-mono text-sm">No announcements yet. Add one above.</div>}
         {items.map((a) => (
           <div key={a.id} className="border border-border rounded-sm bg-card p-3 flex items-start gap-3">
-            <div className="flex-1 min-w-0">
+            <button type="button" onClick={() => setSelected(a)} className="flex-1 min-w-0 text-left">
               <div className="flex items-center gap-2 flex-wrap mb-1">
                 <Badge variant="outline" className={`text-[10px] font-mono uppercase ${TYPE_COLORS[a.type]}`}>{a.type}</Badge>
                 {a.ticker && <Badge className="bg-primary text-primary-foreground font-mono text-[10px] px-2">{a.ticker}</Badge>}
@@ -128,15 +135,17 @@ const AnnouncementsPanel = () => {
               </div>
               {a.note && <p className="text-xs text-muted-foreground leading-relaxed">{a.note}</p>}
               <div className="text-[10px] font-mono text-muted-foreground mt-1">
-                {new Date(a.createdAt).toLocaleString()}
+                {new Date(a.createdAt).toLocaleString()} · <span className="text-primary">Read full context →</span>
               </div>
-            </div>
+            </button>
             <Button variant="ghost" size="icon" aria-label="Delete announcement" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => remove(a.id)}>
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
           </div>
         ))}
       </div>
+
+      <NewsDetailDialog alert={selected} open={!!selected} onOpenChange={(v) => { if (!v) setSelected(null); }} />
     </div>
   );
 };
