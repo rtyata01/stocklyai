@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Trash2, X, Bookmark, Newspaper, Loader2 } from "lucide-react";
+import { Plus, Trash2, X, Bookmark, Newspaper, Loader2, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import NewsDetailDialog, { NewsAlert } from "@/components/NewsDetailDialog";
+import AttentionScoreDialog from "@/components/AttentionScoreDialog";
 
 type BreakingItem = NewsAlert & { ticker: string };
 
@@ -56,6 +57,7 @@ export default function MyWatchlistPanel() {
   const [breakingItems, setBreakingItems] = useState<BreakingItem[]>([]);
   const [breakingFor, setBreakingFor] = useState<string | null>(null);
   const [selected, setSelected] = useState<BreakingItem | null>(null);
+  const [attentionOpen, setAttentionOpen] = useState(false);
 
   const findBreakingNews = async () => {
     if (!active || active.tickers.length === 0) {
@@ -161,6 +163,9 @@ export default function MyWatchlistPanel() {
           onExtraRefresh={findBreakingNews}
           toolbarExtras={
             <>
+              <Button variant="default" size="sm" className="gap-1.5 text-xs" onClick={() => setAttentionOpen(true)}>
+                <Flame className="h-3.5 w-3.5" /> Attention Score
+              </Button>
               <ManageTickersDialog
                 open={manageOpen}
                 onOpenChange={setManageOpen}
@@ -240,6 +245,15 @@ export default function MyWatchlistPanel() {
             </button>
           ))}
         </div>
+      )}
+
+      {active && (
+        <AttentionScoreDialog
+          open={attentionOpen}
+          onOpenChange={setAttentionOpen}
+          tickers={active.tickers}
+          label={active.name}
+        />
       )}
 
       <NewsDetailDialog alert={selected} open={!!selected} onOpenChange={(v) => { if (!v) setSelected(null); }} />

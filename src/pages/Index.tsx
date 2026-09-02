@@ -13,11 +13,12 @@ import PortfolioTable from "@/components/PortfolioTable";
 import MyWatchlistPanel from "@/components/MyWatchlistPanel";
 import PortfolioSummaryDialog from "@/components/PortfolioSummaryDialog";
 import PortfolioBriefingDialog from "@/components/PortfolioBriefingDialog";
+import AttentionScoreDialog from "@/components/AttentionScoreDialog";
 import { SectorGroup } from "@/data/stocks";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useQueryClient } from "@tanstack/react-query";
-import { Settings, Activity, Newspaper } from "lucide-react";
+import { Settings, Activity, Newspaper, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Helmet } from "react-helmet-async";
 import { useAuth } from "@/hooks/useAuth";
@@ -47,6 +48,7 @@ const Index = () => {
   const [watchlistOpen, setWatchlistOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [briefingOpen, setBriefingOpen] = useState(false);
+  const [attentionOpen, setAttentionOpen] = useState(false);
   const { sectors: activeSectors, save: savePortfolio } = usePortfolio();
 
   // Refresh market data when the owner identity changes (sign in/out).
@@ -84,6 +86,12 @@ const Index = () => {
 
           <PortfolioSummaryDialog open={summaryOpen} onOpenChange={setSummaryOpen} sectors={activeSectors} />
           <PortfolioBriefingDialog open={briefingOpen} onOpenChange={setBriefingOpen} sectors={activeSectors} />
+          <AttentionScoreDialog
+            open={attentionOpen}
+            onOpenChange={setAttentionOpen}
+            tickers={activeSectors.flatMap((s) => s.tickers)}
+            label="Portfolio"
+          />
 
           <main className="px-4 md:px-8 pt-4">
             <Tabs value={tab} onValueChange={handleTabChange}>
@@ -115,6 +123,10 @@ const Index = () => {
                   onReorderSectors={(next) => { void savePortfolio(next); }}
                   toolbarExtras={
                     <>
+                      <Button variant="default" size="sm" onClick={() => setAttentionOpen(true)} className="gap-1.5 text-xs">
+                        <Flame className="h-3.5 w-3.5" />
+                        Attention Score
+                      </Button>
                       <Button variant="default" size="sm" onClick={() => setSummaryOpen(true)} className="gap-1.5 text-xs">
                         <Activity className="h-3.5 w-3.5" />
                         Portfolio Pulse
