@@ -119,11 +119,16 @@ OUTPUT REQUIREMENTS:
           },
         ],
         tool_choice: { type: 'function', function: { name: 'return_price_evaluations' } },
-      }),
-    });
+    }, LOVABLE_API_KEY);
 
     if (!response.ok) {
       if (response.status === 429) {
+        const stale = await readAppCacheStale(`price-evaluations:${stocks.map(s => s.ticker).sort().join(',')}`);
+        if (stale?.evaluations) {
+          return new Response(JSON.stringify({ ...stale, stale: true }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
         return new Response(JSON.stringify({ error: 'Rate limited, please try again later.' }), {
           status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
