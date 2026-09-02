@@ -71,7 +71,12 @@ export function usePriceEvaluations(
       const { data, error } = await supabase.functions.invoke("evaluate-prices", {
         body: { stocks, force: refreshNonce > 0 },
       });
-      if (error) throw error;
+      if (error || !data?.evaluations) {
+        // Rate limited or transient failure: serve cached evaluations rather than erroring the page.
+        const fallback = await loadFromCache<{ evaluations: PriceEvaluation[] } | PriceEvaluation[]>(cacheKey, Number.MAX_SAFE_INTEGER);
+        const list = Array.isArray(fallback) ? fallback : fallback?.evaluations;
+        return list ?? [];
+      }
       const evaluations: PriceEvaluation[] = data.evaluations;
       saveLocalCache(cacheKey, { evaluations }, CACHE_TTL);
       return evaluations;

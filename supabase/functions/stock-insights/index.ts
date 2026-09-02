@@ -1,4 +1,5 @@
-import { writeAppCache } from '../_shared/cache.ts';
+import { writeAppCache, readAppCacheStale } from '../_shared/cache.ts';
+import { aiFetch } from '../_shared/aiFetch.ts';
 import { isValidTicker, MAX_TICKERS } from '../_shared/validation.ts';
 
 const corsHeaders = {
@@ -35,10 +36,7 @@ Deno.serve(async (req) => {
 
     const stockList = stocks.map(s => `${s.ticker} ($${s.price.toFixed(2)}, ${s.sector})`).join('\n');
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    const response = await aiFetch({
         model: 'google/gemini-2.5-flash',
         messages: [
           {
@@ -83,11 +81,18 @@ Deno.serve(async (req) => {
           },
         }],
         tool_choice: { type: 'function', function: { name: 'return_insights' } },
-      }),
-    });
+    }, LOVABLE_API_KEY);
 
     if (!response.ok) {
-      if (response.status === 429) return new Response(JSON.stringify({ error: 'Rate limited' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      if (response.status === 429) {
+        const stale = await readAppCacheStale(`stock-insights:${stocks.map(s => s.ticker).sort().join(',')}`);
+        if (stale?.insights) {
+          return new Response(JSON.stringify({ ...stale, stale: true }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        return new Response(JSON.stringify({ error: 'Rate limited, please try again later.' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
       if (response.status === 402) return new Response(JSON.stringify({ error: 'Credits exhausted' }), { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       const t = await response.text();
       console.error('AI gateway error:', response.status, t);

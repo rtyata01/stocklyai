@@ -1,4 +1,5 @@
-import { writeAppCache } from '../_shared/cache.ts';
+import { writeAppCache, readAppCacheStale } from '../_shared/cache.ts';
+import { aiFetch } from '../_shared/aiFetch.ts';
 import { isValidTicker, MAX_TICKERS } from '../_shared/validation.ts';
 
 const corsHeaders = {
@@ -44,13 +45,7 @@ Deno.serve(async (req) => {
       `${s.ticker}: current $${s.price.toFixed(2)}, day range $${s.dayMin.toFixed(2)}-$${s.dayMax.toFixed(2)}, change ${s.change.toFixed(2)}%, sector: ${s.sector}`
     ).join('\n');
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    const response = await aiFetch({
         model: 'google/gemini-2.5-flash',
         messages: [
           {
@@ -124,11 +119,16 @@ OUTPUT REQUIREMENTS:
           },
         ],
         tool_choice: { type: 'function', function: { name: 'return_price_evaluations' } },
-      }),
-    });
+    }, LOVABLE_API_KEY);
 
     if (!response.ok) {
       if (response.status === 429) {
+        const stale = await readAppCacheStale(`price-evaluations:${stocks.map(s => s.ticker).sort().join(',')}`);
+        if (stale?.evaluations) {
+          return new Response(JSON.stringify({ ...stale, stale: true }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
         return new Response(JSON.stringify({ error: 'Rate limited, please try again later.' }), {
           status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
