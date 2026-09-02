@@ -40,7 +40,12 @@ export function useStockInsights(
         sector: sectorMap.get(q.ticker) || "Other",
       }));
       const { data, error } = await supabase.functions.invoke("stock-insights", { body: { stocks } });
-      if (error) throw error;
+      if (error || !data?.insights) {
+        // Rate limited or transient failure: fall back to any cached insights instead of breaking the UI.
+        const fallback = await loadFromCache<{ insights: StockInsight[] } | StockInsight[]>(cacheKey, Number.MAX_SAFE_INTEGER);
+        const list = Array.isArray(fallback) ? fallback : fallback?.insights;
+        return list ?? [];
+      }
       const insights: StockInsight[] = data.insights;
       saveLocalCache(cacheKey, { insights }, CACHE_TTL);
       return insights;
