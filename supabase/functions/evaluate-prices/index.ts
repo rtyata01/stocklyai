@@ -45,10 +45,7 @@ Deno.serve(async (req) => {
       `${s.ticker}: current $${s.price.toFixed(2)}, day range $${s.dayMin.toFixed(2)}-$${s.dayMax.toFixed(2)}, change ${s.change.toFixed(2)}%, sector: ${s.sector}`
     ).join('\n');
 
-    const response = await aiFetch({ __HDR__
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    const response = await aiFetch({
         model: 'google/gemini-2.5-flash',
         messages: [
           {
