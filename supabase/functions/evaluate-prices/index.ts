@@ -1,4 +1,5 @@
-import { writeAppCache } from '../_shared/cache.ts';
+import { writeAppCache, readAppCacheStale } from '../_shared/cache.ts';
+import { aiFetch } from '../_shared/aiFetch.ts';
 import { isValidTicker, MAX_TICKERS } from '../_shared/validation.ts';
 
 const corsHeaders = {
@@ -44,10 +45,7 @@ Deno.serve(async (req) => {
       `${s.ticker}: current $${s.price.toFixed(2)}, day range $${s.dayMin.toFixed(2)}-$${s.dayMax.toFixed(2)}, change ${s.change.toFixed(2)}%, sector: ${s.sector}`
     ).join('\n');
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+    const response = await aiFetch({ __HDR__
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({

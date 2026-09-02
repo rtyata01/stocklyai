@@ -1,4 +1,5 @@
-import { writeAppCache } from '../_shared/cache.ts';
+import { writeAppCache, readAppCacheStale } from '../_shared/cache.ts';
+import { aiFetch } from '../_shared/aiFetch.ts';
 import { isValidTicker, MAX_TICKERS } from '../_shared/validation.ts';
 
 const corsHeaders = {
@@ -35,10 +36,7 @@ Deno.serve(async (req) => {
 
     const stockList = stocks.map(s => `${s.ticker} ($${s.price.toFixed(2)}, ${s.sector})`).join('\n');
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    const response = await aiFetch({
         model: 'google/gemini-2.5-flash',
         messages: [
           {
