@@ -12,13 +12,13 @@ import { usePortfolio } from "@/hooks/usePortfolio";
 import PortfolioTable from "@/components/PortfolioTable";
 import MyWatchlistPanel from "@/components/MyWatchlistPanel";
 import PortfolioSummaryDialog from "@/components/PortfolioSummaryDialog";
-import PortfolioBriefingDialog from "@/components/PortfolioBriefingDialog";
+import WeeklyDebriefButton from "@/components/WeeklyDebriefButton";
 import AttentionScoreDialog from "@/components/AttentionScoreDialog";
 import { SectorGroup } from "@/data/stocks";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useQueryClient } from "@tanstack/react-query";
-import { Settings, Activity, Newspaper, Flame } from "lucide-react";
+import { Settings, Activity, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Helmet } from "react-helmet-async";
 import { useAuth } from "@/hooks/useAuth";
@@ -47,7 +47,6 @@ const Index = () => {
   };
   const [watchlistOpen, setWatchlistOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
-  const [briefingOpen, setBriefingOpen] = useState(false);
   const [attentionOpen, setAttentionOpen] = useState(false);
   const { sectors: activeSectors, save: savePortfolio } = usePortfolio();
 
@@ -85,7 +84,6 @@ const Index = () => {
           />
 
           <PortfolioSummaryDialog open={summaryOpen} onOpenChange={setSummaryOpen} sectors={activeSectors} />
-          <PortfolioBriefingDialog open={briefingOpen} onOpenChange={setBriefingOpen} sectors={activeSectors} />
           <AttentionScoreDialog
             open={attentionOpen}
             onOpenChange={setAttentionOpen}
@@ -131,10 +129,7 @@ const Index = () => {
                         <Activity className="h-3.5 w-3.5" />
                         Portfolio Pulse
                       </Button>
-                      <Button variant="secondary" size="sm" onClick={() => setBriefingOpen(true)} className="gap-1.5 text-xs">
-                        <Newspaper className="h-3.5 w-3.5" />
-                        Weekly Debrief
-                      </Button>
+                      <WeeklyDebriefButton sectors={activeSectors} label="Portfolio" />
                       <Button variant="outline" size="sm" onClick={() => setWatchlistOpen(true)} className="gap-1.5 text-xs">
                         <Settings className="h-3.5 w-3.5" />
                         Manage Portfolio

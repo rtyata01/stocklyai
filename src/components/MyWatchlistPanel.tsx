@@ -19,6 +19,7 @@ import {
 
 import NewsDetailDialog, { NewsAlert } from "@/components/NewsDetailDialog";
 import AttentionScoreDialog from "@/components/AttentionScoreDialog";
+import WeeklyDebriefButton from "@/components/WeeklyDebriefButton";
 
 type BreakingItem = NewsAlert & { ticker: string };
 
@@ -166,6 +167,10 @@ export default function MyWatchlistPanel() {
               <Button variant="default" size="sm" className="gap-1.5 text-xs" onClick={() => setAttentionOpen(true)}>
                 <Flame className="h-3.5 w-3.5" /> Attention Score
               </Button>
+              <WeeklyDebriefButton
+                sectors={[{ name: active.name, tickers: active.tickers } as SectorGroup]}
+                label={active.name}
+              />
               <ManageTickersDialog
                 open={manageOpen}
                 onOpenChange={setManageOpen}
