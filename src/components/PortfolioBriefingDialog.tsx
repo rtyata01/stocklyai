@@ -28,8 +28,8 @@ const pct = (v: number) => `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`;
 const toneCls = (v: number) => (v >= 0 ? "text-pine" : "text-destructive");
 
 export default function PortfolioBriefingDialog({
-  open, onOpenChange, sectors,
-}: { open: boolean; onOpenChange: (v: boolean) => void; sectors: SectorGroup[] }) {
+  open, onOpenChange, sectors, label = "Portfolio",
+}: { open: boolean; onOpenChange: (v: boolean) => void; sectors: SectorGroup[]; label?: string }) {
   const [data, setData] = useState<Briefing | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,7 +71,7 @@ export default function PortfolioBriefingDialog({
       <DialogContent className="max-w-3xl max-h-[88vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-mono text-sm tracking-wide flex items-center gap-2">
-            <Newspaper className="h-4 w-4 text-primary" /> The Weekly Debrief
+            <Newspaper className="h-4 w-4 text-primary" /> The Weekly Debrief — {label}
           </DialogTitle>
         </DialogHeader>
 
@@ -90,7 +90,7 @@ export default function PortfolioBriefingDialog({
               <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1">Executive summary</div>
               <p className="text-sm leading-relaxed">{data.executiveSummary}</p>
               <div className="flex flex-wrap gap-4 mt-3 font-mono text-xs">
-                <span>Portfolio <span className={toneCls(data.portfolioWeekPct)}>{pct(data.portfolioWeekPct)}</span></span>
+                <span>{label} <span className={toneCls(data.portfolioWeekPct)}>{pct(data.portfolioWeekPct)}</span></span>
                 <span>SPY <span className={toneCls(data.spyWeekPct)}>{pct(data.spyWeekPct)}</span></span>
                 <span>Alpha <span className={toneCls(data.alphaPct)}>{pct(data.alphaPct)}</span></span>
               </div>
