@@ -1,4 +1,5 @@
 import { isValidTicker } from "../_shared/validation.ts";
+import { aiFetch } from "../_shared/aiFetch.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -68,10 +69,7 @@ Deno.serve(async (req) => {
       ? `Recent real headlines (use these as the factual basis; do not invent events):\n${sources.map((s, i) => `${i + 1}. ${s.title} — ${s.publisher}`).join('\n')}`
       : 'No recent headlines available; base the alert on general sentiment and technicals and say so.';
 
-    const resp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    const resp = await aiFetch({
         model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: `Today is ${today}. You generate concise, fresh stock alerts grounded in the supplied real headlines. Be specific and actionable. Never fabricate events or URLs.` },
@@ -97,14 +95,32 @@ Deno.serve(async (req) => {
           },
         }],
         tool_choice: { type: 'function', function: { name: 'return_alert' } },
-      }),
-    });
+      }, LOVABLE_API_KEY);
 
     if (!resp.ok) {
       const t = await resp.text();
       console.error('AI error', resp.status, t);
-      if (resp.status === 429) return new Response(JSON.stringify({ error: 'Rate limited, try again shortly' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       if (resp.status === 402) return new Response(JSON.stringify({ error: 'AI credits exhausted' }), { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      if (resp.status === 429 || resp.status >= 500) {
+        // Graceful degradation: return a real-headline summary instead of failing the UI
+        const top = sources[0];
+        return new Response(JSON.stringify({
+          ticker: sym,
+          title: top ? top.title.slice(0, 120) : `${sym} — no fresh catalyst`,
+          note: top
+            ? `Latest coverage from ${top.publisher}. AI commentary is temporarily unavailable due to high demand.`
+            : 'No recent headlines found and AI commentary is temporarily unavailable.',
+          details: sources.length
+            ? `Recent headlines for ${sym}:\n${sources.map((s) => `• ${s.title} (${s.publisher})`).join('\n')}`
+            : `No recent headlines were found for ${sym}.`,
+          impact: 'neutral',
+          keyPoints: sources.slice(0, 5).map((s) => s.title),
+          type: 'watch',
+          degraded: true,
+          price,
+          sources,
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
       throw new Error('AI gateway error');
     }
 

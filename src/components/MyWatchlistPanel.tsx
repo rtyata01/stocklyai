@@ -70,8 +70,11 @@ export default function MyWatchlistPanel() {
     setBreakingFor(active.id);
     const tickers = active.tickers.slice(0, 10); // cap to keep AI usage reasonable
     try {
-      const results = await Promise.all(
-        tickers.map(async (t) => {
+      // Run in small batches so the AI service isn't hit with 10 requests at once
+      const results: (BreakingItem | null)[] = [];
+      for (let i = 0; i < tickers.length; i += 3) {
+        const batch = await Promise.all(
+        tickers.slice(i, i + 3).map(async (t) => {
           const { data, error } = await supabase.functions.invoke("breaking-alert", { body: { ticker: t } });
           if (error || !data || data.error) return null;
           return {
@@ -87,7 +90,9 @@ export default function MyWatchlistPanel() {
             price: typeof data.price === "number" ? data.price : undefined,
           } as BreakingItem;
         }),
-      );
+        );
+        results.push(...batch);
+      }
       const items = results.filter((x): x is BreakingItem => !!x);
       setBreakingItems(items);
       if (items.length === 0) toast.error("No breaking news found");
