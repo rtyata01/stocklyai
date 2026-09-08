@@ -125,11 +125,11 @@ const Index = () => {
                         <Flame className="h-3.5 w-3.5" />
                         Attention Score
                       </Button>
+                      <WeeklyDebriefButton sectors={activeSectors} label="Portfolio" />
                       <Button variant="default" size="sm" onClick={() => setSummaryOpen(true)} className="gap-1.5 text-xs">
                         <Activity className="h-3.5 w-3.5" />
                         Portfolio Pulse
                       </Button>
-                      <WeeklyDebriefButton sectors={activeSectors} label="Portfolio" />
                       <Button variant="outline" size="sm" onClick={() => setWatchlistOpen(true)} className="gap-1.5 text-xs">
                         <Settings className="h-3.5 w-3.5" />
                         Manage Portfolio
