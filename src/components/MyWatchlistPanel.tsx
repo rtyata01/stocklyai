@@ -90,7 +90,9 @@ export default function MyWatchlistPanel() {
             price: typeof data.price === "number" ? data.price : undefined,
           } as BreakingItem;
         }),
-      );
+        );
+        results.push(...batch);
+      }
       const items = results.filter((x): x is BreakingItem => !!x);
       setBreakingItems(items);
       if (items.length === 0) toast.error("No breaking news found");
