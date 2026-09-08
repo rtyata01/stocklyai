@@ -69,10 +69,7 @@ Deno.serve(async (req) => {
       ? `Recent real headlines (use these as the factual basis; do not invent events):\n${sources.map((s, i) => `${i + 1}. ${s.title} — ${s.publisher}`).join('\n')}`
       : 'No recent headlines available; base the alert on general sentiment and technicals and say so.';
 
-    const resp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    const resp = await aiFetch({
         model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: `Today is ${today}. You generate concise, fresh stock alerts grounded in the supplied real headlines. Be specific and actionable. Never fabricate events or URLs.` },
