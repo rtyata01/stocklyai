@@ -1,4 +1,5 @@
 import { isValidTicker } from "../_shared/validation.ts";
+import { aiFetch } from "../_shared/aiFetch.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
