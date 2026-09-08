@@ -95,14 +95,32 @@ Deno.serve(async (req) => {
           },
         }],
         tool_choice: { type: 'function', function: { name: 'return_alert' } },
-      }),
-    });
+      }, LOVABLE_API_KEY);
 
     if (!resp.ok) {
       const t = await resp.text();
       console.error('AI error', resp.status, t);
-      if (resp.status === 429) return new Response(JSON.stringify({ error: 'Rate limited, try again shortly' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       if (resp.status === 402) return new Response(JSON.stringify({ error: 'AI credits exhausted' }), { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      if (resp.status === 429 || resp.status >= 500) {
+        // Graceful degradation: return a real-headline summary instead of failing the UI
+        const top = sources[0];
+        return new Response(JSON.stringify({
+          ticker: sym,
+          title: top ? top.title.slice(0, 120) : `${sym} — no fresh catalyst`,
+          note: top
+            ? `Latest coverage from ${top.publisher}. AI commentary is temporarily unavailable due to high demand.`
+            : 'No recent headlines found and AI commentary is temporarily unavailable.',
+          details: sources.length
+            ? `Recent headlines for ${sym}:\n${sources.map((s) => `• ${s.title} (${s.publisher})`).join('\n')}`
+            : `No recent headlines were found for ${sym}.`,
+          impact: 'neutral',
+          keyPoints: sources.slice(0, 5).map((s) => s.title),
+          type: 'watch',
+          degraded: true,
+          price,
+          sources,
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
       throw new Error('AI gateway error');
     }
 
