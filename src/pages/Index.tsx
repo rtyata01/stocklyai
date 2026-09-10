@@ -16,13 +16,35 @@ import WeeklyDebriefButton from "@/components/WeeklyDebriefButton";
 import AttentionScoreDialog from "@/components/AttentionScoreDialog";
 import { SectorGroup } from "@/data/stocks";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useQueryClient } from "@tanstack/react-query";
-import { Settings, Activity, Flame } from "lucide-react";
+import { Settings, Activity, Check, ChevronDown, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Helmet } from "react-helmet-async";
 import { useAuth } from "@/hooks/useAuth";
 import SiteFooter from "@/components/SiteFooter";
+
+const TRADING_TABS = [
+  { value: "basics", label: "Trading 101", description: "Learn essential investing terms and principles." },
+  { value: "cycle", label: "Cycle Trading", description: "Find stocks positioned for recurring market cycles." },
+  { value: "swing", label: "Swing Trading", description: "Review short-term catalysts and trading signals." },
+  { value: "earnings", label: "Earnings Momentum", description: "Discover upcoming earnings setups with favorable risk and reward." },
+];
+
+const MenuTooltip = ({ children, description }: { children: React.ReactNode; description: string }) => (
+  <Tooltip>
+    <TooltipTrigger asChild>{children}</TooltipTrigger>
+    <TooltipContent side="bottom" className="max-w-64 text-xs">
+      {description}
+    </TooltipContent>
+  </Tooltip>
+);
 
 const Index = () => {
   const queryClient = useQueryClient();
@@ -34,6 +56,7 @@ const Index = () => {
     return t && VALID_TABS.includes(t) ? t : "portfolio";
   })();
   const [tab, setTab] = useState<string>(initialTab);
+  const selectedTradingTab = TRADING_TABS.find((item) => item.value === tab);
   useEffect(() => {
     const t = searchParams.get("tab");
     if (t && VALID_TABS.includes(t) && t !== tab) setTab(t);
@@ -94,15 +117,52 @@ const Index = () => {
           <main className="px-4 md:px-8 pt-4">
             <Tabs value={tab} onValueChange={handleTabChange}>
               <TabsList className="mb-4 flex-wrap h-auto gap-1">
-                <TabsTrigger value="mylists" className="text-xs font-mono">My Watchlist</TabsTrigger>
-                <TabsTrigger value="portfolio" className="text-xs font-mono">Portfolio</TabsTrigger>
-                <TabsTrigger value="basics" className="text-xs font-mono">Trading 101</TabsTrigger>
-                <TabsTrigger value="compare" className="text-xs font-mono">AI Compare</TabsTrigger>
-                <TabsTrigger value="cycle" className="text-xs font-mono">Cycle Trading</TabsTrigger>
-                <TabsTrigger value="swing" className="text-xs font-mono">Swing Trading</TabsTrigger>
-                <TabsTrigger value="earnings" className="text-xs font-mono">Earnings Momentum</TabsTrigger>
+                <MenuTooltip description="Track custom stock lists, relevant news, and attention signals.">
+                  <TabsTrigger value="mylists" className="text-xs font-mono">Watchlist</TabsTrigger>
+                </MenuTooltip>
+                <MenuTooltip description="Monitor your holdings, valuation levels, volume, and portfolio health.">
+                  <TabsTrigger value="portfolio" className="text-xs font-mono">Portfolio</TabsTrigger>
+                </MenuTooltip>
 
-                <TabsTrigger value="announcements" className="text-xs font-mono">Announcements</TabsTrigger>
+                <DropdownMenu>
+                  <MenuTooltip description="Learn investing basics or explore cycle, swing, and earnings strategies.">
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`h-8 gap-1 px-3 text-xs font-mono font-medium ${selectedTradingTab ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}
+                        aria-label="Choose a trading strategy"
+                      >
+                        {selectedTradingTab?.label ?? "Trading 101"}
+                        <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                  </MenuTooltip>
+                  <DropdownMenuContent align="start" className="w-72">
+                    {TRADING_TABS.map((item) => (
+                      <DropdownMenuItem
+                        key={item.value}
+                        onSelect={() => handleTabChange(item.value)}
+                        className="items-start gap-2 py-2.5"
+                      >
+                        <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">
+                          {tab === item.value && <Check className="h-3.5 w-3.5" aria-hidden="true" />}
+                        </span>
+                        <span>
+                          <span className="block text-xs font-mono font-medium">{item.label}</span>
+                          <span className="mt-0.5 block text-[11px] leading-4 text-muted-foreground">{item.description}</span>
+                        </span>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                <MenuTooltip description="Compare stocks using growth, margins, valuation, performance, and market peers.">
+                  <TabsTrigger value="compare" className="text-xs font-mono">AI Compare</TabsTrigger>
+                </MenuTooltip>
+                <MenuTooltip description="Review breaking company developments and their potential market impact.">
+                  <TabsTrigger value="announcements" className="text-xs font-mono">Announcements</TabsTrigger>
+                </MenuTooltip>
               </TabsList>
 
               <TabsContent value="mylists">
