@@ -26,7 +26,11 @@ const CRITERIA = [
   { value: "highest_volume", label: "Highest Volume" },
   { value: "top_gainers", label: "Top Gainers" },
   { value: "trending", label: "Trending Stocks" },
+  { value: "highest_dividends", label: "Highest Dividends" },
+  { value: "highest_eps", label: "Highest EPS" },
+  { value: "highest_pe", label: "Highest PE" },
 ];
+
 
 export default function MarketWatchlistPanel() {
   const [sector, setSector] = useState<string>("");
