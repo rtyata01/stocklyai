@@ -16,7 +16,8 @@ const SECTOR_UNIVERSE: Record<string, string[]> = {
   quantum: ['IONQ', 'RGTI', 'QBTS', 'QUBT', 'ARQQ', 'HON', 'IBM', 'GOOGL', 'MSFT', 'NVDA'],
 };
 
-const CRITERIA = new Set(['highest_volume', 'top_gainers', 'trending']);
+const CRITERIA = new Set(['highest_volume', 'top_gainers', 'trending', 'highest_dividends', 'highest_eps', 'highest_pe']);
+const FUNDAMENTAL_CRITERIA = new Set(['highest_dividends', 'highest_eps', 'highest_pe']);
 
 interface Row {
   ticker: string;
@@ -24,9 +25,31 @@ interface Row {
   change: number;
   volume: number;
   volumeChange: number;
+  dividendYield?: number;
+  eps?: number;
+  pe?: number;
 }
 
-async function fetchRow(ticker: string): Promise<Row | null> {
+async function fetchFundamentals(ticker: string): Promise<{ dividendYield: number; eps: number; pe: number } | null> {
+  try {
+    const url = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(ticker)}?modules=summaryDetail,defaultKeyStatistics`;
+    const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const r = data?.quoteSummary?.result?.[0];
+    if (!r) return null;
+    const sd = r.summaryDetail ?? {};
+    const ks = r.defaultKeyStatistics ?? {};
+    const dy = Number(sd.dividendYield?.raw ?? sd.trailingAnnualDividendYield?.raw ?? 0) * 100;
+    const eps = Number(ks.trailingEps?.raw ?? 0);
+    const pe = Number(sd.trailingPE?.raw ?? 0);
+    return { dividendYield: Number.isFinite(dy) ? dy : 0, eps: Number.isFinite(eps) ? eps : 0, pe: Number.isFinite(pe) ? pe : 0 };
+  } catch {
+    return null;
+  }
+}
+
+async function fetchRow(ticker: string, withFundamentals: boolean): Promise<Row | null> {
   try {
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1mo`;
     const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
@@ -47,7 +70,12 @@ async function fetchRow(ticker: string): Promise<Row | null> {
       ? prior.reduce((a, b) => a + b, 0) / prior.length
       : Number(meta?.averageDailyVolume3Month ?? 0);
     const volumeChange = avg > 0 ? ((volume - avg) / avg) * 100 : 0;
-    return { ticker, price, change, volume, volumeChange };
+    const row: Row = { ticker, price, change, volume, volumeChange };
+    if (withFundamentals) {
+      const f = await fetchFundamentals(ticker);
+      if (f) Object.assign(row, f);
+    }
+    return row;
   } catch {
     return null;
   }
@@ -55,6 +83,7 @@ async function fetchRow(ticker: string): Promise<Row | null> {
 
 const cache = new Map<string, { rows: Row[]; ts: number }>();
 const TTL = 10 * 60 * 1000;
+
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
