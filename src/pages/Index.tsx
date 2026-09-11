@@ -11,6 +11,8 @@ import ManageWatchlistDialog from "@/components/ManageWatchlistDialog";
 import { usePortfolio } from "@/hooks/usePortfolio";
 import PortfolioTable from "@/components/PortfolioTable";
 import MyWatchlistPanel from "@/components/MyWatchlistPanel";
+import MarketWatchlistPanel from "@/components/MarketWatchlistPanel";
+
 import PortfolioSummaryDialog from "@/components/PortfolioSummaryDialog";
 import WeeklyDebriefButton from "@/components/WeeklyDebriefButton";
 import AttentionScoreDialog from "@/components/AttentionScoreDialog";
@@ -125,9 +127,39 @@ const Index = () => {
           <main className="px-4 md:px-8 pt-4">
             <Tabs value={tab} onValueChange={handleTabChange}>
               <TabsList className="mb-4 flex-wrap h-auto gap-1">
-                <MenuTooltip description="Track custom stock lists, relevant news, and attention signals.">
-                  <TabsTrigger value="mylists" className="text-xs font-mono">Watchlist</TabsTrigger>
-                </MenuTooltip>
+                <DropdownMenu>
+                  <MenuTooltip description="Track your own lists or explore the wider market by sector and ranking.">
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`h-8 gap-1 px-3 text-xs font-mono font-medium ${selectedWatchlistTab ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}
+                        aria-label="Choose a watchlist view"
+                      >
+                        Watchlist
+                        <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                  </MenuTooltip>
+                  <DropdownMenuContent align="start" className="w-72">
+                    {WATCHLIST_TABS.map((item) => (
+                      <DropdownMenuItem
+                        key={item.value}
+                        onSelect={() => handleTabChange(item.value)}
+                        className="items-start gap-2 py-2.5"
+                      >
+                        <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">
+                          {tab === item.value && <Check className="h-3.5 w-3.5" aria-hidden="true" />}
+                        </span>
+                        <span>
+                          <span className="block text-xs font-mono font-medium">{item.label}</span>
+                          <span className="mt-0.5 block text-[11px] leading-4 text-muted-foreground">{item.description}</span>
+                        </span>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
                 <MenuTooltip description="Monitor your holdings, valuation levels, volume, and portfolio health.">
                   <TabsTrigger value="portfolio" className="text-xs font-mono">Portfolio</TabsTrigger>
                 </MenuTooltip>
@@ -141,7 +173,7 @@ const Index = () => {
                         className={`h-8 gap-1 px-3 text-xs font-mono font-medium ${selectedTradingTab ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}
                         aria-label="Choose a trading strategy"
                       >
-                        {selectedTradingTab?.label ?? "Trading 101"}
+                        Trading
                         <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -176,6 +208,11 @@ const Index = () => {
               <TabsContent value="mylists">
                 <MyWatchlistPanel />
               </TabsContent>
+
+              <TabsContent value="market">
+                <MarketWatchlistPanel />
+              </TabsContent>
+
 
               <TabsContent value="portfolio">
                 {!isAuthed && (
