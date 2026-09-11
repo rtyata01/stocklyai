@@ -26,7 +26,11 @@ const CRITERIA = [
   { value: "highest_volume", label: "Highest Volume" },
   { value: "top_gainers", label: "Top Gainers" },
   { value: "trending", label: "Trending Stocks" },
+  { value: "highest_dividends", label: "Highest Dividends" },
+  { value: "highest_eps", label: "Highest EPS" },
+  { value: "highest_pe", label: "Highest PE" },
 ];
+
 
 export default function MarketWatchlistPanel() {
   const [sector, setSector] = useState<string>("");
@@ -85,8 +89,9 @@ export default function MarketWatchlistPanel() {
 
         <Button size="sm" className="gap-1.5 text-xs" onClick={run} disabled={!sector || !criterion || loading}>
           {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Search className="h-3.5 w-3.5" />}
-          Find Top 15
+          Find Best Stocks
         </Button>
+
       </div>
 
       {loading && (

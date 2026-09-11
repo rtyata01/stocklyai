@@ -12,6 +12,8 @@ import { usePortfolio } from "@/hooks/usePortfolio";
 import PortfolioTable from "@/components/PortfolioTable";
 import MyWatchlistPanel from "@/components/MyWatchlistPanel";
 import MarketWatchlistPanel from "@/components/MarketWatchlistPanel";
+import MarketLeadersPanel from "@/components/MarketLeadersPanel";
+
 
 import PortfolioSummaryDialog from "@/components/PortfolioSummaryDialog";
 import WeeklyDebriefButton from "@/components/WeeklyDebriefButton";
@@ -41,8 +43,10 @@ const TRADING_TABS = [
 
 const WATCHLIST_TABS = [
   { value: "mylists", label: "My Watchlist", description: "Track your own custom stock lists, news, and attention signals." },
-  { value: "market", label: "Market Watchlist", description: "Find the top 15 stocks by sector and ranking across the market." },
+  { value: "market", label: "Market Watchlist", description: "Find the best stocks by sector and ranking across the market." },
+  { value: "leaders", label: "Market Leaders", description: "See the top holdings of leading investors, and add your own." },
 ];
+
 
 
 const MenuTooltip = ({ children, description }: { children: React.ReactNode; description: string }) => (
@@ -58,7 +62,7 @@ const Index = () => {
   const queryClient = useQueryClient();
   const { ownerKey, isAuthed } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const VALID_TABS = ["mylists", "market", "portfolio", "compare", "earnings", "swing", "cycle", "announcements", "basics"];
+  const VALID_TABS = ["mylists", "market", "leaders", "portfolio", "compare", "earnings", "swing", "cycle", "announcements", "basics"];
   const initialTab = (() => {
     const t = searchParams.get("tab");
     return t && VALID_TABS.includes(t) ? t : "portfolio";
@@ -212,6 +216,11 @@ const Index = () => {
               <TabsContent value="market">
                 <MarketWatchlistPanel />
               </TabsContent>
+
+              <TabsContent value="leaders">
+                <MarketLeadersPanel />
+              </TabsContent>
+
 
 
               <TabsContent value="portfolio">
