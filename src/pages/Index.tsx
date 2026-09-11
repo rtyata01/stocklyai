@@ -41,8 +41,10 @@ const TRADING_TABS = [
 
 const WATCHLIST_TABS = [
   { value: "mylists", label: "My Watchlist", description: "Track your own custom stock lists, news, and attention signals." },
-  { value: "market", label: "Market Watchlist", description: "Find the top 15 stocks by sector and ranking across the market." },
+  { value: "market", label: "Market Watchlist", description: "Find the best stocks by sector and ranking across the market." },
+  { value: "leaders", label: "Market Leaders", description: "See the top holdings of leading investors, and add your own." },
 ];
+
 
 
 const MenuTooltip = ({ children, description }: { children: React.ReactNode; description: string }) => (
