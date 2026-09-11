@@ -89,8 +89,9 @@ export default function MarketWatchlistPanel() {
 
         <Button size="sm" className="gap-1.5 text-xs" onClick={run} disabled={!sector || !criterion || loading}>
           {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Search className="h-3.5 w-3.5" />}
-          Find Top 15
+          Find Best Stocks
         </Button>
+
       </div>
 
       {loading && (
