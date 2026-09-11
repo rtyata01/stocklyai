@@ -37,6 +37,12 @@ const TRADING_TABS = [
   { value: "earnings", label: "Earnings Momentum", description: "Discover upcoming earnings setups with favorable risk and reward." },
 ];
 
+const WATCHLIST_TABS = [
+  { value: "mylists", label: "My Watchlist", description: "Track your own custom stock lists, news, and attention signals." },
+  { value: "market", label: "Market Watchlist", description: "Find the top 15 stocks by sector and ranking across the market." },
+];
+
+
 const MenuTooltip = ({ children, description }: { children: React.ReactNode; description: string }) => (
   <Tooltip>
     <TooltipTrigger asChild>{children}</TooltipTrigger>
@@ -50,13 +56,15 @@ const Index = () => {
   const queryClient = useQueryClient();
   const { ownerKey, isAuthed } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const VALID_TABS = ["mylists", "portfolio", "compare", "earnings", "swing", "cycle", "announcements", "basics"];
+  const VALID_TABS = ["mylists", "market", "portfolio", "compare", "earnings", "swing", "cycle", "announcements", "basics"];
   const initialTab = (() => {
     const t = searchParams.get("tab");
     return t && VALID_TABS.includes(t) ? t : "portfolio";
   })();
   const [tab, setTab] = useState<string>(initialTab);
   const selectedTradingTab = TRADING_TABS.find((item) => item.value === tab);
+  const selectedWatchlistTab = WATCHLIST_TABS.find((item) => item.value === tab);
+
   useEffect(() => {
     const t = searchParams.get("tab");
     if (t && VALID_TABS.includes(t) && t !== tab) setTab(t);
