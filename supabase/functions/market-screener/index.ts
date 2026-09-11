@@ -108,17 +108,27 @@ Deno.serve(async (req) => {
     }
 
     const universe = SECTOR_UNIVERSE[sector];
+    const withFundamentals = FUNDAMENTAL_CRITERIA.has(criterion);
     const rows: Row[] = [];
     for (let i = 0; i < universe.length; i += 8) {
-      const batch = await Promise.all(universe.slice(i, i + 8).map(fetchRow));
+      const batch = await Promise.all(universe.slice(i, i + 8).map((t) => fetchRow(t, withFundamentals)));
       rows.push(...batch.filter((r): r is Row => !!r));
     }
 
-    const sorted = [...rows].sort((a, b) => {
+    let pool = rows;
+    if (criterion === 'highest_dividends') pool = rows.filter((r) => (r.dividendYield ?? 0) > 0);
+    if (criterion === 'highest_eps') pool = rows.filter((r) => (r.eps ?? 0) > 0);
+    if (criterion === 'highest_pe') pool = rows.filter((r) => (r.pe ?? 0) > 0);
+
+    const sorted = [...pool].sort((a, b) => {
       if (criterion === 'highest_volume') return b.volume - a.volume;
       if (criterion === 'top_gainers') return b.change - a.change;
+      if (criterion === 'highest_dividends') return (b.dividendYield ?? 0) - (a.dividendYield ?? 0);
+      if (criterion === 'highest_eps') return (b.eps ?? 0) - (a.eps ?? 0);
+      if (criterion === 'highest_pe') return (b.pe ?? 0) - (a.pe ?? 0);
       return b.volumeChange - a.volumeChange;
     }).slice(0, 15);
+
 
     cache.set(key, { rows: sorted, ts: Date.now() });
 
