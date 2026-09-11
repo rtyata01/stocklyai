@@ -12,6 +12,8 @@ import { usePortfolio } from "@/hooks/usePortfolio";
 import PortfolioTable from "@/components/PortfolioTable";
 import MyWatchlistPanel from "@/components/MyWatchlistPanel";
 import MarketWatchlistPanel from "@/components/MarketWatchlistPanel";
+import MarketLeadersPanel from "@/components/MarketLeadersPanel";
+
 
 import PortfolioSummaryDialog from "@/components/PortfolioSummaryDialog";
 import WeeklyDebriefButton from "@/components/WeeklyDebriefButton";
@@ -60,7 +62,7 @@ const Index = () => {
   const queryClient = useQueryClient();
   const { ownerKey, isAuthed } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const VALID_TABS = ["mylists", "market", "portfolio", "compare", "earnings", "swing", "cycle", "announcements", "basics"];
+  const VALID_TABS = ["mylists", "market", "leaders", "portfolio", "compare", "earnings", "swing", "cycle", "announcements", "basics"];
   const initialTab = (() => {
     const t = searchParams.get("tab");
     return t && VALID_TABS.includes(t) ? t : "portfolio";
@@ -214,6 +216,11 @@ const Index = () => {
               <TabsContent value="market">
                 <MarketWatchlistPanel />
               </TabsContent>
+
+              <TabsContent value="leaders">
+                <MarketLeadersPanel />
+              </TabsContent>
+
 
 
               <TabsContent value="portfolio">
