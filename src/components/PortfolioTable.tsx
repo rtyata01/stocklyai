@@ -28,8 +28,8 @@ interface Props {
   showRefresh?: boolean;
   toolbarExtras?: React.ReactNode;
   emptyMessage?: string;
-  /** Encodes which tab to return to from the stock detail page. */
-  viewFrom?: "portfolio" | "mylists";
+  /** @deprecated Back navigation is now derived from the current page URL. */
+  viewFrom?: string;
   /** Extra async work triggered on Re-evaluate (e.g. breaking news scan). */
   onExtraRefresh?: () => void | Promise<void>;
   /** When provided, sector headers become drag handles for reordering. */
@@ -41,11 +41,12 @@ export default function PortfolioTable({
   showRefresh = true,
   toolbarExtras,
   emptyMessage,
-  viewFrom = "portfolio",
   onExtraRefresh,
   onReorderSectors,
 }: Props) {
+  const location = useLocation();
   const queryClient = useQueryClient();
+
   const [refreshNonce, setRefreshNonce] = useState(0);
   const allTickers = sectors.flatMap((s) => s.tickers);
   const { data: quotes, isLoading, error } = useStockData(refreshNonce, allTickers);
