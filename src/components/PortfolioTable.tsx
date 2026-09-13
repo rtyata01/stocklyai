@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import { buildStockLink } from "@/lib/backNav";
+
 import { formatCurrency, formatVolume, SectorGroup } from "@/data/stocks";
 import { useStockData } from "@/hooks/useStockData";
 import { usePriceEvaluations, clearPriceCache } from "@/hooks/usePriceEvaluations";
@@ -421,7 +423,7 @@ export default function PortfolioTable({
                             </TableCell>
                             <TableCell className="py-2 px-4 text-center">
                               <Link
-                                to={`/stock/${ticker}?from=${viewFrom}`}
+                                to={buildStockLink(ticker, location)}
                                 className="text-[11px] font-mono text-primary hover:text-primary/80 underline underline-offset-2"
                               >
                                 View
