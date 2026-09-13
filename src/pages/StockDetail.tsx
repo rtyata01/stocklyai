@@ -4,6 +4,8 @@ import { usePriceEvaluations } from "@/hooks/usePriceEvaluations";
 import { useStockData } from "@/hooks/useStockData";
 import { useStockInsights } from "@/hooks/useStockInsights";
 import { formatCurrency } from "@/data/stocks";
+import { resolveBack } from "@/lib/backNav";
+
 import { ArrowLeft, TrendingUp, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -79,9 +81,8 @@ const StockDetail = () => {
   const { ticker } = useParams<{ ticker: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const from = searchParams.get("from");
-  const backTo = from === "mylists" ? "/?tab=mylists" : "/";
-  const backLabel = from === "mylists" ? "Back to My Watchlist" : "Back to Portfolio";
+  const { to: backTo, label: backLabel } = resolveBack(searchParams.get("from"));
+
   const { data: detail, isLoading, error } = useStockDetail(ticker);
   const { data: quotes } = useStockData();
   const { data: evaluations } = usePriceEvaluations(quotes);
