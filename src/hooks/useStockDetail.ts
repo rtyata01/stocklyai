@@ -41,6 +41,12 @@ export interface InvestmentSimulation {
   periodReturns: PeriodReturn[];
 }
 
+export interface FocusArea {
+  area: string;
+  description: string;
+  revenueShare?: number | null;
+}
+
 export interface StockDetail {
   currentPrice: number;
   week52High: number;
@@ -54,8 +60,10 @@ export interface StockDetail {
   yearlyEarnings: YearlyEarning[];
   priceHistory: PricePoint[];
   investmentSimulation: InvestmentSimulation;
+  focusAreas?: FocusArea[];
   catalysts: Catalyst[];
 }
+
 
 const CACHE_TTL = 4 * 60 * 60 * 1000; // 4 hours
 

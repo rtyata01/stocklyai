@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import { buildStockLink } from "@/lib/backNav";
+
 import { formatCurrency, formatVolume, SectorGroup } from "@/data/stocks";
 import { useStockData } from "@/hooks/useStockData";
 import { usePriceEvaluations, clearPriceCache } from "@/hooks/usePriceEvaluations";
@@ -26,8 +28,8 @@ interface Props {
   showRefresh?: boolean;
   toolbarExtras?: React.ReactNode;
   emptyMessage?: string;
-  /** Encodes which tab to return to from the stock detail page. */
-  viewFrom?: "portfolio" | "mylists";
+  /** @deprecated Back navigation is now derived from the current page URL. */
+  viewFrom?: string;
   /** Extra async work triggered on Re-evaluate (e.g. breaking news scan). */
   onExtraRefresh?: () => void | Promise<void>;
   /** When provided, sector headers become drag handles for reordering. */
@@ -39,11 +41,12 @@ export default function PortfolioTable({
   showRefresh = true,
   toolbarExtras,
   emptyMessage,
-  viewFrom = "portfolio",
   onExtraRefresh,
   onReorderSectors,
 }: Props) {
+  const location = useLocation();
   const queryClient = useQueryClient();
+
   const [refreshNonce, setRefreshNonce] = useState(0);
   const allTickers = sectors.flatMap((s) => s.tickers);
   const { data: quotes, isLoading, error } = useStockData(refreshNonce, allTickers);
@@ -421,7 +424,7 @@ export default function PortfolioTable({
                             </TableCell>
                             <TableCell className="py-2 px-4 text-center">
                               <Link
-                                to={`/stock/${ticker}?from=${viewFrom}`}
+                                to={buildStockLink(ticker, location)}
                                 className="text-[11px] font-mono text-primary hover:text-primary/80 underline underline-offset-2"
                               >
                                 View
