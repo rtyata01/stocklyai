@@ -142,7 +142,7 @@ async function fetchAiSupplements(ticker: string, currentPrice: number, historic
         model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: `You provide forward-looking analyst consensus estimates and upcoming catalysts. You may also provide REPORTED past actuals when explicitly asked to fill gaps. Use Wall Street consensus where available. All revenue in millions USD.` },
-          { role: 'user', content: `Ticker: ${ticker}. Today: ${today}.\n${histCtx}\n\nProvide:\n1. ${needPastQuarters > 0 ? `${needPastQuarters} most-recent REPORTED past quarters (actuals) NOT already in the known list — put these in pastQuarters.` : 'No past quarters needed.'}\n2. Next 4 quarters EPS and revenue ESTIMATES (current quarter + 3 future) — put in forwardQuarters.\n3. ${needPastYears > 0 ? `${needPastYears} most-recent REPORTED past years (actuals) NOT in known list — put in pastYears.` : 'No past years needed.'}\n4. Next 4 years EPS and revenue ESTIMATES (current year + 3 future) — put in forwardYears.\n5. 3-8 upcoming major catalysts with dates if known.` },
+          { role: 'user', content: `Ticker: ${ticker}. Today: ${today}.\n${histCtx}\n\nProvide:\n1. ${needPastQuarters > 0 ? `${needPastQuarters} most-recent REPORTED past quarters (actuals) NOT already in the known list — put these in pastQuarters.` : 'No past quarters needed.'}\n2. Next 4 quarters EPS and revenue ESTIMATES (current quarter + 3 future) — put in forwardQuarters.\n3. ${needPastYears > 0 ? `${needPastYears} most-recent REPORTED past years (actuals) NOT in known list — put in pastYears.` : 'No past years needed.'}\n4. Next 4 years EPS and revenue ESTIMATES (current year + 3 future) — put in forwardYears.\n5. 3-8 upcoming major catalysts with dates if known.\n6. focusAreas: 3-5 core business areas this company focuses on and prioritises (e.g. product lines, segments, strategic bets). For each: a short area name (1-4 words), one concise sentence describing it, and revenueShare as an approximate percentage of revenue (0 if unknown).` },
         ],
         tools: [{
           type: 'function',
@@ -196,8 +196,21 @@ async function fetchAiSupplements(ticker: string, currentPrice: number, historic
                     required: ['event', 'impact', 'details'],
                   },
                 },
+                focusAreas: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      area: { type: 'string' },
+                      description: { type: 'string' },
+                      revenueShare: { type: 'number' },
+                    },
+                    required: ['area', 'description'],
+                  },
+                },
               },
-              required: ['forwardQuarters', 'forwardYears', 'catalysts'],
+              required: ['forwardQuarters', 'forwardYears', 'catalysts', 'focusAreas'],
+
             },
           },
         }],
