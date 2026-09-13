@@ -217,6 +217,29 @@ const StockDetail = () => {
                 )}
               </section>
 
+              {/* Core Focus Areas */}
+              {detail.focusAreas && detail.focusAreas.length > 0 && (
+                <section>
+                  <h2 className="font-serif text-base text-foreground mb-3 flex items-center gap-3">
+                    Core Focus Areas <span className="flex-1 h-[1px] bg-border" />
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {detail.focusAreas.map((f) => (
+                      <div key={f.area} className="border border-border rounded-sm p-3 bg-secondary/20">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="font-mono text-xs text-foreground uppercase tracking-wide">{f.area}</div>
+                          {f.revenueShare ? (
+                            <span className="font-mono text-[10px] text-primary shrink-0">~{Math.round(f.revenueShare)}% rev</span>
+                          ) : null}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">{f.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+
               {/* $1000 Investment Simulation */}
               {detail.investmentSimulation && detail.investmentSimulation.periodReturns?.length > 0 && (() => {
                 const currentPriceForSimulation = detail.currentPrice > 0 ? detail.currentPrice : (quote?.price ?? 0);
