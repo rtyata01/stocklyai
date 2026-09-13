@@ -322,6 +322,15 @@ Deno.serve(async (req) => {
       event: c.event, date: c.date ?? null, impact: c.impact, details: c.details,
     }));
 
+    const focusAreas = (supplements?.focusAreas ?? [])
+      .filter((f: any) => f?.area && f?.description)
+      .slice(0, 5)
+      .map((f: any) => ({
+        area: String(f.area),
+        description: String(f.description),
+        revenueShare: typeof f.revenueShare === 'number' && f.revenueShare > 0 ? f.revenueShare : null,
+      }));
+
     const detail = {
       currentPrice,
       week52High,
@@ -335,8 +344,10 @@ Deno.serve(async (req) => {
       yearlyEarnings,
       priceHistory,
       investmentSimulation: { initialInvestment: 1000, periodReturns },
+      focusAreas,
       catalysts,
     };
+
 
     await writeAppCache(`stock-detail:${ticker}`, { detail }, 4 * 60 * 60 * 1000);
 
