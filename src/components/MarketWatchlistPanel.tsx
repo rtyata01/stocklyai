@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,6 +10,7 @@ import PortfolioTable from "@/components/PortfolioTable";
 import { SectorGroup } from "@/data/stocks";
 
 const SECTORS = [
+  { value: "all", label: "All Sectors" },
   { value: "tech", label: "Tech" },
   { value: "ai", label: "AI" },
   { value: "robotics", label: "Robotics" },
@@ -33,12 +34,12 @@ const CRITERIA = [
 
 
 export default function MarketWatchlistPanel() {
-  const [sector, setSector] = useState<string>("");
-  const [criterion, setCriterion] = useState<string>("");
+  const [sector, setSector] = useState<string>("ai");
+  const [criterion, setCriterion] = useState<string>("highest_volume");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<SectorGroup | null>(null);
 
-  const run = async () => {
+  const run = useCallback(async () => {
     if (!sector || !criterion) return;
     setLoading(true);
     try {
@@ -60,7 +61,14 @@ export default function MarketWatchlistPanel() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [sector, criterion]);
+
+  const didAutoRun = useRef(false);
+  useEffect(() => {
+    if (didAutoRun.current) return;
+    didAutoRun.current = true;
+    void run();
+  }, [run]);
 
   return (
     <div className="pb-8">
