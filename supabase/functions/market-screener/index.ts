@@ -16,6 +16,8 @@ const SECTOR_UNIVERSE: Record<string, string[]> = {
   quantum: ['IONQ', 'RGTI', 'QBTS', 'QUBT', 'ARQQ', 'HON', 'IBM', 'GOOGL', 'MSFT', 'NVDA'],
 };
 
+SECTOR_UNIVERSE.all = [...new Set(Object.values(SECTOR_UNIVERSE).flat())];
+
 const CRITERIA = new Set(['highest_volume', 'top_gainers', 'trending', 'highest_dividends', 'highest_eps', 'highest_pe']);
 const FUNDAMENTAL_CRITERIA = new Set(['highest_dividends', 'highest_eps', 'highest_pe']);
 
@@ -137,8 +139,8 @@ Deno.serve(async (req) => {
     const universe = SECTOR_UNIVERSE[sector];
     const withFundamentals = FUNDAMENTAL_CRITERIA.has(criterion);
     const rows: Row[] = [];
-    for (let i = 0; i < universe.length; i += 8) {
-      const batch = await Promise.all(universe.slice(i, i + 8).map((t) => fetchRow(t, withFundamentals)));
+    for (let i = 0; i < universe.length; i += 15) {
+      const batch = await Promise.all(universe.slice(i, i + 15).map((t) => fetchRow(t, withFundamentals)));
       rows.push(...batch.filter((r): r is Row => !!r));
     }
 
