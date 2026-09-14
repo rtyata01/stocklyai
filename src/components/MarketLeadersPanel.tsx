@@ -44,7 +44,16 @@ function loadLeaders(): Leader[] {
 
 export default function MarketLeadersPanel() {
   const [leaders, setLeaders] = useState<Leader[]>(() => loadLeaders());
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(() => {
+    // Default to Cathie Wood so the panel loads her stocks immediately.
+    try {
+      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
+      const pool = Array.isArray(stored) && stored.length ? stored : DEFAULT_LEADERS;
+      return pool.some((l) => l.id === "wood") ? "wood" : pool[0]?.id ?? null;
+    } catch {
+      return "wood";
+    }
+  });
   const [addOpen, setAddOpen] = useState(false);
   const [name, setName] = useState("");
   const [firm, setFirm] = useState("");
