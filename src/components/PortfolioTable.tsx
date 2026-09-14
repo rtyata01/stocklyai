@@ -249,12 +249,12 @@ export default function PortfolioTable({
                   <Table className="table-fixed w-full">
                     <TableHeader>
                       <TableRow className="bg-secondary/50 hover:bg-secondary/50">
-                        <TableHead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground h-8 w-[16%]">
+                        <TableHead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground h-8 w-[14%]">
                           <button type="button" onClick={() => toggleSort("symbol")} className={headerBtnCls}>
                             Symbol <SortIcon col="symbol" />
                           </button>
                         </TableHead>
-                        <TableHead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground text-right h-8 w-[14%]">
+                        <TableHead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground text-right h-8 w-[16%]">
                           <button type="button" onClick={() => toggleSort("price")} className={`${headerBtnCls} w-full justify-end`}>
                             Price <SortIcon col="price" />
                           </button>
@@ -341,17 +341,19 @@ export default function PortfolioTable({
                                   </Tooltip>
                                 )}
                                 <span className="font-serif text-sm font-medium text-foreground">{ticker}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="py-2 px-4 text-right">
+                              <div className="flex items-center justify-end gap-2 whitespace-nowrap">
+                                <span className="font-mono text-sm text-foreground tabular-nums">
+                                  {noData ? "—" : formatCurrency(price)}
+                                </span>
                                 {!noData && (
-                                  <span className={`text-[10px] font-mono ${isPositive ? "text-pine" : "text-destructive"}`}>
+                                  <span className={`text-[10px] font-mono tabular-nums ${isPositive ? "text-pine" : "text-destructive"}`}>
                                     {isPositive ? "+" : ""}{change.toFixed(2)}%
                                   </span>
                                 )}
                               </div>
-                            </TableCell>
-                            <TableCell className="py-2 px-4 text-right">
-                              <span className="font-mono text-sm text-foreground tabular-nums">
-                                {noData ? "—" : formatCurrency(price)}
-                              </span>
                             </TableCell>
                             <TableCell className="py-2 px-4 text-right">
                               <div className="flex items-center justify-end gap-2">
