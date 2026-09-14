@@ -16,6 +16,8 @@ const SECTOR_UNIVERSE: Record<string, string[]> = {
   quantum: ['IONQ', 'RGTI', 'QBTS', 'QUBT', 'ARQQ', 'HON', 'IBM', 'GOOGL', 'MSFT', 'NVDA'],
 };
 
+SECTOR_UNIVERSE.all = [...new Set(Object.values(SECTOR_UNIVERSE).flat())];
+
 const CRITERIA = new Set(['highest_volume', 'top_gainers', 'trending', 'highest_dividends', 'highest_eps', 'highest_pe']);
 const FUNDAMENTAL_CRITERIA = new Set(['highest_dividends', 'highest_eps', 'highest_pe']);
 
@@ -30,24 +32,51 @@ interface Row {
   pe?: number;
 }
 
+// Yahoo's quoteSummary endpoint requires a cookie + crumb pair.
+let auth: { cookie: string; crumb: string; ts: number } | null = null;
+async function getYahooAuth(): Promise<{ cookie: string; crumb: string } | null> {
+  if (auth && Date.now() - auth.ts < 30 * 60 * 1000) return auth;
+  try {
+    const res = await fetch('https://fc.yahoo.com', { headers: { 'User-Agent': 'Mozilla/5.0' }, redirect: 'follow' });
+    const setCookies = (res.headers as unknown as { getSetCookie?: () => string[] }).getSetCookie?.() ?? [];
+    const raw = setCookies.length ? setCookies : [res.headers.get('set-cookie') ?? ''];
+    const cookie = raw.filter(Boolean).map((c) => c.split(';')[0]).join('; ');
+    await res.body?.cancel();
+    if (!cookie) return null;
+    const cr = await fetch('https://query1.finance.yahoo.com/v1/test/getcrumb', {
+      headers: { 'User-Agent': 'Mozilla/5.0', Cookie: cookie },
+    });
+    const crumb = (await cr.text()).trim();
+    if (!crumb || crumb.length > 32) return null;
+    auth = { cookie, crumb, ts: Date.now() };
+    return auth;
+  } catch {
+    return null;
+  }
+}
+
 async function fetchFundamentals(ticker: string): Promise<{ dividendYield: number; eps: number; pe: number } | null> {
   try {
-    const url = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(ticker)}?modules=summaryDetail,defaultKeyStatistics`;
-    const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+    const a = await getYahooAuth();
+    if (!a) return null;
+    const url = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(ticker)}?modules=summaryDetail,defaultKeyStatistics&crumb=${encodeURIComponent(a.crumb)}`;
+    const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0', Cookie: a.cookie } });
     if (!res.ok) return null;
     const data = await res.json();
     const r = data?.quoteSummary?.result?.[0];
     if (!r) return null;
     const sd = r.summaryDetail ?? {};
     const ks = r.defaultKeyStatistics ?? {};
-    const dy = Number(sd.dividendYield?.raw ?? sd.trailingAnnualDividendYield?.raw ?? 0) * 100;
+    let dy = Number(sd.dividendYield?.raw ?? sd.trailingAnnualDividendYield?.raw ?? 0);
+    if (dy > 0 && dy < 1) dy = dy * 100; // Yahoo sometimes returns a fraction
     const eps = Number(ks.trailingEps?.raw ?? 0);
-    const pe = Number(sd.trailingPE?.raw ?? 0);
+    const pe = Number(sd.trailingPE?.raw ?? ks.forwardPE?.raw ?? 0);
     return { dividendYield: Number.isFinite(dy) ? dy : 0, eps: Number.isFinite(eps) ? eps : 0, pe: Number.isFinite(pe) ? pe : 0 };
   } catch {
     return null;
   }
 }
+
 
 async function fetchRow(ticker: string, withFundamentals: boolean): Promise<Row | null> {
   try {
@@ -110,8 +139,8 @@ Deno.serve(async (req) => {
     const universe = SECTOR_UNIVERSE[sector];
     const withFundamentals = FUNDAMENTAL_CRITERIA.has(criterion);
     const rows: Row[] = [];
-    for (let i = 0; i < universe.length; i += 8) {
-      const batch = await Promise.all(universe.slice(i, i + 8).map((t) => fetchRow(t, withFundamentals)));
+    for (let i = 0; i < universe.length; i += 15) {
+      const batch = await Promise.all(universe.slice(i, i + 15).map((t) => fetchRow(t, withFundamentals)));
       rows.push(...batch.filter((r): r is Row => !!r));
     }
 
