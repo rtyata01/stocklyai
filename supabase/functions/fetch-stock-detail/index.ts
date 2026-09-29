@@ -331,10 +331,23 @@ Deno.serve(async (req) => {
         revenueShare: typeof f.revenueShare === 'number' && f.revenueShare > 0 ? f.revenueShare : null,
       }));
 
+    let dividendYield: number | null = null;
+    if (qs?.source === 'v10') {
+      const sd = qs.data.summaryDetail ?? {};
+      const raw = sd.dividendYield?.raw ?? sd.trailingAnnualDividendYield?.raw ?? null;
+      dividendYield = typeof raw === 'number' ? raw * 100 : null;
+    } else if (qs?.source === 'v7') {
+      const q = qs.data;
+      const raw = q.dividendYield ?? (q.trailingAnnualDividendYield != null ? q.trailingAnnualDividendYield * 100 : null);
+      dividendYield = typeof raw === 'number' ? raw : null;
+    }
+    if (isCrypto) dividendYield = null;
+
     const detail = {
       currentPrice,
       week52High,
       week52Low,
+      dividendYield,
       peRatio,
       eps,
       freeCashFlow,

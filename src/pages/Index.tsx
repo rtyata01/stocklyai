@@ -13,6 +13,7 @@ import PortfolioTable from "@/components/PortfolioTable";
 import MyWatchlistPanel from "@/components/MyWatchlistPanel";
 import MarketWatchlistPanel from "@/components/MarketWatchlistPanel";
 import MarketLeadersPanel from "@/components/MarketLeadersPanel";
+import CommunityPanel from "@/components/CommunityPanel";
 
 
 import PortfolioSummaryDialog from "@/components/PortfolioSummaryDialog";
@@ -62,7 +63,7 @@ const Index = () => {
   const queryClient = useQueryClient();
   const { ownerKey, isAuthed } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const VALID_TABS = ["mylists", "market", "leaders", "portfolio", "compare", "earnings", "swing", "cycle", "announcements", "basics"];
+  const VALID_TABS = ["mylists", "market", "leaders", "portfolio", "compare", "earnings", "swing", "cycle", "announcements", "basics", "community"];
   const initialTab = (() => {
     const t = searchParams.get("tab");
     return t && VALID_TABS.includes(t) ? t : "portfolio";
@@ -207,7 +208,14 @@ const Index = () => {
                 <MenuTooltip description="Review breaking company developments and their potential market impact.">
                   <TabsTrigger value="announcements" className="text-xs font-mono">Announcements</TabsTrigger>
                 </MenuTooltip>
+                <MenuTooltip description="Read, like, repost and comment on community posts about each stock, or share your own.">
+                  <TabsTrigger value="community" className="text-xs font-mono">Community Post</TabsTrigger>
+                </MenuTooltip>
               </TabsList>
+
+              <TabsContent value="community">
+                <CommunityPanel />
+              </TabsContent>
 
               <TabsContent value="mylists">
                 <MyWatchlistPanel />

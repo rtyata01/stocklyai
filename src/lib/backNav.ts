@@ -17,6 +17,7 @@ const TAB_LABELS: Record<string, string> = {
   earnings: "Earnings Momentum",
   announcements: "Announcements",
   basics: "Trading 101",
+  community: "Community Posts",
 };
 
 /** Build a stock detail link that remembers the current page. */

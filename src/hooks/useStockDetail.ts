@@ -51,6 +51,7 @@ export interface StockDetail {
   currentPrice: number;
   week52High: number;
   week52Low: number;
+  dividendYield?: number | null;
   peRatio: number | null;
   eps: number | null;
   freeCashFlow: number | null;

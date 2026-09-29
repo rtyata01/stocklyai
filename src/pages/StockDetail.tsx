@@ -184,8 +184,7 @@ const StockDetail = () => {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {[
                     { label: "Current Price", value: formatCurrency(quote?.price ?? detail.currentPrice) },
-                    { label: "52W High", value: detail.week52High ? formatCurrency(detail.week52High) : "—" },
-                    { label: "52W Low", value: detail.week52Low ? formatCurrency(detail.week52Low) : "—" },
+                    { label: "Dividend Yield", value: detail.dividendYield != null ? `${detail.dividendYield.toFixed(2)}%` : (detail.dividendYield === null ? "0.00%" : "—") },
                     { label: "P/E Ratio", value: detail.peRatio?.toFixed(2) ?? "N/A" },
                     { label: "EPS (TTM)", value: detail.eps != null ? `$${detail.eps.toFixed(2)}` : "N/A" },
                     { label: "Free Cash Flow", value: detail.freeCashFlow != null ? `$${detail.freeCashFlow.toLocaleString()}M` : "N/A" },
