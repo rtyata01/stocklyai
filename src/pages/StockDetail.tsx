@@ -98,6 +98,15 @@ const StockDetail = () => {
     ? ((detail.currentPrice - detail.week52Low) / (detail.week52High - detail.week52Low)) * 100
     : 0;
 
+  // Only show catalysts with a concrete date within the next 12 months.
+  const visibleCatalysts = (detail?.catalysts ?? []).filter((c) => {
+    if (!c.date || !/^\d{4}-\d{2}(-\d{2})?$/.test(c.date)) return false;
+    const t = new Date(c.date.length === 7 ? `${c.date}-01` : c.date).getTime();
+    if (!Number.isFinite(t)) return false;
+    const now = Date.now();
+    return t >= now - 31 * 86400000 && t <= now + 365 * 86400000;
+  });
+
   const chartGridColor = "hsl(var(--border))";
   const chartAxisColor = "hsl(var(--muted-foreground))";
   const chartTooltipBg = "hsl(var(--popover))";
@@ -160,12 +169,9 @@ const StockDetail = () => {
               </div>
             )}
           </div>
-          {evalData && (
-            <p className="text-[10px] font-mono text-muted-foreground mt-2 text-right">
-              For informational purposes only — not financial advice.
-            </p>
-            )}
-          </div>
+          <p className="text-[10px] font-mono text-muted-foreground mt-2 text-right">
+            AI Buy/Hold/Sell zones and analysis are for informational purposes only — not financial advice.
+          </p>
         </header>
 
         <main className="p-4 md:p-8 space-y-6">
