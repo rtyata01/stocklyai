@@ -350,9 +350,25 @@ Deno.serve(async (req) => {
       ...((supplements?.forwardYears ?? []).map((y: any) => ({ ...y, isEstimate: true }))),
     ];
 
-    const catalysts = (supplements?.catalysts ?? []).map((c: any) => ({
-      event: c.event, date: c.date ?? null, impact: c.impact, details: c.details,
-    }));
+    // AI catalysts are always unverified; drop undated or out-of-window (>12 months) events.
+    const nowMs = Date.now();
+    const inWindow = (d: unknown) => {
+      if (typeof d !== 'string' || !/^\d{4}-\d{2}(-\d{2})?$/.test(d)) return false;
+      const t = new Date(d.length === 7 ? `${d}-01` : d).getTime();
+      return Number.isFinite(t) && t >= nowMs - 31 * 86400000 && t <= nowMs + 365 * 86400000;
+    };
+    const catalysts: any[] = (supplements?.catalysts ?? [])
+      .filter((c: any) => inWindow(c?.date))
+      .map((c: any) => ({ event: c.event, date: c.date, impact: c.impact, details: c.details, verified: false }));
+
+    // Confirmed: next earnings date from Yahoo's calendar
+    const earnDate = qs?.source === 'v10' ? qs.data.calendarEvents?.earnings?.earningsDate?.[0]?.raw : (qs?.data?.earningsTimestamp ?? null);
+    if (typeof earnDate === 'number') {
+      const iso = new Date(earnDate * 1000).toISOString().slice(0, 10);
+      if (inWindow(iso)) {
+        catalysts.unshift({ event: 'Quarterly earnings report', date: iso, impact: 'neutral', details: 'Scheduled earnings release (from Yahoo Finance calendar).', verified: true });
+      }
+    }
 
     const focusAreas = (supplements?.focusAreas ?? [])
       .filter((f: any) => f?.area && f?.description)
