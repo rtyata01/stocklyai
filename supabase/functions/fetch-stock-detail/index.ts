@@ -27,18 +27,50 @@ async function yahooChart(symbol: string, range: string, interval: string) {
   return await res.json();
 }
 
-async function yahooQuoteSummary(symbol: string): Promise<any | null> {
-  // Try the v10 quoteSummary (often blocked) then fall back to v7 quote.
-  const modules = 'summaryDetail,defaultKeyStatistics,financialData,price,calendarEvents,earnings';
+async function yahooCrumb(): Promise<{ cookie: string; crumb: string } | null> {
   try {
-    const url = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(symbol)}?modules=${modules}`;
-    const res = await fetch(url, { headers: UA });
-    if (res.ok) {
-      const j = await res.json();
-      const result = j?.quoteSummary?.result?.[0];
-      if (result) return { source: 'v10', data: result };
-    }
-  } catch { /* ignore */ }
+    const r1 = await fetch('https://fc.yahoo.com', { headers: UA, redirect: 'manual' });
+    const setCookie = r1.headers.get('set-cookie') ?? '';
+    const cookie = setCookie.split(',').map((c) => c.split(';')[0].trim()).filter((c) => c.includes('=')).join('; ');
+    if (!cookie) return null;
+    const r2 = await fetch('https://query1.finance.yahoo.com/v1/test/getcrumb', { headers: { ...UA, Cookie: cookie } });
+    const crumb = (await r2.text()).trim();
+    if (!r2.ok || !crumb || crumb.includes(' ') || crumb.length > 40) return null;
+    return { cookie, crumb };
+  } catch { return null; }
+}
+
+async function alphaOverview(symbol: string): Promise<any | null> {
+  const key = Deno.env.get('ALPHA_VANTAGE_API_KEY');
+  if (!key) return null;
+  try {
+    const res = await fetch(`https://www.alphavantage.co/query?function=OVERVIEW&symbol=${encodeURIComponent(symbol)}&apikey=${key}`);
+    if (!res.ok) return null;
+    const j = await res.json();
+    return j?.Symbol ? j : null;
+  } catch { return null; }
+}
+
+const num = (v: unknown): number | null => {
+  const n = typeof v === 'string' ? parseFloat(v) : typeof v === 'number' ? v : NaN;
+  return Number.isFinite(n) ? n : null;
+};
+
+async function yahooQuoteSummary(symbol: string): Promise<any | null> {
+  // Try the v10 quoteSummary (needs cookie+crumb) then fall back to v7 quote.
+  const modules = 'summaryDetail,defaultKeyStatistics,financialData,price,calendarEvents,earnings';
+  const auth = await yahooCrumb();
+  for (const a of [auth, null]) {
+    try {
+      const url = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(symbol)}?modules=${modules}${a ? `&crumb=${encodeURIComponent(a.crumb)}` : ''}`;
+      const res = await fetch(url, { headers: a ? { ...UA, Cookie: a.cookie } : UA });
+      if (res.ok) {
+        const j = await res.json();
+        const result = j?.quoteSummary?.result?.[0];
+        if (result) return { source: 'v10', data: result };
+      }
+    } catch { /* ignore */ }
+  }
 
   try {
     const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbol)}`;
@@ -340,6 +372,17 @@ Deno.serve(async (req) => {
       const q = qs.data;
       const raw = q.dividendYield ?? (q.trailingAnnualDividendYield != null ? q.trailingAnnualDividendYield * 100 : null);
       dividendYield = typeof raw === 'number' ? raw : null;
+    }
+    // Fill any missing fundamentals from Alpha Vantage
+    if (!isCrypto && (peRatio == null || eps == null || marketCap == null || dividendYield == null || totalRevenue == null)) {
+      const av = await alphaOverview(symbol);
+      if (av) {
+        peRatio ??= num(av.PERatio);
+        eps ??= num(av.EPS);
+        const mc = num(av.MarketCapitalization); if (marketCap == null && mc) marketCap = mc / 1e9;
+        const rv = num(av.RevenueTTM); if (totalRevenue == null && rv) totalRevenue = rv / 1e6;
+        const dy = num(av.DividendYield); if (dividendYield == null && dy != null) dividendYield = dy * 100;
+      }
     }
     if (isCrypto) dividendYield = null;
 
