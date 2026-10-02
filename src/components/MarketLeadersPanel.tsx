@@ -36,7 +36,12 @@ function loadLeaders(): Leader[] {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_LEADERS;
     const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed) && parsed.length) return parsed as Leader[];
+    if (Array.isArray(parsed) && parsed.length) {
+      // Data corrections: drop deceased investors, rename changed tickers (SQ -> XYZ).
+      return (parsed as Leader[])
+        .filter((l) => l.id !== "munger")
+        .map((l) => ({ ...l, tickers: l.tickers.map((t) => (t === "SQ" ? "XYZ" : t)) }));
+    }
   } catch { /* ignore */ }
   return DEFAULT_LEADERS;
 }

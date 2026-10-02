@@ -147,6 +147,11 @@ const SiteFooter = () => {
           </div>
         </div>
 
+        <div className="text-[11px] font-mono text-muted-foreground max-w-2xl leading-relaxed">
+          Data sources: market prices, volume and company fundamentals from Yahoo Finance; earnings calendar and
+          fundamentals backup from Alpha Vantage. Quotes may be delayed. AI analysis is generated and may be
+          inaccurate. For informational purposes only — not financial advice.
+        </div>
         <div className="text-[11px] font-mono text-muted-foreground">
           {SITE_URL}
         </div>
