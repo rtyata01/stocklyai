@@ -98,6 +98,15 @@ const StockDetail = () => {
     ? ((detail.currentPrice - detail.week52Low) / (detail.week52High - detail.week52Low)) * 100
     : 0;
 
+  // Only show catalysts with a concrete date within the next 12 months.
+  const visibleCatalysts = (detail?.catalysts ?? []).filter((c) => {
+    if (!c.date || !/^\d{4}-\d{2}(-\d{2})?$/.test(c.date)) return false;
+    const t = new Date(c.date.length === 7 ? `${c.date}-01` : c.date).getTime();
+    if (!Number.isFinite(t)) return false;
+    const now = Date.now();
+    return t >= now - 31 * 86400000 && t <= now + 365 * 86400000;
+  });
+
   const chartGridColor = "hsl(var(--border))";
   const chartAxisColor = "hsl(var(--muted-foreground))";
   const chartTooltipBg = "hsl(var(--popover))";
@@ -160,6 +169,9 @@ const StockDetail = () => {
               </div>
             )}
           </div>
+          <p className="text-[10px] font-mono text-muted-foreground mt-2 text-right">
+            AI Buy/Hold/Sell zones and analysis are for informational purposes only — not financial advice.
+          </p>
         </header>
 
         <main className="p-4 md:p-8 space-y-6">
@@ -368,13 +380,13 @@ const StockDetail = () => {
 
               {/* Catalysts */}
 
-              {detail.catalysts && detail.catalysts.length > 0 && (
+              {visibleCatalysts.length > 0 && (
                 <section>
                   <h2 className="font-serif text-base text-foreground mb-3 flex items-center gap-3">
                     Upcoming Catalysts <span className="flex-1 h-[1px] bg-border" />
                   </h2>
                   <div className="grid gap-2">
-                    {detail.catalysts.map((c, i) => (
+                    {visibleCatalysts.map((c, i) => (
                       <div key={i} className="border border-border rounded-sm p-3 bg-secondary/20 flex items-start gap-3">
                         <div className={`mt-0.5 w-2 h-2 rounded-full shrink-0 ${
                           c.impact === 'bullish' ? 'bg-pine' : c.impact === 'bearish' ? 'bg-destructive' : 'bg-muted-foreground'
@@ -391,6 +403,9 @@ const StockDetail = () => {
                               c.impact === 'bullish' ? 'text-pine bg-pine/10' : c.impact === 'bearish' ? 'text-destructive bg-destructive/10' : 'text-muted-foreground bg-secondary'
                             }`}>
                               {c.impact}
+                            </span>
+                            <span className={`text-[10px] font-mono uppercase px-1.5 py-0.5 rounded border ${c.verified ? 'text-pine border-pine/30' : 'text-muted-foreground border-border'}`}>
+                              {c.verified ? 'confirmed' : 'unverified'}
                             </span>
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">{c.details}</p>

@@ -443,6 +443,13 @@ export default function PortfolioTable({
           );
         })}
 
+        {hasAny && (
+          <p className="text-[10px] font-mono text-muted-foreground px-1 pt-1">
+            AI Buy/Hold/Sell zones are for informational purposes only — not financial advice.
+          </p>
+        )}
+
+
         {hasAny && evalLoading && !isLoading && (
           <div className="text-center text-muted-foreground py-4 font-mono text-xs">
             AI is evaluating fair prices…

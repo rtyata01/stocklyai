@@ -26,6 +26,7 @@ export interface Catalyst {
   date: string | null;
   impact: "bullish" | "bearish" | "neutral";
   details: string;
+  verified?: boolean;
 }
 
 export interface PeriodReturn {

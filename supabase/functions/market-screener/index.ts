@@ -9,7 +9,7 @@ const SECTOR_UNIVERSE: Record<string, string[]> = {
   robotics: ['TSLA', 'ISRG', 'ABB', 'ROK', 'FANUY', 'IRBT', 'SERV', 'RR', 'PATH', 'NVDA', 'TER', 'OMCL', 'KRNT', 'CGNX', 'SYM', 'AVAV', 'KTOS', 'RKLB', 'HON', 'EMR'],
   energy: ['XOM', 'CVX', 'COP', 'SLB', 'OXY', 'PSX', 'MPC', 'VLO', 'EOG', 'DVN', 'FANG', 'HAL', 'KMI', 'WMB', 'ENPH', 'FSLR', 'RUN', 'NEE', 'PLUG', 'BE'],
   nuclear: ['NNE', 'OKLO', 'SMR', 'CCJ', 'LEU', 'UUUU', 'UEC', 'DNN', 'BWXT', 'VST', 'CEG', 'TLN', 'ASPI', 'LTBR', 'NLR'],
-  fintech: ['SOFI', 'HOOD', 'COIN', 'MSTR', 'PYPL', 'SQ', 'AFRM', 'UPST', 'NU', 'V', 'MA', 'BITF', 'BMNR', 'MARA', 'RIOT', 'CLSK', 'CIFR', 'GLXY'],
+  fintech: ['SOFI', 'HOOD', 'COIN', 'MSTR', 'PYPL', 'XYZ', 'AFRM', 'UPST', 'NU', 'V', 'MA', 'BITF', 'BMNR', 'MARA', 'RIOT', 'CLSK', 'CIFR', 'GLXY'],
   biotech: ['NTLA', 'CRSP', 'BEAM', 'MRNA', 'VRTX', 'REGN', 'AMGN', 'GILD', 'ALNY', 'SRPT', 'RXRX', 'TEM', 'ILMN', 'EXAS', 'IONS'],
   ev: ['TSLA', 'RIVN', 'LCID', 'NIO', 'XPEV', 'LI', 'BYDDY', 'GM', 'F', 'CHPT', 'BLNK', 'QS', 'ACHR', 'JOBY', 'EVTL'],
   semis: ['NVDA', 'AMD', 'MU', 'AVGO', 'TSM', 'INTC', 'QCOM', 'ARM', 'MRVL', 'LRCX', 'AMAT', 'KLAC', 'ASML', 'ON', 'TXN', 'ADI', 'SMCI', 'CRDO', 'ALAB', 'NXPI'],
