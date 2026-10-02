@@ -160,6 +160,12 @@ const StockDetail = () => {
               </div>
             )}
           </div>
+          {evalData && (
+            <p className="text-[10px] font-mono text-muted-foreground mt-2 text-right">
+              For informational purposes only — not financial advice.
+            </p>
+            )}
+          </div>
         </header>
 
         <main className="p-4 md:p-8 space-y-6">
@@ -368,13 +374,13 @@ const StockDetail = () => {
 
               {/* Catalysts */}
 
-              {detail.catalysts && detail.catalysts.length > 0 && (
+              {visibleCatalysts.length > 0 && (
                 <section>
                   <h2 className="font-serif text-base text-foreground mb-3 flex items-center gap-3">
                     Upcoming Catalysts <span className="flex-1 h-[1px] bg-border" />
                   </h2>
                   <div className="grid gap-2">
-                    {detail.catalysts.map((c, i) => (
+                    {visibleCatalysts.map((c, i) => (
                       <div key={i} className="border border-border rounded-sm p-3 bg-secondary/20 flex items-start gap-3">
                         <div className={`mt-0.5 w-2 h-2 rounded-full shrink-0 ${
                           c.impact === 'bullish' ? 'bg-pine' : c.impact === 'bearish' ? 'bg-destructive' : 'bg-muted-foreground'
@@ -391,6 +397,9 @@ const StockDetail = () => {
                               c.impact === 'bullish' ? 'text-pine bg-pine/10' : c.impact === 'bearish' ? 'text-destructive bg-destructive/10' : 'text-muted-foreground bg-secondary'
                             }`}>
                               {c.impact}
+                            </span>
+                            <span className={`text-[10px] font-mono uppercase px-1.5 py-0.5 rounded border ${c.verified ? 'text-pine border-pine/30' : 'text-muted-foreground border-border'}`}>
+                              {c.verified ? 'confirmed' : 'unverified'}
                             </span>
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">{c.details}</p>
