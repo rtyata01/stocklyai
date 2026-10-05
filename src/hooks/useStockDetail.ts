@@ -88,6 +88,12 @@ export function useStockDetail(ticker: string | undefined) {
       saveLocalCache(key, { detail }, CACHE_TTL);
       return detail;
     },
+    // Show last-known (even expired) details instantly while fresh data loads.
+    placeholderData: () => {
+      if (!ticker) return undefined;
+      const stale = readStaleLocal<{ detail: StockDetail } | StockDetail>(`stock-detail:${ticker}`);
+      return stale ? ((stale as { detail?: StockDetail }).detail ?? (stale as StockDetail)) : undefined;
+    },
     enabled: !!ticker,
     staleTime: 4 * 60 * 60 * 1000,
     retry: 1,
