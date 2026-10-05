@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { buildStockLink } from "@/lib/backNav";
 
 import { formatCurrency, formatVolume, SectorGroup } from "@/data/stocks";
+import { Skeleton } from "@/components/ui/skeleton";
 import { TableSkeleton, UpdatingBadge } from "@/components/LoadingSkeletons";
 import { useStockData } from "@/hooks/useStockData";
 import { usePriceEvaluations, clearPriceCache } from "@/hooks/usePriceEvaluations";
@@ -353,7 +354,7 @@ export default function PortfolioTable({
                             <TableCell className="py-2 px-4 text-right">
                               <div className="flex items-center justify-end gap-2 whitespace-nowrap">
                                 <span className="font-mono text-sm text-foreground tabular-nums">
-                                  {noData ? "—" : formatCurrency(price)}
+                                  {noData ? (updating ? <Skeleton className="h-3.5 w-16 inline-block align-middle" /> : "—") : formatCurrency(price)}
                                 </span>
                                 {!noData && (
                                   <span className={`text-[10px] font-mono tabular-nums ${isPositive ? "text-pine" : "text-destructive"}`}>
@@ -389,7 +390,7 @@ export default function PortfolioTable({
                                 </Tooltip>
                               ) : (
                                 <span className="font-mono text-sm text-primary tabular-nums">
-                                  {evalLoading ? "…" : ev ? formatCurrency(ev.buyPrice) : "—"}
+                                  {ev ? formatCurrency(ev.buyPrice) : evalLoading ? <Skeleton className="h-3.5 w-14 inline-block align-middle" /> : "—"}
                                 </span>
                               )}
                             </TableCell>
@@ -408,7 +409,7 @@ export default function PortfolioTable({
                                 </Tooltip>
                               ) : (
                                 <span className="font-mono text-sm text-muted-foreground tabular-nums">
-                                  {evalLoading ? "…" : ev ? formatCurrency(ev.holdPrice) : "—"}
+                                  {ev ? formatCurrency(ev.holdPrice) : evalLoading ? <Skeleton className="h-3.5 w-14 inline-block align-middle" /> : "—"}
                                 </span>
                               )}
                             </TableCell>
@@ -427,7 +428,7 @@ export default function PortfolioTable({
                                 </Tooltip>
                               ) : (
                                 <span className="font-mono text-sm text-destructive tabular-nums">
-                                  {evalLoading ? "…" : ev ? formatCurrency(ev.salePrice) : "—"}
+                                  {ev ? formatCurrency(ev.salePrice) : evalLoading ? <Skeleton className="h-3.5 w-14 inline-block align-middle" /> : "—"}
                                 </span>
                               )}
                             </TableCell>

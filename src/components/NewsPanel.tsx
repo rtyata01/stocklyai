@@ -1,3 +1,4 @@
+import { CardSkeleton } from "@/components/LoadingSkeletons";
 import { useState, useEffect, useRef } from "react";
 import { useStockNews, useRefreshNews } from "@/hooks/useStockNews";
 import { useStockData } from "@/hooks/useStockData";
@@ -263,7 +264,7 @@ const NewsPanel = () => {
         <HelpTip text={tip} />
       </h3>
       {isLoading && (
-        <div className="text-center text-muted-foreground py-10 font-mono text-sm">Loading…</div>
+        <CardSkeleton count={3} />
       )}
       {!isLoading && picks.length === 0 && (
         <div className="text-center text-muted-foreground py-10 font-mono text-sm border border-dashed border-border rounded-sm">

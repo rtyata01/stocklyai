@@ -1,3 +1,4 @@
+import { CardSkeleton } from "@/components/LoadingSkeletons";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Trash2, X, Bookmark, Newspaper, Loader2, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -233,7 +234,7 @@ export default function MyWatchlistPanel() {
             </h4>
           </div>
           {breakingLoading && breakingItems.length === 0 && (
-            <div className="text-center text-muted-foreground py-8 font-mono text-xs">Scanning {active.tickers.slice(0, 10).length} stocks…</div>
+            <CardSkeleton count={3} />
           )}
           {breakingItems.map((a, i) => (
             <button
