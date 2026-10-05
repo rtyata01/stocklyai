@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { allTickers, StockQuote } from "@/data/stocks";
 import { getWatchlistSectors } from "@/components/ManageWatchlistDialog";
-import { loadFromCache, saveLocalCache } from "@/lib/cacheClient";
+import { loadFromCache, saveLocalCache, lastKnown } from "@/lib/cacheClient";
 
 function getActiveTickers(): string[] {
   try {
@@ -29,7 +29,7 @@ export function useStockData(refreshNonce = 0, tickersOverride?: string[]) {
         const cached = await loadFromCache<{ quotes: StockQuote[] } | StockQuote[]>(cacheKey, TTL);
         if (cached) {
           const quotes = Array.isArray(cached) ? cached : cached.quotes;
-          if (quotes?.length) return quotes;
+          if (quotes?.length) { lastKnown.saveQuotes(quotes); return quotes; }
         }
       }
       const { data, error } = await supabase.functions.invoke("fetch-stocks", {
@@ -37,7 +37,14 @@ export function useStockData(refreshNonce = 0, tickersOverride?: string[]) {
       });
       if (error) throw error;
       saveLocalCache(cacheKey, { quotes: data.quotes }, TTL);
+      lastKnown.saveQuotes(data.quotes ?? []);
       return data.quotes;
+    },
+    // Stale-while-revalidate: render last-known prices instantly while live data loads.
+    placeholderData: (prev) => {
+      if (prev && prev.length) return prev;
+      const stale = lastKnown.quotes<StockQuote>(tickers);
+      return stale.length ? stale : undefined;
     },
     enabled: tickers.length > 0,
     refetchInterval: 15 * 60 * 1000,
