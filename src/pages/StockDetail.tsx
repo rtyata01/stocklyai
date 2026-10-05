@@ -7,6 +7,7 @@ import { formatCurrency } from "@/data/stocks";
 import { resolveBack } from "@/lib/backNav";
 
 import { ArrowLeft, TrendingUp, TrendingDown } from "lucide-react";
+import { CardSkeleton, UpdatingBadge } from "@/components/LoadingSkeletons";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Helmet } from "react-helmet-async";
@@ -83,7 +84,7 @@ const StockDetail = () => {
   const [searchParams] = useSearchParams();
   const { to: backTo, label: backLabel } = resolveBack(searchParams.get("from"));
 
-  const { data: detail, isLoading, error } = useStockDetail(ticker);
+  const { data: detail, isLoading, error, isPlaceholderData: detailStale, isFetching: detailFetching } = useStockDetail(ticker);
   const { data: quotes } = useStockData();
   const { data: evaluations } = usePriceEvaluations(quotes);
   const { data: insights } = useStockInsights(quotes);
@@ -175,10 +176,15 @@ const StockDetail = () => {
         </header>
 
         <main className="p-4 md:p-8 space-y-6">
-          {isLoading && (
-            <div className="text-center text-muted-foreground py-20 font-mono text-sm">
-              Loading stock details…
+          {isLoading && !detail && (
+            <div className="space-y-6">
+              <CardSkeleton count={4} className="grid-cols-2 md:grid-cols-4" />
+              <CardSkeleton count={3} className="md:grid-cols-3" />
+              <CardSkeleton count={2} />
             </div>
+          )}
+          {detail && (detailStale || detailFetching) && (
+            <div className="flex justify-end"><UpdatingBadge label="updating with latest data…" /></div>
           )}
           {error && (
             <div className="text-center text-destructive py-20 font-mono text-sm">
