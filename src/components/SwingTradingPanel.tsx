@@ -1,3 +1,4 @@
+import { CardSkeleton } from "@/components/LoadingSkeletons";
 import { useState } from "react";
 import { useSwingSignals, clearSwingCache, SwingSignal } from "@/hooks/useSwingSignals";
 import { useStockData } from "@/hooks/useStockData";
@@ -141,7 +142,7 @@ const SwingTradingPanel = () => {
         </Button>
       </div>
 
-      {isLoading && <div className="text-center text-muted-foreground py-20 font-mono text-sm">Scanning news for FDA approvals & swing catalysts…</div>}
+      {isLoading && <CardSkeleton count={4} />}
       {error && <div className="text-center text-destructive py-20 font-mono text-sm">Failed to load signals.</div>}
 
       {!isLoading && signals && signals.length === 0 && (

@@ -14,14 +14,51 @@ interface CacheEnvelope<T> {
  * Use `loadFromCache` first; on miss, call your edge function (which will populate the
  * shared `app_cache`) and then `saveLocalCache` so the local layer stays warm.
  */
+/** Synchronously read the last-known local value, even if expired (for stale-while-revalidate). */
+export function readStaleLocal<T>(key: string): T | undefined {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return undefined;
+    return (JSON.parse(raw) as CacheEnvelope<T>).data;
+  } catch {
+    return undefined;
+  }
+}
+
+const LAST_QUOTES = "last-known:quotes";
+const LAST_EVALS = "last-known:evaluations";
+
+function readMap<T>(k: string): Record<string, T> {
+  try { return JSON.parse(localStorage.getItem(k) ?? "{}"); } catch { return {}; }
+}
+function mergeMap<T extends { ticker: string }>(k: string, items: T[]) {
+  try {
+    const m = readMap<T>(k);
+    items.forEach((i) => { if (i?.ticker) m[i.ticker] = i; });
+    localStorage.setItem(k, JSON.stringify(m));
+  } catch { /* ignore */ }
+}
+/** Per-ticker last-known stores, shared across all tables/tabs. */
+export const lastKnown = {
+  quotes: <T extends { ticker: string }>(tickers: string[]): T[] => {
+    const m = readMap<T>(LAST_QUOTES);
+    return tickers.map((t) => m[t]).filter(Boolean) as T[];
+  },
+  saveQuotes: <T extends { ticker: string }>(items: T[]) => mergeMap(LAST_QUOTES, items),
+  evals: <T extends { ticker: string }>(tickers: string[]): T[] => {
+    const m = readMap<T>(LAST_EVALS);
+    return tickers.map((t) => m[t]).filter(Boolean) as T[];
+  },
+  saveEvals: <T extends { ticker: string }>(items: T[]) => mergeMap(LAST_EVALS, items),
+};
+
 export async function loadFromCache<T>(key: string, ttlMs: number): Promise<T | null> {
-  // Layer 1: localStorage
+  // Layer 1: localStorage (expired entries are kept as stale fallbacks)
   try {
     const raw = localStorage.getItem(key);
     if (raw) {
       const parsed: CacheEnvelope<T> = JSON.parse(raw);
       if (Date.now() < parsed.expiresAt) return parsed.data;
-      localStorage.removeItem(key);
     }
   } catch {
     /* ignore */

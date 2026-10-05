@@ -1,3 +1,4 @@
+import { TableSkeleton } from "@/components/LoadingSkeletons";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -103,7 +104,7 @@ export default function MarketWatchlistPanel() {
       </div>
 
       {loading && (
-        <div className="text-center text-muted-foreground py-16 font-mono text-sm">Scanning the market…</div>
+        <TableSkeleton rows={8} />
       )}
 
       {!loading && !result && (

@@ -3,6 +3,8 @@ import { Link, useLocation } from "react-router-dom";
 import { buildStockLink } from "@/lib/backNav";
 
 import { formatCurrency, formatVolume, SectorGroup } from "@/data/stocks";
+import { Skeleton } from "@/components/ui/skeleton";
+import { TableSkeleton, UpdatingBadge } from "@/components/LoadingSkeletons";
 import { useStockData } from "@/hooks/useStockData";
 import { usePriceEvaluations, clearPriceCache } from "@/hooks/usePriceEvaluations";
 import { useStockInsights } from "@/hooks/useStockInsights";
@@ -49,8 +51,11 @@ export default function PortfolioTable({
 
   const [refreshNonce, setRefreshNonce] = useState(0);
   const allTickers = sectors.flatMap((s) => s.tickers);
-  const { data: quotes, isLoading, error } = useStockData(refreshNonce, allTickers);
-  const { data: evaluations, isLoading: evalLoading } = usePriceEvaluations(quotes, refreshNonce);
+  const { data: quotes, isLoading: quotesLoading, error: quotesError, isPlaceholderData: quotesStale, isFetching: quotesFetching } = useStockData(refreshNonce, allTickers);
+  const isLoading = quotesLoading && !quotes?.length;
+  const error = quotesError && !quotes?.length ? quotesError : null;
+  const { data: evaluations, isLoading: evalLoading, isPlaceholderData: evalStale } = usePriceEvaluations(quotes, refreshNonce);
+  const updating = !isLoading && (quotesStale || quotesFetching || evalLoading || evalStale);
   const { data: insights } = useStockInsights(quotes, refreshNonce);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [sort, setSort] = useState<{ key: SortKey; dir: SortDir } | null>(null);
@@ -179,7 +184,10 @@ export default function PortfolioTable({
         )}
 
         {hasAny && isLoading && (
-          <div className="text-center text-muted-foreground py-20 font-mono text-sm">Fetching market data…</div>
+          <TableSkeleton sections={Math.min(3, Math.max(1, sectors.length))} rows={Math.min(6, Math.max(3, allTickers.length))} />
+        )}
+        {hasAny && updating && (
+          <div className="flex justify-end -mt-2"><UpdatingBadge /></div>
         )}
         {hasAny && error && (
           <div className="text-center text-destructive py-20 font-mono text-sm">Failed to load data. Retrying…</div>
@@ -346,7 +354,7 @@ export default function PortfolioTable({
                             <TableCell className="py-2 px-4 text-right">
                               <div className="flex items-center justify-end gap-2 whitespace-nowrap">
                                 <span className="font-mono text-sm text-foreground tabular-nums">
-                                  {noData ? "—" : formatCurrency(price)}
+                                  {noData ? (updating ? <Skeleton className="h-3.5 w-16 inline-block align-middle" /> : "—") : formatCurrency(price)}
                                 </span>
                                 {!noData && (
                                   <span className={`text-[10px] font-mono tabular-nums ${isPositive ? "text-pine" : "text-destructive"}`}>
@@ -382,7 +390,7 @@ export default function PortfolioTable({
                                 </Tooltip>
                               ) : (
                                 <span className="font-mono text-sm text-primary tabular-nums">
-                                  {evalLoading ? "…" : ev ? formatCurrency(ev.buyPrice) : "—"}
+                                  {ev ? formatCurrency(ev.buyPrice) : evalLoading ? <Skeleton className="h-3.5 w-14 inline-block align-middle" /> : "—"}
                                 </span>
                               )}
                             </TableCell>
@@ -401,7 +409,7 @@ export default function PortfolioTable({
                                 </Tooltip>
                               ) : (
                                 <span className="font-mono text-sm text-muted-foreground tabular-nums">
-                                  {evalLoading ? "…" : ev ? formatCurrency(ev.holdPrice) : "—"}
+                                  {ev ? formatCurrency(ev.holdPrice) : evalLoading ? <Skeleton className="h-3.5 w-14 inline-block align-middle" /> : "—"}
                                 </span>
                               )}
                             </TableCell>
@@ -420,7 +428,7 @@ export default function PortfolioTable({
                                 </Tooltip>
                               ) : (
                                 <span className="font-mono text-sm text-destructive tabular-nums">
-                                  {evalLoading ? "…" : ev ? formatCurrency(ev.salePrice) : "—"}
+                                  {ev ? formatCurrency(ev.salePrice) : evalLoading ? <Skeleton className="h-3.5 w-14 inline-block align-middle" /> : "—"}
                                 </span>
                               )}
                             </TableCell>
@@ -450,11 +458,7 @@ export default function PortfolioTable({
         )}
 
 
-        {hasAny && evalLoading && !isLoading && (
-          <div className="text-center text-muted-foreground py-4 font-mono text-xs">
-            AI is evaluating fair prices…
-          </div>
-        )}
+
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+import { CardSkeleton } from "@/components/LoadingSkeletons";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Heart, Repeat2, MessageCircle, Trash2, Search, Loader2, Send } from "lucide-react";
@@ -285,7 +286,7 @@ const CommunityPanel = () => {
         </div>
 
         {loading ? (
-          <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground py-8"><Loader2 className="h-4 w-4 animate-spin" /> Loading posts…</div>
+          <CardSkeleton count={3} />
         ) : groups.length === 0 ? (
           <div className="text-xs font-mono text-muted-foreground py-8 text-center">No posts yet. Be the first to share a view.</div>
         ) : (
