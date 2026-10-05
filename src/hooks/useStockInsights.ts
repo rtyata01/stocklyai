@@ -50,6 +50,7 @@ export function useStockInsights(
       saveLocalCache(cacheKey, { insights }, CACHE_TTL);
       return insights;
     },
+    placeholderData: (prev) => prev,
     enabled: !!quotes && quotes.length > 0,
     staleTime: CACHE_TTL,
     retry: 1,

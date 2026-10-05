@@ -49,6 +49,7 @@ export function usePriceEvaluations(
         if (cached) {
           const evals = Array.isArray(cached) ? cached : cached.evaluations;
           if (evals && quotes.every((q) => evals.some((c) => c.ticker === q.ticker))) {
+            lastKnown.saveEvals(evals);
             return evals;
           }
         }
@@ -75,11 +76,17 @@ export function usePriceEvaluations(
         // Rate limited or transient failure: serve cached evaluations rather than erroring the page.
         const fallback = await loadFromCache<{ evaluations: PriceEvaluation[] } | PriceEvaluation[]>(cacheKey, Number.MAX_SAFE_INTEGER);
         const list = Array.isArray(fallback) ? fallback : fallback?.evaluations;
-        return list ?? [];
+        return list ?? lastKnown.evals<PriceEvaluation>(tickers);
       }
       const evaluations: PriceEvaluation[] = data.evaluations;
       saveLocalCache(cacheKey, { evaluations }, CACHE_TTL);
+      lastKnown.saveEvals(evaluations);
       return evaluations;
+    },
+    placeholderData: (prev) => {
+      if (prev && prev.length) return prev;
+      const stale = lastKnown.evals<PriceEvaluation>(tickers);
+      return stale.length ? stale : undefined;
     },
     enabled: !!quotes && quotes.length > 0,
     staleTime: CACHE_TTL,
