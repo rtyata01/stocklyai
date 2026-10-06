@@ -1,3 +1,4 @@
+import { CardSkeleton } from "@/components/LoadingSkeletons";
 import { useMemo, useState, useEffect, useRef, KeyboardEvent } from "react";
 import { useStockData } from "@/hooks/useStockData";
 import { supabase } from "@/integrations/supabase/client";
@@ -221,6 +222,8 @@ export default function CycleTradingPanel() {
       {error && (
         <div className="text-center text-destructive py-6 font-mono text-xs">{error}</div>
       )}
+
+      {(loading || bestLoading) && !results?.length && <CardSkeleton count={3} />}
 
       {results && mode === "best" && results.length > 0 && (
         <div className="border border-primary/40 bg-primary/5 rounded-sm p-3 text-xs font-mono text-primary">
