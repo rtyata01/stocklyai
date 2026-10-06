@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { sectors } from "@/data/stocks";
-import { loadFromCache, saveLocalCache, clearCache } from "@/lib/cacheClient";
+import { loadFromCache, saveLocalCache, clearCache, lastKnown } from "@/lib/cacheClient";
 
 export interface PriceEvaluation {
   ticker: string;
