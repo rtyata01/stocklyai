@@ -116,9 +116,6 @@ export default function CycleTradingPanel() {
       const picks = (data as any)?.results ?? [];
       setResults(picks);
       setMode("best");
-      if (picks.length === 0) {
-        toast({ title: "No cyclic bottoms found", description: "No stocks currently sit at the bottom of a repeating cycle." });
-      }
     } catch (e: any) {
       setError(e?.message || "Failed to find best picks");
     } finally { setBestLoading(false); }
