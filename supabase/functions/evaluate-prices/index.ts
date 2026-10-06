@@ -129,8 +129,9 @@ OUTPUT REQUIREMENTS:
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
-        return new Response(JSON.stringify({ error: 'Rate limited, please try again later.' }), {
-          status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        // Soft-fail with 200 so the client falls back to its own cached evaluations.
+        return new Response(JSON.stringify({ rateLimited: true, evaluations: null }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
       if (response.status === 402) {
