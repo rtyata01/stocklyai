@@ -52,8 +52,8 @@ export default function PortfolioTable({
   const [refreshNonce, setRefreshNonce] = useState(0);
   const allTickers = sectors.flatMap((s) => s.tickers);
   const { data: quotes, isLoading: quotesLoading, error: quotesError, isPlaceholderData: quotesStale, isFetching: quotesFetching } = useStockData(refreshNonce, allTickers);
-  const isLoading = quotesLoading && !quotes?.length;
-  const error = quotesError && !quotes?.length ? quotesError : null;
+  const isLoading = quotesLoading && !(quotes ?? []).length;
+  const error = quotesError && !(quotes ?? []).length ? quotesError : null;
   const { data: evaluations, isLoading: evalLoading, isPlaceholderData: evalStale } = usePriceEvaluations(quotes, refreshNonce);
   const updating = !isLoading && (quotesStale || quotesFetching || evalLoading || evalStale);
   const { data: insights } = useStockInsights(quotes, refreshNonce);
