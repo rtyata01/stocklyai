@@ -96,8 +96,6 @@ export default function MyWatchlistPanel() {
       }
       const items = results.filter((x): x is BreakingItem => !!x);
       setBreakingItems(items);
-      if (items.length === 0) toast.error("No breaking news found");
-      else toast.success(`Found ${items.length} breaking update${items.length === 1 ? "" : "s"}`);
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Failed to fetch breaking news");
     } finally {
