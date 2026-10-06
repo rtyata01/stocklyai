@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
-        return new Response(JSON.stringify({ error: 'Rate limited, please try again later.' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        return new Response(JSON.stringify({ rateLimited: true, insights: null }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
       if (response.status === 402) return new Response(JSON.stringify({ error: 'Credits exhausted' }), { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       const t = await response.text();
