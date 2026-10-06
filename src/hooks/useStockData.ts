@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { allTickers, StockQuote } from "@/data/stocks";
 import { getWatchlistSectors } from "@/components/ManageWatchlistDialog";
+// lastKnown persists per-ticker quotes for stale-while-revalidate rendering
 import { loadFromCache, saveLocalCache, lastKnown } from "@/lib/cacheClient";
 
 function getActiveTickers(): string[] {
