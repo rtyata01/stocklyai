@@ -21,6 +21,9 @@ import {
 import NewsDetailDialog, { NewsAlert } from "@/components/NewsDetailDialog";
 import AttentionScoreDialog from "@/components/AttentionScoreDialog";
 import WeeklyDebriefButton from "@/components/WeeklyDebriefButton";
+import GuestModeBanner from "@/components/GuestModeBanner";
+import { watchlistStarters, uniqueStarterName, type WatchlistStarter } from "@/data/watchlistStarters";
+import { Crown, Cpu, ShieldCheck } from "lucide-react";
 
 type BreakingItem = NewsAlert & { ticker: string };
 
@@ -43,7 +46,7 @@ function normalizeTickers(input: string): string[] {
 }
 
 export default function MyWatchlistPanel() {
-  const { isAuthed } = useAuth();
+  const { isAuthed, loading: authLoading } = useAuth();
   const { lists, loading, create, remove, update } = useUserWatchlists();
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -60,6 +63,30 @@ export default function MyWatchlistPanel() {
   const [breakingFor, setBreakingFor] = useState<string | null>(null);
   const [selected, setSelected] = useState<BreakingItem | null>(null);
   const [attentionOpen, setAttentionOpen] = useState(false);
+  const [starterPending, setStarterPending] = useState<string | null>(null);
+  const starterLock = useRef(false);
+
+  const applyStarter = async (starter: WatchlistStarter) => {
+    if (starterLock.current || loading || authLoading) return;
+    starterLock.current = true;
+    setStarterPending(starter.id);
+    try {
+      if (active && active.tickers.length === 0) {
+        if (starter.tickers.length) await update(active.id, { tickers: [...starter.tickers] });
+        else setManageOpen(true);
+      } else {
+        const name = uniqueStarterName(starter.name, lists.map((list) => list.name));
+        const list = await create(name, [...starter.tickers]);
+        setActiveId(list.id);
+        if (starter.id === "blank") setManageOpen(true);
+      }
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Couldn't save this watchlist. Please try again.");
+    } finally {
+      starterLock.current = false;
+      setStarterPending(null);
+    }
+  };
 
   const findBreakingNews = async () => {
     if (!active || active.tickers.length === 0) {
@@ -116,9 +143,7 @@ export default function MyWatchlistPanel() {
   return (
     <div className="pb-8">
       {!isAuthed && (
-        <div className="mb-3 text-[11px] font-mono text-muted-foreground bg-secondary/40 border border-border rounded-sm px-3 py-2">
-          Signed in as guest — watchlists are saved on this device. <a href="/auth" className="text-primary underline underline-offset-2">Sign in</a> to sync across devices.
-        </div>
+        <GuestModeBanner subject="watchlists" />
       )}
 
       <div className="flex flex-wrap items-center gap-2 mb-4">
@@ -158,6 +183,23 @@ export default function MyWatchlistPanel() {
           }}
         />
       </div>
+
+      {(loading || authLoading) && !active ? <CardSkeleton count={3} /> : (!active || active.tickers.length === 0) && (
+        <section className="border-y border-border py-6 mb-5" aria-label="Watchlist starters">
+          <h2 className="font-serif text-lg text-foreground mb-4">{active ? `Add stocks to ${active.name}` : "Your first watchlist"}</h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {watchlistStarters.map((starter) => {
+              const Icon = starter.id === "buffett" ? Crown : starter.id === "ai" ? Cpu : starter.id === "moats" ? ShieldCheck : Plus;
+              return (
+                <Button key={starter.id} variant="outline" className="h-auto min-h-20 items-start justify-start whitespace-normal px-4 py-4 text-left" disabled={starterPending !== null || loading || authLoading} onClick={() => { void applyStarter(starter); }}>
+                  {starterPending === starter.id ? <Loader2 className="mr-3 mt-0.5 h-4 w-4 shrink-0 animate-spin" /> : <Icon className="mr-3 mt-0.5 h-4 w-4 shrink-0 text-primary" />}
+                  <span className="min-w-0"><span className="block text-xs">{starter.label}</span><span className="block mt-1.5 text-[11px] text-muted-foreground">{starter.id === "blank" ? "Your own selection" : `${starter.tickers.length} stocks · ${starter.tickers.slice(0, 3).join(", ")}`}</span></span>
+                </Button>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {active && (
         <PortfolioTable
