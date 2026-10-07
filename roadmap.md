@@ -1,4 +1,6 @@
 # Tasks
-- [x] Add the requested benefits to auth and guest banners (unavailable email delivery and alerts labeled coming soon).
-- [x] Add persistent one-click starter templates to empty watchlists.
-- [x] Verify benefits and template creation, empty-list filling, and reload persistence (four tests and guest browser flows passed without page errors).
+- [ ] Add email-only Monday Weekly Debrief subscription, persistent storage, confirmation, and unsubscribe.
+- [ ] Connect Resend and a verified sender; schedule Monday digest delivery using existing briefing content.
+- [ ] Replace Announcements generating dead-end with ticker/above-below/price/Save controls and deletable active alerts.
+- [ ] Send price-crossing notifications to the saved subscription email, prompting when absent.
+- [ ] Test subscription storage, alert creation/deletion, unsubscribe, and email delivery; remove test records.
