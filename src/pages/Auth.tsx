@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Helmet } from "react-helmet-async";
+import SignupBenefits from "@/components/SignupBenefits";
 
 const emailSchema = z.string().trim().email().max(255);
 const pwSchema = z.string().min(6).max(72);
@@ -70,7 +71,7 @@ const Auth = () => {
       </Helmet>
       <div className="w-full max-w-sm border border-border rounded-md bg-card p-6 shadow-lg">
         <h1 className="font-serif text-xl mb-1 text-foreground">Welcome to Stockly.ai</h1>
-        <p className="text-xs text-muted-foreground mb-5">Sign in to save watchlists across devices.</p>
+        <div className="mt-3 mb-5"><SignupBenefits /></div>
 
         <Tabs defaultValue="signin">
           <TabsList className="grid grid-cols-2 mb-4">

@@ -34,6 +34,7 @@ import { Button } from "@/components/ui/button";
 import { Helmet } from "react-helmet-async";
 import { useAuth } from "@/hooks/useAuth";
 import SiteFooter from "@/components/SiteFooter";
+import GuestModeBanner from "@/components/GuestModeBanner";
 
 const TRADING_TABS = [
   { value: "basics", label: "Trading 101", description: "Learn essential investing terms and principles." },
@@ -233,9 +234,7 @@ const Index = () => {
 
               <TabsContent value="portfolio">
                 {!isAuthed && (
-                  <div className="mb-3 text-[11px] font-mono text-muted-foreground bg-secondary/40 border border-border rounded-sm px-3 py-2">
-                    Signed in as guest — portfolio is saved on this device. <a href="/auth" className="text-primary underline underline-offset-2">Sign in</a> to sync across devices.
-                  </div>
+                  <GuestModeBanner subject="portfolio" />
                 )}
                 <PortfolioTable
                   key={ownerKey}
