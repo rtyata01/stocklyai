@@ -15,6 +15,13 @@
       "when": 1791478587203,
       "tag": "0001_email_subscriptions_price_alerts",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791478612670,
+      "tag": "0002_subscription_privacy_and_rate_limit",
+      "breakpoints": true
     }
   ]
 }

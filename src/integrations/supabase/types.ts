@@ -187,6 +187,7 @@ export type Database = {
           label: string
           last_digest_date: string | null
           management_token: string
+          request_hash: string | null
           subscribed: boolean
           tickers: string[]
         }
@@ -197,6 +198,7 @@ export type Database = {
           label?: string
           last_digest_date?: string | null
           management_token?: string
+          request_hash?: string | null
           subscribed?: boolean
           tickers?: string[]
         }
@@ -207,6 +209,7 @@ export type Database = {
           label?: string
           last_digest_date?: string | null
           management_token?: string
+          request_hash?: string | null
           subscribed?: boolean
           tickers?: string[]
         }
