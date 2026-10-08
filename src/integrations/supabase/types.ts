@@ -277,6 +277,21 @@ export type Database = {
         }
         Relationships: []
       }
+      stock_email_job_locks: {
+        Row: {
+          job_name: string
+          locked_until: string
+        }
+        Insert: {
+          job_name: string
+          locked_until: string
+        }
+        Update: {
+          job_name?: string
+          locked_until?: string
+        }
+        Relationships: []
+      }
       stock_news: {
         Row: {
           created_at: string
@@ -345,12 +360,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_stock_email_job: { Args: { job_name: string }; Returns: boolean }
       get_visit_stats: {
         Args: never
         Returns: {
           total_visits: number
           unique_visitors: number
         }[]
+      }
+      release_stock_email_job: {
+        Args: { job_name: string }
+        Returns: undefined
       }
     }
     Enums: {
