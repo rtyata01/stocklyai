@@ -164,6 +164,101 @@ export type Database = {
           },
         ]
       }
+      email_job_config: {
+        Row: {
+          callback_token: string
+          id: boolean
+        }
+        Insert: {
+          callback_token?: string
+          id?: boolean
+        }
+        Update: {
+          callback_token?: string
+          id?: boolean
+        }
+        Relationships: []
+      }
+      email_subscriptions: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          label: string
+          last_digest_date: string | null
+          management_token: string
+          request_hash: string | null
+          subscribed: boolean
+          tickers: string[]
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          label?: string
+          last_digest_date?: string | null
+          management_token?: string
+          request_hash?: string | null
+          subscribed?: boolean
+          tickers?: string[]
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          label?: string
+          last_digest_date?: string | null
+          management_token?: string
+          request_hash?: string | null
+          subscribed?: boolean
+          tickers?: string[]
+        }
+        Relationships: []
+      }
+      price_alerts: {
+        Row: {
+          created_at: string
+          delivered_at: string | null
+          direction: string
+          id: string
+          last_price: number | null
+          subscription_id: string
+          target_price: number
+          ticker: string
+          triggered_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          delivered_at?: string | null
+          direction: string
+          id?: string
+          last_price?: number | null
+          subscription_id: string
+          target_price: number
+          ticker: string
+          triggered_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          delivered_at?: string | null
+          direction?: string
+          id?: string
+          last_price?: number | null
+          subscription_id?: string
+          target_price?: number
+          ticker?: string
+          triggered_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_alerts_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "email_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       site_visits: {
         Row: {
           created_at: string
@@ -179,6 +274,21 @@ export type Database = {
           created_at?: string
           id?: string
           visitor_id?: string
+        }
+        Relationships: []
+      }
+      stock_email_job_locks: {
+        Row: {
+          job_name: string
+          locked_until: string
+        }
+        Insert: {
+          job_name: string
+          locked_until: string
+        }
+        Update: {
+          job_name?: string
+          locked_until?: string
         }
         Relationships: []
       }
@@ -250,12 +360,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_stock_email_job: { Args: { job_name: string }; Returns: boolean }
       get_visit_stats: {
         Args: never
         Returns: {
           total_visits: number
           unique_visitors: number
         }[]
+      }
+      release_stock_email_job: {
+        Args: { job_name: string }
+        Returns: undefined
       }
     }
     Enums: {

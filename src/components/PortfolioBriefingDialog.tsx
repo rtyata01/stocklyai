@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { loadFromCache, saveLocalCache } from "@/lib/cacheClient";
 import { SectorGroup } from "@/data/stocks";
 import { RefreshCw, Newspaper, Zap, AlertTriangle, Sparkles, CalendarDays } from "lucide-react";
+import DebriefEmailSignup from "@/components/DebriefEmailSignup";
 
 interface Driver {
   ticker: string; weekPct: number; monthPct: number; price: number;
@@ -64,7 +65,7 @@ export default function PortfolioBriefingDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  const driverBullets: string[] = Array.isArray(data?.driverBullets) ? data!.driverBullets! : [];
+  const driverBullets: string[] = data?.driverBullets ?? [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -178,6 +179,7 @@ export default function PortfolioBriefingDialog({
             </p>
           </div>
         )}
+        <DebriefEmailSignup tickers={tickers} label={label} />
       </DialogContent>
     </Dialog>
   );
