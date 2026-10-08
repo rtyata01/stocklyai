@@ -3,8 +3,6 @@ import { z } from 'npm:zod@3.25.76';
 export const tickerSchema = z.string().trim().toUpperCase().regex(/^[A-Z0-9][A-Z0-9.^=-]{0,14}$/);
 export const emailSchema = z.string().trim().toLowerCase().email().max(255);
 export const tokenSchema = z.string().uuid();
-export const crosses = (previous: number | null, current: number, target: number, direction: string) =>
-  previous !== null && (direction === 'above' ? previous <= target && current > target : previous >= target && current < target);
 export const escapeHtml = (value: unknown) => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] ?? c));
 export async function marketPrice(ticker: string): Promise<number | null> {
   const aliases: Record<string, string> = { ETH: 'ETH-USD', SOL: 'SOL-USD', XRP: 'XRP-USD' };
