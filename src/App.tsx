@@ -10,6 +10,7 @@ import Index from "./pages/Index.tsx";
 import StockDetail from "./pages/StockDetail.tsx";
 import Auth from "./pages/Auth.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import EmailUnsubscribe from "./pages/EmailUnsubscribe";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/email/unsubscribe" element={<EmailUnsubscribe />} />
               <Route path="/stock/:ticker" element={<StockDetail />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
