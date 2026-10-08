@@ -8,6 +8,13 @@
       "when": 1790709570315,
       "tag": "0000_community_posts",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791478587203,
+      "tag": "0001_email_subscriptions_price_alerts",
+      "breakpoints": true
     }
   ]
 }

@@ -164,6 +164,98 @@ export type Database = {
           },
         ]
       }
+      email_job_config: {
+        Row: {
+          callback_token: string
+          id: boolean
+        }
+        Insert: {
+          callback_token?: string
+          id?: boolean
+        }
+        Update: {
+          callback_token?: string
+          id?: boolean
+        }
+        Relationships: []
+      }
+      email_subscriptions: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          label: string
+          last_digest_date: string | null
+          management_token: string
+          subscribed: boolean
+          tickers: string[]
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          label?: string
+          last_digest_date?: string | null
+          management_token?: string
+          subscribed?: boolean
+          tickers?: string[]
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          label?: string
+          last_digest_date?: string | null
+          management_token?: string
+          subscribed?: boolean
+          tickers?: string[]
+        }
+        Relationships: []
+      }
+      price_alerts: {
+        Row: {
+          created_at: string
+          delivered_at: string | null
+          direction: string
+          id: string
+          last_price: number | null
+          subscription_id: string
+          target_price: number
+          ticker: string
+          triggered_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          delivered_at?: string | null
+          direction: string
+          id?: string
+          last_price?: number | null
+          subscription_id: string
+          target_price: number
+          ticker: string
+          triggered_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          delivered_at?: string | null
+          direction?: string
+          id?: string
+          last_price?: number | null
+          subscription_id?: string
+          target_price?: number
+          ticker?: string
+          triggered_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_alerts_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "email_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       site_visits: {
         Row: {
           created_at: string
