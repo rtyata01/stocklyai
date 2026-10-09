@@ -202,19 +202,23 @@ const StockDetail = () => {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {[
                     { label: "Current Price", value: formatCurrency(quote?.price ?? detail.currentPrice) },
-                    { label: "Dividend Yield", value: detail.dividendYield != null ? `${detail.dividendYield.toFixed(2)}%` : "—" },
-                    { label: "P/E Ratio", value: detail.peRatio?.toFixed(2) ?? "N/A" },
-                    { label: "EPS (TTM)", value: detail.eps != null ? `$${detail.eps.toFixed(2)}` : "N/A" },
-                    { label: "Free Cash Flow", value: detail.freeCashFlow != null ? `$${detail.freeCashFlow.toLocaleString()}M` : "N/A" },
-                    { label: "Total Revenue", value: detail.totalRevenue != null ? `$${detail.totalRevenue.toLocaleString()}M` : "N/A" },
-                    { label: "Market Cap", value: detail.marketCap != null ? `$${detail.marketCap.toFixed(1)}B` : "N/A" },
-                  ].map(m => (
+                    { label: "Dividend Yield", value: detail.dividendYield != null && Number.isFinite(detail.dividendYield) ? `${detail.dividendYield.toFixed(2)}%` : null },
+                    { label: "P/E Ratio", value: detail.peRatio != null && Number.isFinite(detail.peRatio) ? detail.peRatio.toFixed(2) : null },
+                    { label: "EPS (TTM)", value: detail.eps != null && Number.isFinite(detail.eps) ? `$${detail.eps.toFixed(2)}` : null },
+                    { label: "Free Cash Flow (TTM)", value: detail.freeCashFlow != null && Number.isFinite(detail.freeCashFlow) ? `$${detail.freeCashFlow.toLocaleString()}M` : null },
+                    { label: "Total Revenue (TTM)", value: detail.totalRevenue != null && Number.isFinite(detail.totalRevenue) ? `$${detail.totalRevenue.toLocaleString()}M` : null },
+                    { label: "Market Cap", value: detail.marketCap != null && Number.isFinite(detail.marketCap) ? `$${detail.marketCap.toFixed(1)}B` : null },
+                  ].filter(m => m.value != null).map(m => (
                     <div key={m.label} className="border border-border rounded-sm p-3 bg-secondary/20">
                       <div className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">{m.label}</div>
                       <div className="font-mono text-sm text-foreground mt-1">{m.value}</div>
                     </div>
                   ))}
                 </div>
+                {[detail.peRatio, detail.eps, detail.freeCashFlow, detail.totalRevenue, detail.marketCap].filter(v => v == null || !Number.isFinite(v)).length > 2 && (
+                  <p className="text-xs text-muted-foreground mt-3">Full fundamentals coming soon for this ticker.</p>
+                )}
+                {detail.fundamentalSources?.length ? <p className="text-[10px] text-muted-foreground mt-2">Sources: {detail.fundamentalSources.join(' · ')}{detail.reportingDate ? ` · Reported through ${detail.reportingDate}` : ''}</p> : null}
 
                 {/* 52 Week Range Bar */}
                 {detail.week52Low > 0 && detail.week52High > 0 && (

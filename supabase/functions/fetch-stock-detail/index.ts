@@ -1,10 +1,8 @@
 import { writeAppCache } from '../_shared/cache.ts';
 import { isValidTicker } from '../_shared/validation.ts';
+import { secFundamentals } from '../_shared/secFundamentals.ts';
+import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
 
 const UA = { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36' };
 
@@ -73,8 +71,8 @@ async function yahooQuoteSummary(symbol: string): Promise<any | null> {
   }
 
   try {
-    const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbol)}`;
-    const res = await fetch(url, { headers: UA });
+    const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbol)}${auth ? `&crumb=${encodeURIComponent(auth.crumb)}` : ''}`;
+    const res = await fetch(url, { headers: auth ? { ...UA, Cookie: auth.cookie } : UA });
     if (res.ok) {
       const j = await res.json();
       const q = j?.quoteResponse?.result?.[0];
@@ -307,7 +305,9 @@ Deno.serve(async (req) => {
     let eps: number | null = null;
     let freeCashFlow: number | null = null;
     let totalRevenue: number | null = null;
-    let marketCap: number | null = null;
+    let marketCap: number | null = num(meta.marketCap) != null ? Number(meta.marketCap) / 1e9 : null;
+    const fundamentalSources = ['Yahoo Finance'];
+    let reportingDate: string | null = null;
 
     if (qs?.source === 'v10') {
       const sd = qs.data.summaryDetail ?? {};
@@ -316,17 +316,30 @@ Deno.serve(async (req) => {
       const pr = qs.data.price ?? {};
       peRatio = sd.trailingPE?.raw ?? null;
       eps = ks.trailingEps?.raw ?? null;
-      freeCashFlow = fd.freeCashflow?.raw ? fd.freeCashflow.raw / 1_000_000 : null;
-      totalRevenue = fd.totalRevenue?.raw ? fd.totalRevenue.raw / 1_000_000 : null;
-      marketCap = pr.marketCap?.raw ? pr.marketCap.raw / 1_000_000_000 : (sd.marketCap?.raw ? sd.marketCap.raw / 1_000_000_000 : null);
+      freeCashFlow = num(fd.freeCashflow?.raw) != null ? fd.freeCashflow.raw / 1_000_000 : null;
+      totalRevenue = num(fd.totalRevenue?.raw) != null ? fd.totalRevenue.raw / 1_000_000 : null;
+      marketCap = num(pr.marketCap?.raw) != null ? pr.marketCap.raw / 1_000_000_000 : (num(sd.marketCap?.raw) != null ? sd.marketCap.raw / 1_000_000_000 : marketCap);
     } else if (qs?.source === 'v7') {
       const q = qs.data;
       peRatio = q.trailingPE ?? null;
       eps = q.epsTrailingTwelveMonths ?? null;
-      marketCap = q.marketCap ? q.marketCap / 1_000_000_000 : null;
+      marketCap = num(q.marketCap) != null ? q.marketCap / 1_000_000_000 : marketCap;
     }
 
     if (isCrypto) { peRatio = null; eps = null; }
+    // Reported SEC filings are a grounded fallback, never AI-invented financial values.
+    if (!isCrypto && [peRatio, eps, freeCashFlow, totalRevenue, marketCap].some(v => v == null)) {
+      const sec = await secFundamentals(ticker, currentPrice);
+      if (sec) {
+        peRatio ??= sec.peRatio;
+        eps ??= sec.eps;
+        freeCashFlow ??= sec.freeCashFlow;
+        totalRevenue ??= sec.totalRevenue;
+        marketCap ??= sec.marketCap;
+        reportingDate = sec.reportingDate;
+        fundamentalSources.push('SEC company filings (TTM; market cap estimated from reported shares when needed)');
+      }
+    }
 
     // 3. Historical earnings (actuals only)
     const historical = qs?.source === 'v10' ? extractHistoricalEarnings(qs) : { quarterly: [], yearly: [] };
@@ -393,6 +406,7 @@ Deno.serve(async (req) => {
     if (!isCrypto && (peRatio == null || eps == null || marketCap == null || dividendYield == null || totalRevenue == null)) {
       const av = await alphaOverview(symbol);
       if (av) {
+        fundamentalSources.push('Alpha Vantage');
         peRatio ??= num(av.PERatio);
         eps ??= num(av.EPS);
         const mc = num(av.MarketCapitalization); if (marketCap == null && mc) marketCap = mc / 1e9;
@@ -412,6 +426,9 @@ Deno.serve(async (req) => {
       freeCashFlow,
       totalRevenue,
       marketCap,
+      fundamentalsVersion: 2,
+      fundamentalSources,
+      reportingDate,
       quarterlyEarnings,
       yearlyEarnings,
       priceHistory,
@@ -421,7 +438,8 @@ Deno.serve(async (req) => {
     };
 
 
-    await writeAppCache(`stock-detail:${ticker}`, { detail }, 4 * 60 * 60 * 1000);
+    const ttl = [eps, freeCashFlow, totalRevenue, marketCap].filter(v => v == null).length > 2 ? 5 * 60 * 1000 : 4 * 60 * 60 * 1000;
+    await writeAppCache(`stock-detail:v2:${ticker}`, { detail }, ttl);
 
     return new Response(JSON.stringify({ detail }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

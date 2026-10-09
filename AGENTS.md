@@ -5,3 +5,4 @@
 - Keep email subscriptions and price alerts private behind server endpoints and unguessable management tokens; guests need no account and must not gain public access to other subscribers.
 - Use Resend through the linked connector for digest and price-alert emails, reusing the portfolio briefing function; do not enable delivery until a verified sender is configured.
 - Detect alerts from a stored previous quote to a new quote across the threshold, then retry a pending notification with a stable idempotency key rather than sending repeatedly.
+- Ground missing stock fundamentals in SEC company filings using annual plus current YTD minus prior comparable YTD; never use AI to fabricate financial metrics, and version the detail cache when the feed changes.
