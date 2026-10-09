@@ -58,6 +58,9 @@ export interface StockDetail {
   freeCashFlow: number | null;
   totalRevenue: number | null;
   marketCap: number | null;
+  fundamentalsVersion?: number;
+  fundamentalSources?: string[];
+  reportingDate?: string | null;
   quarterlyEarnings: QuarterlyEarning[];
   yearlyEarnings: YearlyEarning[];
   priceHistory: PricePoint[];
@@ -71,27 +74,27 @@ const CACHE_TTL = 4 * 60 * 60 * 1000; // 4 hours
 
 export function useStockDetail(ticker: string | undefined) {
   return useQuery({
-    queryKey: ["stock-detail", ticker],
+    queryKey: ["stock-detail", "v2", ticker],
     queryFn: async (): Promise<StockDetail> => {
       if (!ticker) throw new Error("No ticker");
-      const key = `stock-detail:${ticker}`;
+      const key = `stock-detail:v2:${ticker}`;
       const cached = await loadFromCache<{ detail: StockDetail } | StockDetail>(key, CACHE_TTL);
       if (cached) {
         const detail = (cached as { detail?: StockDetail }).detail ?? (cached as StockDetail);
-        if (detail) return detail;
+        if (detail?.fundamentalsVersion === 2 && [detail.eps, detail.freeCashFlow, detail.totalRevenue, detail.marketCap].filter(v => v == null).length <= 2) return detail;
       }
       const { data, error } = await supabase.functions.invoke("fetch-stock-detail", {
         body: { ticker },
       });
       if (error) throw error;
       const detail: StockDetail = data.detail;
-      saveLocalCache(key, { detail }, CACHE_TTL);
+      saveLocalCache(key, { detail }, [detail.eps, detail.freeCashFlow, detail.totalRevenue, detail.marketCap].filter(v => v == null).length > 2 ? 5 * 60 * 1000 : CACHE_TTL);
       return detail;
     },
     // Show last-known (even expired) details instantly while fresh data loads.
     placeholderData: () => {
       if (!ticker) return undefined;
-      const stale = readStaleLocal<{ detail: StockDetail } | StockDetail>(`stock-detail:${ticker}`);
+      const stale = readStaleLocal<{ detail: StockDetail } | StockDetail>(`stock-detail:v2:${ticker}`) ?? readStaleLocal<{ detail: StockDetail } | StockDetail>(`stock-detail:${ticker}`);
       return stale ? ((stale as { detail?: StockDetail }).detail ?? (stale as StockDetail)) : undefined;
     },
     enabled: !!ticker,
