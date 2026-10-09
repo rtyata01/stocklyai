@@ -13,6 +13,7 @@ Deno.serve(async req => {
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
   const db = createClient(Deno.env.get('SUPABASE_URL') ?? '', serviceKey);
   let claimed = false;
+  let claimedJob: 'alerts' | 'digest' | null = null;
   try {
     const parsed = schema.safeParse(await req.json());
     if (!parsed.success) return json({ error: 'Invalid job.' }, 400);
@@ -26,6 +27,7 @@ Deno.serve(async req => {
     if (lockError) throw lockError;
     if (!lock) return json({ skipped: 'Job already running.' });
     claimed = true;
+    claimedJob = job;
     let sent = 0;
     let failed = 0;
     const now = new Date();
@@ -75,9 +77,8 @@ Deno.serve(async req => {
     console.error('Stock email job failed', e instanceof Error ? e.message : 'unknown');
     return json({ error: 'Email processing failed.' }, 500);
   } finally {
-    if (claimed) {
-      const body = await req.clone().json().catch(() => null);
-      if (body?.job) await db.rpc('release_stock_email_job', { job_name: body.job });
+    if (claimed && claimedJob) {
+      await db.rpc('release_stock_email_job', { job_name: claimedJob });
     }
   }
 });
