@@ -1,4 +1,4 @@
-import { useMemo, useState, KeyboardEvent } from "react";
+import { useEffect, useMemo, useState, KeyboardEvent } from "react";
 import { useStockData } from "@/hooks/useStockData";
 import { supabase } from "@/integrations/supabase/client";
 import { loadFromCache, saveLocalCache } from "@/lib/cacheClient";
@@ -114,6 +114,13 @@ export default function StockComparisonPanel() {
   const [result, setResult] = useState<ComparisonResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [marketLoading, setMarketLoading] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    if (!loading) { setElapsed(0); return; }
+    const start = Date.now();
+    const id = setInterval(() => setElapsed(Math.floor((Date.now() - start) / 1000)), 1000);
+    return () => clearInterval(id);
+  }, [loading]);
   const [error, setError] = useState<string | null>(null);
   const [rangeKey, setRangeKey] = useState<string>("1Y");
   const [alternatives, setAlternatives] = useState<AlternativesResult | null>(null);
@@ -185,7 +192,7 @@ export default function StockComparisonPanel() {
   };
 
   const runCompare = async (mode: "compare" | "market" = "compare") => {
-    if (mode === "compare" && selected.length < 2) return;
+    if (mode === "compare" && (selected.length < 2 || loading)) return;
     if (mode === "market" && selected.length !== 1) return;
     mode === "market" ? setMarketLoading(true) : setLoading(true);
     setError(null);
@@ -271,12 +278,34 @@ export default function StockComparisonPanel() {
               {marketLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Globe2 className="h-3.5 w-3.5" />}
               Market Compare
             </Button>
-            <Button onClick={() => runCompare("compare")} disabled={selected.length < 2 || loading} size="sm" className="gap-1.5 text-xs">
+            <Button
+              onClick={() => { if (!loading) runCompare("compare"); }}
+              disabled={!loading && selected.length < 2}
+              aria-disabled={loading}
+              aria-busy={loading}
+              size="sm"
+              className={`gap-1.5 text-xs ${loading ? "cursor-wait" : ""}`}
+            >
               {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-              Compare ({selected.length})
+              {loading ? "Analyzing…" : `Compare (${selected.length})`}
             </Button>
           </div>
         </div>
+        {loading && (
+          <div className="mb-3 space-y-1.5" role="status" aria-live="polite">
+            <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full bg-primary transition-[width] duration-1000 ease-linear"
+                style={{ width: `${Math.min(95, (elapsed / 15) * 85)}%` }}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {elapsed >= 30
+                ? "Still working — thanks for your patience."
+                : "Analyzing… this usually takes about 15 seconds"}
+            </p>
+          </div>
+        )}
 
         {/* Selected chips */}
         <div className="flex flex-wrap gap-1.5 mb-2 min-h-[28px]">
