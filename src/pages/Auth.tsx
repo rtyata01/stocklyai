@@ -36,7 +36,7 @@ const Auth = () => {
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Signed in");
-    nav("/");
+    nav("/app");
   };
 
   const handleSignUp = async () => {
@@ -46,7 +46,7 @@ const Auth = () => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: window.location.origin },
+      options: { emailRedirectTo: `${window.location.origin}/app` },
     });
     setBusy(false);
     if (error) return toast.error(error.message);
@@ -56,11 +56,11 @@ const Auth = () => {
   const handleGoogle = async () => {
     setBusy(true);
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+      redirect_uri: `${window.location.origin}/app`,
     });
     setBusy(false);
     if (result.error) return toast.error("Google sign-in failed");
-    if (!result.redirected) nav("/");
+    if (!result.redirected) nav("/app");
   };
 
   return (
@@ -109,7 +109,7 @@ const Auth = () => {
         </Button>
 
         <div className="mt-4 text-center">
-          <Link to="/" className="text-xs text-muted-foreground hover:text-primary underline underline-offset-2">
+          <Link to="/app" className="text-xs text-muted-foreground hover:text-primary underline underline-offset-2">
             Continue as guest
           </Link>
         </div>

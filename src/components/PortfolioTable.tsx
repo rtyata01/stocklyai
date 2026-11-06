@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { buildStockLink } from "@/lib/backNav";
 
@@ -54,8 +54,29 @@ export default function PortfolioTable({
   const { data: quotes, isLoading: quotesLoading, error: quotesError, isPlaceholderData: quotesStale, isFetching: quotesFetching } = useStockData(refreshNonce, allTickers);
   const isLoading = quotesLoading && !(quotes ?? []).length;
   const error = quotesError && !(quotes ?? []).length ? quotesError : null;
-  const { data: evaluations, isLoading: evalLoading, isPlaceholderData: evalStale } = usePriceEvaluations(quotes, refreshNonce);
-  const updating = !isLoading && (quotesStale || quotesFetching || evalLoading || evalStale);
+  // Debounce zone re-evaluation: wait for 2s of no portfolio edits (Re-evaluate bypasses this).
+  const tickerSig = (quotes ?? []).map((q) => q.ticker).join(",");
+  const [evalQuotes, setEvalQuotes] = useState(quotes);
+  const lastNonce = useRef(refreshNonce);
+  useEffect(() => {
+    if (!quotes?.length) return;
+    if (!evalQuotes?.length || lastNonce.current !== refreshNonce) {
+      lastNonce.current = refreshNonce;
+      setEvalQuotes(quotes);
+      return;
+    }
+    const id = setTimeout(() => setEvalQuotes(quotes), 2000);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tickerSig, refreshNonce, quotes?.length]);
+  const debouncing = !!quotes?.length && (evalQuotes ?? []).map((q) => q.ticker).join(",") !== tickerSig;
+  const { data: evaluations, isLoading: evalLoadingRaw, isFetching: evalFetching, isPlaceholderData: evalStale } = usePriceEvaluations(evalQuotes, refreshNonce);
+  // Keep previously shown zones on screen until fresh values arrive.
+  const keptEvals = useRef(new Map<string, NonNullable<typeof evaluations>[number]>());
+  if (evaluations?.length) evaluations.forEach((e) => keptEvals.current.set(e.ticker, e));
+  const zonesUpdating = debouncing || evalFetching || evalStale;
+  const evalLoading = evalLoadingRaw && keptEvals.current.size === 0;
+  const updating = !isLoading && (quotesStale || quotesFetching || zonesUpdating);
   const { data: insights } = useStockInsights(quotes, refreshNonce);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [sort, setSort] = useState<{ key: SortKey; dir: SortDir } | null>(null);
@@ -90,7 +111,7 @@ export default function PortfolioTable({
   };
 
   const quoteMap = new Map(quotes?.map((q) => [q.ticker, q]) ?? []);
-  const evalMap = new Map(evaluations?.map((e) => [e.ticker, e]) ?? []);
+  const evalMap = new Map([...keptEvals.current, ...(evaluations?.map((e) => [e.ticker, e] as const) ?? [])]);
   const insightMap = new Map(insights?.map((i) => [i.ticker, i]) ?? []);
 
   const handleRefresh = () => {
@@ -285,6 +306,9 @@ export default function PortfolioTable({
                             <button type="button" onClick={() => toggleSort("buy")} className={`${headerBtnCls} text-primary`}>
                               Buy <SortIcon col="buy" />
                             </button>
+                            {zonesUpdating && keptEvals.current.size > 0 && (
+                              <span className="rounded-sm bg-primary/10 px-1 py-px text-[9px] normal-case tracking-normal text-primary animate-pulse">updating…</span>
+                            )}
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <button type="button" aria-label="About Buy zone" className="text-primary/60 hover:text-primary"><HelpCircle className="h-3 w-3" /></button>
@@ -380,7 +404,7 @@ export default function PortfolioTable({
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <span className="font-mono text-sm text-primary tabular-nums cursor-help underline decoration-dotted decoration-primary/40 underline-offset-4">
-                                      {evalLoading ? "…" : formatCurrency(ev.buyPrice)}
+                                      {formatCurrency(ev.buyPrice)}
                                     </span>
                                   </TooltipTrigger>
                                   <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
@@ -399,7 +423,7 @@ export default function PortfolioTable({
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <span className="font-mono text-sm text-muted-foreground tabular-nums cursor-help underline decoration-dotted decoration-muted-foreground/40 underline-offset-4">
-                                      {evalLoading ? "…" : formatCurrency(ev.holdPrice)}
+                                      {formatCurrency(ev.holdPrice)}
                                     </span>
                                   </TooltipTrigger>
                                   <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
@@ -418,7 +442,7 @@ export default function PortfolioTable({
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <span className="font-mono text-sm text-destructive tabular-nums cursor-help underline decoration-dotted decoration-destructive/40 underline-offset-4">
-                                      {evalLoading ? "…" : formatCurrency(ev.salePrice)}
+                                      {formatCurrency(ev.salePrice)}
                                     </span>
                                   </TooltipTrigger>
                                   <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">

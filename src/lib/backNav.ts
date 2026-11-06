@@ -29,24 +29,26 @@ export function buildStockLink(ticker: string, origin: { pathname: string; searc
 /** Resolve the `from` param into a destination path and a human label. */
 export function resolveBack(from: string | null): { to: string; label: string } {
   // Legacy values still used by older links.
-  if (!from) return { to: "/", label: "Back to Portfolio" };
+  if (!from) return { to: "/app", label: "Back to Portfolio" };
   if (from === "mylists" || from === "portfolio") {
     return {
-      to: from === "mylists" ? "/?tab=mylists" : "/",
+      to: from === "mylists" ? "/app?tab=mylists" : "/app",
       label: `Back to ${TAB_LABELS[from]}`,
     };
   }
 
   // Only accept same-origin relative paths.
   if (!from.startsWith("/") || from.startsWith("//")) {
-    return { to: "/", label: "Back to Portfolio" };
+    return { to: "/app", label: "Back to Portfolio" };
   }
 
+  // Legacy links pointed at "/" when the app lived at the root.
+  if (from === "/" || from.startsWith("/?")) from = `/app${from.slice(1)}`;
   const [path, search = ""] = from.split("?");
   const tab = new URLSearchParams(search).get("tab");
   const label = tab
     ? TAB_LABELS[tab] ?? "Previous Page"
-    : path === "/"
+    : path === "/app"
       ? TAB_LABELS.portfolio
       : "Previous Page";
 

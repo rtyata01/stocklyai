@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { portfolioToCsv, csvToPortfolio } from "@/lib/portfolioCsv";
+import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { X, Plus } from "lucide-react";
+import { X, Plus, Download, Upload } from "lucide-react";
 import { sectors, SectorGroup } from "@/data/stocks";
 
 const LEGACY_KEY = "stockly-watchlist";
@@ -132,6 +134,33 @@ const ManageWatchlistDialog = ({ open, onOpenChange, onSave, ownerKey }: Props) 
   const [newTicker, setNewTicker] = useState("");
   const [selectedSector, setSelectedSector] = useState(0);
   const [newSectorName, setNewSectorName] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const exportCsv = () => {
+    const blob = new Blob([portfolioToCsv(editSectors)], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `stocklyai-portfolio-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30_000);
+  };
+
+  const importCsv = async (file?: File) => {
+    if (!file) return;
+    try {
+      const imported = csvToPortfolio(await file.text());
+      setEditSectors(imported);
+      setSelectedSector(0);
+      toast.success(`Imported ${imported.reduce((n, s) => n + s.tickers.length, 0)} stocks — click Save Portfolio to keep them.`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't read that file.");
+    } finally {
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
 
   // Refresh from storage when identity changes or dialog reopens
   useEffect(() => {
@@ -184,6 +213,16 @@ const ManageWatchlistDialog = ({ open, onOpenChange, onSave, ownerKey }: Props) 
         </DialogHeader>
 
         <div className="space-y-4">
+          <div className="flex flex-wrap items-center gap-2 rounded-sm border border-border bg-secondary/30 p-2">
+            <Button type="button" variant="outline" size="sm" className="gap-1.5 text-xs" onClick={exportCsv}>
+              <Download className="h-3.5 w-3.5" /> Export portfolio
+            </Button>
+            <Button type="button" variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => fileRef.current?.click()}>
+              <Upload className="h-3.5 w-3.5" /> Import
+            </Button>
+            <input ref={fileRef} type="file" accept=".csv,text/csv" className="hidden" aria-label="Import portfolio CSV" onChange={(e) => importCsv(e.target.files?.[0])} />
+            <span className="text-[11px] text-muted-foreground">Your portfolio is saved in this browser — export a backup copy.</span>
+          </div>
           {/* Add ticker */}
           <div className="space-y-2">
             <label className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Add Stock to Sector</label>
